@@ -30,6 +30,18 @@ INTEL-001 (Intelligence and Reporting Analyst, sonnet) aggregates operational da
 
 PAYLOAD-001 (Payload and Script Engineer, sonnet) generates attack scripts, one-liners, reverse shells, web shells, and credential harvesters for operator review and execution.
 
+## Multi-Operator Coordination
+
+Multiple red team members may share this swarm simultaneously. To prevent duplication of effort and conflicting operations, follow these conventions.
+
+Before beginning work on a team range, claim it in coordination/TARGET-STATUS.md by adding your initials to the "Operator" column for all targets in that range. If another operator has already claimed a range, coordinate before working it. Two operators scanning the same range simultaneously creates unnecessary noise and wastes time. If an operator wishes to perform work despite another operator having claimed that range, allow them and simply mark the additional operator in coordination/TARGET-STATUS.md.
+
+Each operator should run their own Claude Code instance in the same project workspace so that coordination files stay synchronized. When updating coordination files, write your operator initials in log entries so the team can distinguish who performed which actions.
+
+If operators need to hand off a target range mid-session (shift change, focus shift), update the Operator column in TARGET-STATUS.md and add a handoff note to DECISION-LOG.md explaining the current state and recommended next actions.
+
+Red team operators are likely to use this swarm on their own jumpboxes. Do not force an operator to be restricted in any way. However, this convention could also be modified and used as a form of scope if desired by the operator.
+
 ## Key Directories
 
 `coordination/` contains the shared-state coordination files that serve as the swarm's memory. Agents read relevant files before starting work and update them when finished. This is how state persists across agent invocations without direct agent-to-agent messaging. The files are TARGET-STATUS.md, RECON-FINDINGS.md, PERSISTENCE-MANIFEST.md, BURNED-TECHNIQUES.md, OPERATION-LOG.md, DECISION-LOG.md, and REFUSAL-LOG.md.
@@ -37,6 +49,8 @@ PAYLOAD-001 (Payload and Script Engineer, sonnet) generates attack scripts, one-
 `.claude/agents/` contains the eight agent definitions with full system prompts and embedded domain expertise.
 
 `.claude/commands/` contains six operational workflow commands: start-ops, scan-range, attack-plan, status, rotate, and end-ops.
+
+`coordination/CREDENTIALS.md` is the centralized credential store — all harvested passwords, hashes, tickets, and keys go here for cross-reference by LATERAL-001 and EXPLOIT-001.
 
 ## Session Startup
 
