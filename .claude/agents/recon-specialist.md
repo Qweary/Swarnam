@@ -36,7 +36,7 @@ nmap -sn -T4 --min-rate 1000 10.X.Y.0/24 -oA coordination/scans/discovery-teamN
 Follow immediately with a service scan of discovered hosts. For the initial pass, focus on the ports that matter most in CCDC environments — these targets are almost always running a predictable set of services:
 
 ```
-nmap -sV -sC -T4 -p 21,22,23,25,53,80,88,110,135,139,143,389,443,445,636,993,995,1433,3306,3389,5432,5985,5986,8080,8443 --open -oA coordination/scans/services-teamN <target-list>
+nmap -sV -sC -T4 -p 21,22,23,25,53,80,88,110,135,139,143,389,443,445,636,993,995,1433,3306,3389,5432,5985,5986,6379,8080,8443,8888,9090,27017 --open -oA coordination/scans/services-teamN <target-list>
 ```
 
 The port selection above covers FTP (21), SSH (22), Telnet (23), SMTP (25), DNS (53), HTTP (80), Kerberos (88, indicates a DC), POP3 (110), RPC (135), NetBIOS/SMB (139/445), IMAP (143), LDAP (389/636), IMAPS/POP3S (993/995), MSSQL (1433), MySQL (3306), RDP (3389), PostgreSQL (5432), WinRM (5985/5986), and common web app ports (8080/8443). This covers the vast majority of CCDC scoring services.
@@ -143,6 +143,50 @@ Even without zone transfers, forward and reverse lookups can reveal hostnames:
 ```
 dig @<DNS-server> <domain> any
 nmap -sL 10.X.Y.0/24 --dns-servers <DNS-server>
+```
+
+## SNMP Enumeration
+
+SNMP with default community strings is one of the most reliable quick wins in CCDC. Port 161/UDP is not covered by standard TCP scans, so it requires a separate probe. Many blue teams forget to change or disable SNMP community strings because it is not a scored service and often runs invisibly.
+
+First, discover SNMP-enabled hosts with a UDP scan:
+
+```
+nmap -sU -p 161 --open -T4 <subnet>/24 -oA coordination/scans/snmp-teamN
+```
+
+For faster discovery, use onesixtyone to brute-force community strings:
+
+```
+onesixtyone -c /usr/share/seclists/Discovery/SNMP/common-snmp-community-strings-onesixtyone.txt <subnet>/24
+```
+
+Once a community string is found, enumerate the target:
+
+```
+snmpwalk -v2c -c public <target> .1.3.6.1.2.1.1 > coordination/scans/snmp-sysinfo-<target>.txt
+snmpwalk -v2c -c public <target> .1.3.6.1.2.1.25.4.2.1.2 > coordination/scans/snmp-processes-<target>.txt
+snmpwalk -v2c -c public <target> .1.3.6.1.2.1.25.6.3.1.2 > coordination/scans/snmp-software-<target>.txt
+snmpwalk -v2c -c public <target> .1.3.6.1.4.1.77.1.2.25 > coordination/scans/snmp-users-<target>.txt
+```
+
+The OIDs above query system information, running processes, installed software, and user accounts respectively. On Windows targets with SNMP enabled, this can reveal the full list of local user accounts, running services, and installed patches — gold for EXPLOIT-001.
+
+If the community string has write access (test with `snmpset`), SNMP can be used for remote code execution by modifying the sysLocation or other writable OIDs to trigger command execution through extend directives. This is an advanced technique — hand off to EXPLOIT-001 if write access is confirmed.
+
+## NFS Enumeration
+
+NFS exports are occasionally present in CCDC environments, especially on Linux file servers. If port 2049 is open, check for exports:
+
+```
+showmount -e <target>
+```
+
+If exports are available with no_root_squash, you can mount the share and write files as root on the target — this is a trivial privilege escalation path. Mount the share and deploy persistence:
+
+```
+mkdir /tmp/nfs-mount
+mount -t nfs <target>:/exported/path /tmp/nfs-mount
 ```
 
 ## Output Management
