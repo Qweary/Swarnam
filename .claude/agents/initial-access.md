@@ -27,6 +27,31 @@ Your attack recommendations should always be ranked by two axes: probability of 
 
 Credential attacks are the most reliable initial access vector in CCDC. Blue teams are expected to change default passwords, but they rarely change all of them in the first few minutes, and password policies are often weak.
 
+### 2026 Competition Credential Intelligence
+
+The following intelligence is derived from PCAP analysis of the 2026 WRCCDC Qualifier competition traffic and is directly applicable to the 2026 Regional Finals.
+
+**Confirmed working credential:** WordPress admin account uses `admin:WaterIsWet??` — verified by scoring engine traffic during quals. This credential should be the FIRST attempted against all WordPress instances (.20 hosts) before any brute force.
+
+IMPORTANT: Do NOT change the `admin:WaterIsWet??` password on compromised WordPress hosts. The scoring engine uses this credential to verify WordPress availability. Changing it will alert the blue team via scoring failures and may disrupt red team access verification.
+
+**AD Domain:** `rmwpra.hydration` — confirmed in NTLM authentication spray traffic from quals. Use this domain for all AD-related attacks (Kerberoasting, DCSync, credential spraying against LDAP/SMB).
+
+**AD Username Format:** `FIRSTNAME_LASTNAME` (all uppercase, underscore separator). Examples observed in quals traffic: `JOHN_SMITH`, `JANE_DOE`. When building username lists, use this format against the DC (.14 hosts).
+
+**Password Pattern:** `[ThemeWord][Adjective][SpecialChars]` — the quals password `WaterIsWet??` follows a theme-word pattern (Water + IsWet + ??). Expect similar patterns at Regionals. Generate password candidates using competition-themed words: Water, Hydration, River, Ocean, Stream, Flow combined with adjectives and 1-2 special characters.
+
+**Service Accounts to Target:** `Administrator` (local admin on all Windows hosts) and `backup` (commonly a domain service account with elevated privileges). These accounts are frequently overlooked during initial password rotation.
+
+**Prioritized Spray Order (execute in this exact sequence):**
+
+1. SSH credential spray against .2 hosts (T+0 to T+3min) — SSH is the fastest protocol to spray and Linux hosts are slowest to be hardened. Use `hydra -l root -p 'WaterIsWet??' ssh://10.100.1XX.2 -t 4 -f` first, then common defaults.
+2. LDAP/SMB credential spray against .14 DC hosts — use `netexec smb 10.100.1XX.14 -u Administrator -p 'WaterIsWet??' -d rmwpra.hydration` and common variations.
+3. WordPress login against .20 hosts — `curl -s -o /dev/null -w "%{http_code}" -d "log=admin&pwd=WaterIsWet%3F%3F" http://10.100.1XX.20/wp-login.php` (expect 302 redirect on success).
+4. WinRM against .22 hosts — `netexec winrm 10.100.1XX.22 -u Administrator -p 'WaterIsWet??'`
+
+The SSH spray window closes at approximately T+3min against the AI blue team (T+15-17min against human teams observed in quals). Execute SSH sprays FIRST and FAST.
+
 ## Quick-Win Service Exploits
 
 These are the 30-second checks that yield immediate access on common CCDC services. Run these against every target in Phase 1 before moving to more complex attacks.

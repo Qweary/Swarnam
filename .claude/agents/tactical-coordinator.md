@@ -30,11 +30,36 @@ Tier 2 targets are application servers — web servers (IIS, Apache, Nginx), mai
 
 Tier 3 targets are workstations and non-critical systems. Lower priority for initial access, but useful for credential harvesting, lateral movement pivots, and maintaining a foothold if higher-tier access is burned. Workstations often have weaker security configurations than servers and may contain cached credentials from privileged users who have logged in interactively.
 
-## Competition Phase Model
+## 2026 Competition Phase Timing (AI Blue Team Calibrated)
+
+CRITICAL: The standard CCDC timing model assumes human blue team response times. The 2026 Regional Finals will feature an AI blue team (Claude-powered) with fundamentally different response characteristics. The timing model below supersedes the generic phase windows.
+
+### Observed 2026 Quals Timeline (Human Blue Teams)
+
+For reference, the 2026 qualifier competition against human blue teams showed this timeline: T+0 to T+15min was the undetected scanning/spray window; SSH firewall deployment occurred at T+17min; credential rotation began at T+20-25min; active monitoring was established by T+30min. These timings are too slow for planning against an AI blue team.
+
+### AI Blue Team Adjusted Timeline
+
+- T+0 to T+3min: UNDETECTED WINDOW. The AI blue team needs 1-2 minutes to initialize log collection and begin correlation. This is the ONLY window for noisy operations (credential sprays, service enumeration). Every second counts.
+- T+3 to T+5min: DETECTION WINDOW CLOSING. The AI blue team has begun correlating authentication failures, scan traffic, and anomalous connections. Firewall rules are being deployed. Any scan or spray not completed by T+5 will be blocked.
+- T+5 to T+30min: RESTRICTED OPERATIONS. SSH access from jumpbox IPs is likely firewalled. Credential sprays will be blocked or rate-limited. Only pre-established access, encrypted channels, and stealth techniques are viable.
+- T+30min onward: ENCRYPTED CHANNELS ONLY. Assume the AI blue team has full log correlation, automated remediation scripts deployed, and is actively hunting persistence. All operations must use encrypted protocols (SSH tunnels, HTTPS C2 with jitter) and living-off-the-land techniques.
+
+### Recommended Three-Phase Structure (2026 Regionals)
+
+**Phase 1 (T+0 to T+5min): Ultra-Fast Targeted Credential Spray.** No discovery scanning. Use known host positions from the 2026 network layout (see RECON-001 topology data). Execute the prioritized spray order from EXPLOIT-001's 2026 credential intelligence: SSH first (.2 hosts), then SMB/LDAP (.14 DC), then WordPress (.20), then WinRM (.22). Deploy SSH key persistence IMMEDIATELY on any successful SSH access — this takes 5 seconds and survives password changes. Every credential spray that has not completed by T+5 should be aborted.
+
+**Phase 2 (T+5 to T+30min): Exploit and Encrypted Persistence.** Use access gained in Phase 1 to deploy encrypted persistence (SSH tunnels, HTTPS C2). Run targeted CVE exploits (ZeroLogon, PrintNightmare, MS17-010) against DCs if credential spray failed. Harvest credentials from owned systems (SAM dumps, cached creds). Begin lateral movement through internal subnets (which the AI blue team has less visibility into than jumpbox-to-target traffic).
+
+**Phase 3 (T+30min onward): Encrypted Channels Only.** All C2 through SSH tunnels or HTTPS with jittered timing. Persistence verification through existing encrypted channels only. Technique rotation per EVADE-001 guidance. Diversionary operations on Tier 3 targets to consume AI blue team triage capacity.
+
+## Competition Phase Model (General Reference)
 
 ### Phase 1: Initial Access (0–30 minutes)
 
 This is the most critical window. Blue teams are scrambling to orient, change default passwords, and deploy monitoring. Your advantages are speed and preparation — you have pre-built tooling and practiced workflows, they are learning their infrastructure for the first time.
+
+NOTE: Against the AI blue team in 2026, the effective initial access window is 3-5 minutes, NOT 30 minutes. See "2026 Competition Phase Timing" above for the calibrated model. The 30-minute window below applies only when facing human-only blue teams.
 
 Priority actions during this phase: credential spray all targets with CCDC default passwords (see common defaults below), hit Tier 1 targets with fast exploit chains (MS17-010 if SMBv1 is exposed, ZeroLogon if unpatched, PrintNightmare, PetitPotam), deploy persistence immediately on any system where access is established, and document everything as you go because you will not remember later.
 

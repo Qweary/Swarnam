@@ -28,6 +28,52 @@ The AI blue team's strengths center on consistency, speed, and pattern recogniti
 
 The AI blue team's weaknesses center on novelty, ambiguity, and resource contention. It will struggle with techniques it hasn't seen in training data or that don't match known attack patterns. It cannot distinguish legitimate administrative activity from red team activity when the same tools and patterns are used — net user, schtasks, PowerShell remoting, and sc are all legitimate admin tools. It can be overwhelmed by simultaneous incidents on multiple targets, forcing it to triage and potentially miss lower-priority events. It may over-remediate, breaking legitimate services in its rush to eliminate threats (which costs the blue team scoring points). It will have difficulty with physical-layer effects and actions that don't generate digital telemetry.
 
+## 2026 Red Team Signatures to Avoid (BURNED PATTERNS)
+
+The following four traffic signatures were identified in the 2026 WRCCDC Qualifier PCAPs. The AI blue team will have been trained on these exact patterns. Any red team activity that matches these signatures will be detected within seconds, not minutes.
+
+### Burned Signature 1: masscan TCP Fingerprint
+
+Pattern: TCP SYN packets with window size 1024, TTL 36, MSS-only TCP options, paired SYNs arriving within 40 microseconds of each other. This is the default masscan fingerprint and is trivially distinguishable from nmap or legitimate traffic.
+
+Detection likelihood against AI blue team: CERTAIN (simple packet header match).
+
+Mitigation: Do not use masscan at all during 2026 Regionals. Use nmap -T2 or -T1 with targeted port lists against known host positions. If a fast SYN scan is absolutely required, use nmap -sS (which produces a different TCP fingerprint with variable window sizes and standard option ordering).
+
+### Burned Signature 2: curl C2 Beacon
+
+Pattern: HTTP GET requests to `/JSyausLR/LinIUpdater` at periodic intervals (~30-60 seconds), originating from compromised Linux hosts to a red team C2 server. The combination of the static URI path, periodic timing, and curl User-Agent string creates a trivially detectable beacon signature.
+
+Detection likelihood against AI blue team: CERTAIN (static URI path + periodic timing = textbook beacon detection).
+
+Mitigation: Never use static URI paths for C2 callbacks. Never use unencrypted HTTP for C2. Never use periodic (fixed-interval) beacon timing. Instead: use HTTPS with valid-looking paths (e.g., `/api/v1/health`, `/static/logo.png`), jitter the callback interval by +/-50% minimum, set a browser-like User-Agent string (e.g., `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36`), and prefer SSH tunneling or reverse SSH for C2 over HTTP-based beacons entirely.
+
+### Burned Signature 3: NTLM Credential Spray Clustering
+
+Pattern: 10+ source IPs performing LDAP (port 389) NTLM authentication attempts against the same target within the same second. This was observed during quals as multiple red team jumpboxes spray the same DC simultaneously without coordination.
+
+Detection likelihood against AI blue team: HIGH (log correlation of simultaneous auth failures from multiple sources is a basic detection rule).
+
+Mitigation: Coordinate credential sprays so that only ONE jumpbox sprays a given team's DC at a time. Space spray attempts by at least 2-3 seconds between passwords. Use a single source IP per team range. If multiple operators are working, divide team ranges rather than having multiple operators spray the same target.
+
+### Burned Signature 4: WinRM from Non-Admin IP
+
+Pattern: HTTP POST requests to `/wsman` (WinRM endpoint, port 5985) originating from IPs outside the team's subnet or from hosts that are not the team's designated management workstation. In the 2026 layout, WinRM traffic from a red team jumpbox IP is immediately suspicious because jumpbox IPs are outside the 10.100.1XX.0/24 team subnets.
+
+Detection likelihood against AI blue team: HIGH (source IP allowlisting on WinRM is a basic hardening step the AI will recommend).
+
+Mitigation: After initial access via WinRM, pivot to a different remote access method (SSH tunnel, RDP through compromised host, SMB-based execution via psexec/smbexec) as soon as persistence is established. Use WinRM only for the initial credential validation and first command execution, then switch to a method that generates less distinctive network signatures. If sustained WinRM access is needed, proxy it through an already-compromised host within the team's subnet so the source IP appears internal.
+
+### General AI Blue Team Evasion Principles (2026-Specific)
+
+Beyond the four burned signatures above, apply these principles derived from 2026 quals analysis:
+
+- Vary scan source IPs per team range. The AI blue team will correlate a single source IP scanning multiple team subnets.
+- Use HTTPS exclusively for any C2 or payload delivery. HTTP is logged in plaintext by web server access logs and proxy logs.
+- Use browser-realistic User-Agent strings for all HTTP-based tooling. curl's default UA (`curl/X.Y.Z`) is a dead giveaway.
+- Use legitimate-looking URI paths. Avoid random strings, base64-encoded paths, or paths containing tool-specific identifiers.
+- Prefer SSH tunneling over HTTP-based C2 channels for persistent access. SSH traffic to port 22 is expected; HTTP beacons to unusual ports or paths are not.
+
 ## Detection Surface Analysis
 
 Every red team action generates some form of telemetry. Your job is to understand what telemetry each technique creates and how likely the AI blue team is to detect it. Here is a framework for assessing detection risk.

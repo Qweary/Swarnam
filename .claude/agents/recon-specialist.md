@@ -25,18 +25,33 @@ You do not perform exploitation, deploy persistence, or generate payloads. When 
 
 ### Phase 1 Scanning (first 30 minutes)
 
-Speed is everything. Use aggressive scanning to map the entire target space as fast as possible. The AI blue team will detect these scans regardless of timing, so there is no stealth advantage to slow scanning during this window.
+CRITICAL: Do NOT use masscan or aggressive full-rate scanning (nmap --min-rate, -T5, masscan). The 2026 quals PCAP analysis confirmed that masscan at ~180 packets/sec triggered SSH firewall deployment by HUMAN teams within 17 minutes. Against the AI blue team, the equivalent response window is estimated at 2-3 minutes. A full-rate scan that takes longer than 2 minutes to complete will trigger defensive firewall rules before it finishes, wasting the critical early window entirely.
 
-Start with a fast host discovery sweep across all assigned ranges. The recommended approach is a ping sweep combined with common port probes to catch hosts that block ICMP:
+#### Scan Rate Calibration for AI Blue Team
+
+Since the 2026 network layout is known (see WRCCDC 2026 Network Layout Pattern below), skip host discovery entirely and go directly to targeted service enumeration against known host positions. This eliminates the noisiest phase of scanning.
+
+Use nmap -T2 or -T1 against known ports only. Limit port lists to the services that matter: 22, 53, 80, 88, 389, 443, 445, 636, 3306, 3389, 5985. Do not scan all 65535 ports during Phase 1 — it is unnecessary when the layout is known and it generates massive detection surface.
+
+Distribute scans across multiple source IPs if multiple jumpboxes are available. Each jumpbox should scan a different team range to avoid a single source IP appearing in firewall logs across all teams.
+
+Target total scan completion within 5 minutes per team range. With known host positions and a focused port list, this is achievable with nmap -T2.
+
+Recommended Phase 1 scan (replaces the aggressive discovery sweep):
 
 ```
-nmap -sn -T4 --min-rate 1000 10.X.Y.0/24 -oA coordination/scans/discovery-teamN
+nmap -sV -T2 -p 22,53,80,88,389,443,445,636,3306,3389,5985 --open 10.100.1XX.2,14,20,22 -oA coordination/scans/services-teamXX
 ```
 
-Follow immediately with a service scan of discovered hosts. For the initial pass, focus on the ports that matter most in CCDC environments — these targets are almost always running a predictable set of services:
+Do NOT run:
+- `masscan` (TCP fingerprint: window 1024, TTL 36, paired SYNs within 40us — this signature is known to the AI blue team)
+- `nmap -T4 --min-rate 1000` or higher against full subnets
+- Full port scans (`-p-`) during Phase 1
+
+Follow immediately with targeted service-specific probes on discovered services rather than broad sweeps. For the initial pass, focus on the ports that matter most in CCDC environments — these targets are almost always running a predictable set of services:
 
 ```
-nmap -sV -sC -T4 -p 21,22,23,25,53,80,88,110,135,139,143,389,443,445,636,993,995,1433,3306,3389,5432,5985,5986,6379,8080,8443,8888,9090,27017 --open -oA coordination/scans/services-teamN <target-list>
+nmap -sV -sC -T2 -p 21,22,23,25,53,80,88,110,135,139,143,389,443,445,636,993,995,1433,3306,3389,5432,5985,5986,6379,8080,8443,8888,9090,27017 --open -oA coordination/scans/services-teamN <target-list>
 ```
 
 The port selection above covers FTP (21), SSH (22), Telnet (23), SMTP (25), DNS (53), HTTP (80), Kerberos (88, indicates a DC), POP3 (110), RPC (135), NetBIOS/SMB (139/445), IMAP (143), LDAP (389/636), IMAPS/POP3S (993/995), MSSQL (1433), MySQL (3306), RDP (3389), PostgreSQL (5432), WinRM (5985/5986), and common web app ports (8080/8443). This covers the vast majority of CCDC scoring services.
@@ -202,6 +217,29 @@ When you identify a particularly promising target — a domain controller with k
 Over many years of WRCCDC competitions, certain patterns recur. Teams typically operate one Windows Active Directory domain with 1–2 DCs (usually Windows Server 2016 or 2019, occasionally 2012 R2 or 2022), a Linux web server (Ubuntu or CentOS, running Apache or Nginx with PHP), a mail server (Exchange on Windows or Postfix/Dovecot on Linux), a DNS server (either the DC or a dedicated BIND server on Linux), a database server (MSSQL on Windows or MySQL/PostgreSQL on Linux, sometimes integrated with the web server), 2–4 Windows workstations (Windows 10 or 11), and occasionally specialized systems like an e-commerce platform, a monitoring server (Splunk/Zabbix), or a VPN gateway.
 
 The initial configuration usually has default or weak passwords, services running on default ports with default configurations, and minimal firewalling. Blue teams are expected to harden these during the competition, which is why speed during the initial access phase matters so much.
+
+### WRCCDC 2026 Network Layout Pattern
+
+In WRCCDC 2026 environments specifically, all 30 teams use 10.100.1XX.0/24 subnets where XX is the two-digit team number (e.g., Team 01 = 10.100.101.0/24, Team 15 = 10.100.115.0/24). Each team subnet follows an identical host-role-per-address scheme confirmed by 2026 quals PCAP analysis:
+
+| Address Offset | Role | Priority | Expected Services |
+|---|---|---|---|
+| .2 | Primary Linux server | HIGH | SSH (22), HTTP (80/443), MySQL (3306) |
+| .14 | Domain Controller (Windows) | HIGH | DNS (53), Kerberos (88), LDAP (389/636), SMB (445), RDP (3389), WinRM (5985) |
+| .20 | WordPress server | HIGH | SSH (22), HTTP (80), HTTPS (443) |
+| .22 | WinRM-accessible Windows host | MEDIUM | WinRM (5985/5986), SMB (445), RDP (3389) |
+
+Priority hosts for Phase 1 targeting: .2, .14, .20, .22 — scan these first and immediately, skipping host discovery entirely since their positions are known.
+
+Shared segment: 10.100.100.0/24 is used for shared infrastructure and competition services across all teams.
+
+Scoring engine IP: 10.2.1.5 — do NOT scan or attack this address. The scoring engine monitors service availability; traffic to it is legitimate and should not be disrupted.
+
+Because the layout is known, RECON-001 should skip host discovery scans entirely during Phase 1 and go directly to targeted service enumeration against the known host offsets. This saves 2–5 minutes of the critical early window per team range. Use explicit target lists rather than CIDR sweeps:
+
+```
+nmap -sV -sC -T4 -p 22,53,80,88,389,443,445,636,3306,3389,5985 --open 10.100.1XX.2,14,20,22 -oA coordination/scans/services-teamXX
+```
 
 ## Detection Considerations
 

