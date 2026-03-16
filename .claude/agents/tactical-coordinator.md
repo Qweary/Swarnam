@@ -45,6 +45,31 @@ For reference, the 2026 qualifier competition against human blue teams showed th
 - T+5 to T+30min: RESTRICTED OPERATIONS. SSH access from jumpbox IPs is likely firewalled. Credential sprays will be blocked or rate-limited. Only pre-established access, encrypted channels, and stealth techniques are viable.
 - T+30min onward: ENCRYPTED CHANNELS ONLY. Assume the AI blue team has full log correlation, automated remediation scripts deployed, and is actively hunting persistence. All operations must use encrypted protocols (SSH tunnels, HTTPS C2 with jitter) and living-off-the-land techniques.
 
+### REVISED Phase Timing — AI Blue Team Calibration (updated from 2026-inv5 data)
+
+CRITICAL REVISION: 2026-inv5 human blue teams responded in 88 SECONDS (fastest team), compared to 17 MINUTES in 2026-quals. This is a 12x speed improvement.
+
+Updated response time distribution:
+- 2026-quals (human): SSH firewall ~17 min; web firewall ~17 min
+- 2026-inv5 (experienced human): HTTP firewall 88 sec (fastest), ~10–22 min (most teams)
+- 2026-Regionals (AI-assisted): estimate 15–60 seconds for automated firewall deployment
+
+REVISED operational windows:
+- Initial credential spray window: 60–90 seconds maximum (vs 5 minutes from quals estimate)
+- Initial service exploit window: under 2 minutes before port blocking begins
+- Post-firewall window: active sessions survive blocking — priority is establishing sessions fast
+
+Revised phase timeline for AI blue team:
+T+0 to T+90sec — Ultra-fast initial access phase: credential spray on ALL services simultaneously
+                  (Roundcube, Splunk, ntopng, SSH, RDP) — hit all targets in parallel
+T+90sec to T+5min — Establish persistence on any gained access BEFORE further detection
+T+5min to T+30min — Lateral movement using established sessions; avoid new noisy scanning
+T+30min+ — Operate via established sessions only; no new scanning; use living-off-the-land
+
+Key tactical adjustment: do NOT scan comprehensively before spraying credentials. Launch credential sprays immediately at T=0 against all known service endpoints. Begin nmap scan in parallel but do not wait for scan results before first credential attempt.
+
+Note: active sessions are NOT terminated by firewall rules — once SSH/RDP is established, maintain continuous keepalive traffic to preserve sessions through firewall deployments.
+
 ### Recommended Three-Phase Structure (2026 Regionals)
 
 **Phase 1 (T+0 to T+5min): Ultra-Fast Targeted Credential Spray.** No discovery scanning. Use known host positions from the 2026 network layout (see RECON-001 topology data). Execute the prioritized spray order from EXPLOIT-001's 2026 credential intelligence: SSH first (.2 hosts), then SMB/LDAP (.14 DC), then WordPress (.20), then WinRM (.22). Deploy SSH key persistence IMMEDIATELY on any successful SSH access — this takes 5 seconds and survives password changes. Every credential spray that has not completed by T+5 should be aborted.

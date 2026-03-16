@@ -1,0 +1,58 @@
+=== PASS 3: BLUE TEAM RESPONSE DETECTION ===
+
+KEY FINDING: Blue team response at 10.100.102 was ~88 SECONDS
+
+FIREWALL DEPLOYMENT DETECTION:
+1. Team 102 (.86 mail server port 80):
+   - Last SYN-ACK from 10.100.102.86:80: 09:26:12 EST (file 0926260000)
+   - First RST from 10.100.102.86:80: 09:26:24 EST (to scoring engine 10.193.202.204)
+   - Window: 12 seconds between last accept and first RST
+   - Scan started: 09:24:56 EST
+   - TOTAL RESPONSE TIME: ~88 seconds from scan start to firewall blocking
+
+2. Broader RST statistics across timeline:
+   09:25:22 (file 1): RST/SYN-ACK ratio = 21% (normal baseline)
+   09:35:57 (file 6): RST/SYN-ACK ratio = 76% (teams deploying firewalls)
+   09:47:59 (file 7): RST/SYN-ACK ratio = 83% (most teams firewalled)
+   13:10 (late comp): RST/SYN-ACK ratio = 51% (established connections tearing down)
+
+3. Port 80 service availability timeline:
+   09:25: 464 SYN-ACKs on port 80 from team hosts (services fully up)
+   09:35: 0 SYN-ACKs (sample artifact — all teams blocked external port 80 scanning)
+   09:47: 246 SYN-ACKs (scoring engine traffic partially recovered)
+   10:02: 218 SYN-ACKs (stable)
+   11:20: 2 SYN-ACKs (nearly all teams blocked external HTTP)
+   13:10: 2 SYN-ACKs (only 1 team still has web accessible from scanner)
+
+SERVICE RESTART DETECTION:
+- No clear service restart events detected in the sampled files
+- Services go down and stay down (blocked, not restarted)
+- .86 mail port 80 went from RST to complete silence — service may have been firewalled at network level
+
+RESPONSE TIMING COMPARISON vs 2026-QUALS:
+- quals: SSH firewall deployment = 17 MINUTES after scanning
+- inv5: HTTP firewall deployment = ~88 SECONDS after scanning (team 102)
+- inv5: Broad firewall coverage by 09:35-09:47 (~10-22 minutes) for remaining teams
+- KEY INSIGHT: This invitational (inv5) blue teams responded 10-12x FASTER than quals teams
+- HYPOTHESIS: inv5 teams were more experienced, or had automated response playbooks
+
+BLUE TEAM TECHNIQUES OBSERVED:
+1. Firewall blocking inbound scanning — widespread, rapid deployment
+2. Service-level blocking (port 80 specifically) — targeted
+3. WinRM blocked at .2 hosts (RST on 5985) — default-off policy
+
+LATE-GAME SERVICE STATUS:
+By 11:20 EST (~115 minutes into competition):
+- Port 80 web services: 99% blocked from external access
+- SSH still accessible (red team maintaining sessions)
+- RDP still accessible to some teams (103, 117, 118 subnets)
+- Splunk (port 8000) still accessible on .60 hosts
+- ntopng (port 443/3000 on .2 hosts) still accessible
+
+SCORING ENGINE BEHAVIOR (for distinguishing from red team):
+- IP range: 10.194.x.x, 10.208.x.x, 10.249.x.x, 10.253.x.x, 10.199.x.x, 10.2xx.x.x
+- Always targets ALL 26 teams in sequence
+- Only touches scored service ports (80, 22, 25, 443, 445)
+- Uses NTLM with usernames "moomoo" and "ceo" for Windows hosts
+- Sources rotate between 3-6 IP addresses per service type
+- No randomization of timing — regular interval sweeps

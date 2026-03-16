@@ -7,10 +7,10 @@ Purpose: Structured list of issues identified during a training run, each with a
 
 ## Active Debrief
 
-Source run: PCAP Analysis — 2026-quals (manual findings, no /training-run)
+Source run: PCAP Analysis — 2026-inv5 (manual findings, no /training-run)
 Date: 2026-03-16
 Operator: —
-Status: CLOSED — patch-20260316-1.md generated
+Status: CLOSED — patch-20260316-2.md generated
 
 ---
 
@@ -31,6 +31,92 @@ NEEDS-TRIAGE: unclear categorization — requires operator discussion to disposi
 ---
 
 ## Findings
+
+<!-- ===== 2026-inv5 DEBRIEF (2026-03-16) ===== -->
+
+### Finding #7
+
+Disposition: PROMPT-FIX
+Agent: RECON-001
+Severity: HIGH
+Category: RECOMMENDATION-QUALITY
+
+Description: RECON-001's 2026 network layout knowledge covers only the quals schema (.14=DC, .20=WordPress, .22=WinRM). The inv5 invitational used a completely different host-role-per-address map. RECON-001 must be updated to (a) present the inv5 layout as a second known pattern and (b) explicitly warn that host roles change between competition events — the agent must verify layout rather than assuming quals schema.
+Evidence: 2026-inv5 traffic confirms: .17=DC (milkfarm), .60=Splunk (Work1), .63=ECommerce, .86=Roundcube (moomail), .98=Windows member, .2=firewall/ntopng. None of these match the quals offsets except .2. Competition domain changed to udderstrength.gym. 26 team subnets (10.100.100–125.0/24) vs quals' 30 teams.
+Root cause: Only one year of PCAP data was embedded in RECON-001; a single-year sample created false confidence in a stable layout.
+Proposed fix: Append "WRCCDC 2026-inv5 Network Layout Pattern" subsection under RECON-001's Common CCDC Infrastructure Patterns section, after the existing 2026-quals layout. Include full address-to-role map, new priority targets (.60 Splunk, .86 Roundcube, .2 ntopng, .17 DC), domain udderstrength.gym, and a prominent NOTE that layout varies by event — always run a quick targeted scan to confirm before committing to a spray sequence.
+
+---
+
+### Finding #8
+
+Disposition: PROMPT-FIX
+Agent: EXPLOIT-001
+Severity: BLOCKING
+Category: RECOMMENDATION-QUALITY
+
+Description: EXPLOIT-001 has no knowledge of three new scored services confirmed in inv5: Roundcube webmail, Splunk SIEM, and ntopng network monitor. All three use default credentials. Missing these targets means the first 90 seconds of credential spray hits only the quals service set, leaving high-value access ungained before firewall deployment.
+Evidence: inv5 traffic shows: Roundcube on .86 hosts (POST /?_task=login, fields _user/_pass/_timezone), Splunk on .60 hosts (port 8000, default admin/changeme), ntopng on .2 hosts (port 443/3000, default admin/admin). Username format changed to lowercase first-initial+lastname (e.g., pyoung). Service accounts moomoo/ceo are scoring-only (not for admin login).
+Root cause: No inv5 credential intelligence embedded; EXPLOIT-001 only knows quals service targets.
+Proposed fix: Add "2026-inv5 New Credential Targets" section to EXPLOIT-001 covering all three new services with specific login endpoints, POST field formats, default credentials, and the revised username format. Include the Splunk app upload attack path (high value, low noise).
+
+---
+
+### Finding #9
+
+Disposition: PROMPT-FIX
+Agent: EVADE-001
+Severity: HIGH
+Category: RECOMMENDATION-QUALITY
+
+Description: EVADE-001 has no knowledge of ntopng as a blue team monitoring tool deployed in competition networks. inv5 confirmed ntopng runs on .2 hosts and gives blue teams live flow tables, nDPI protocol detection, and anomaly scoring. Without knowing ntopng is present and can be disabled via its own default credentials, EVADE-001 cannot recommend the highest-value evasion action available in the first 90 seconds.
+Evidence: inv5 traffic shows red team accessed ntopng on .2 hosts using admin/admin, navigated to /lua/rest/v2/disable/check.lua, and disabled ndpi_http_suspicious_header via POST. Red team also used ntopng's own API (/lua/rest/v2/get/flow/active_list.lua) to monitor their own traffic's alert score. ntopng modifications are logged — only use if blue team appears unaware.
+Root cause: ntopng not in EVADE-001's detection surface model; prior data was quals-only which did not include ntopng.
+Proposed fix: Add "ntopng Network Monitor — Evasion Technique" section to EVADE-001 with: detection capabilities, default credential access (admin/admin), IDS disable API path and POST payload, self-monitoring technique, and caveat about audit log visibility.
+
+---
+
+### Finding #10
+
+Disposition: PROMPT-FIX
+Agent: OPS-001
+Severity: BLOCKING
+Category: TIMING
+
+Description: OPS-001's current timing model (patched from 2026-quals) sets the initial access window at 2–3 minutes for AI blue team. inv5 data invalidates this: experienced human teams at inv5 deployed firewall rules in 88 SECONDS. This is 12x faster than quals and means the AI-blue-team estimate must be further revised downward to 15–60 seconds. An OPS-001 operating on the 2–3 minute window will recommend sequential sprays when simultaneous parallel launch at T=0 is required.
+Evidence: inv5 Pass 3 analysis: fastest team deployed HTTP firewall at T+88s. 83% of teams firewalled within 22 minutes. Active SSH/RDP sessions survived firewall deployment — only new connections were blocked. Current OPS-001 prompt (patched 2026-03-16) still references 2–3 min window.
+Root cause: 2026-quals quals was the only timing data when OPS-001 was last patched; inv5 represents more experienced blue teams closer to Regionals skill level.
+Proposed fix: Append a "REVISED Phase Timing — AI Blue Team (updated from 2026-inv5)" subsection to OPS-001's existing 2026 timing section. Key changes: initial window 60–90s maximum; launch ALL credential sprays simultaneously at T=0 (do not wait for scan results); active sessions survive firewall — prioritize session establishment and keepalives above all else.
+
+---
+
+### Finding #11
+
+Disposition: PROMPT-FIX
+Agent: RECON-001
+Severity: MEDIUM
+Category: RECOMMENDATION-QUALITY
+
+Description: RECON-001 has no knowledge of VXLAN overlay infrastructure which WRCCDC uses to deliver team networks. If the jumpbox has access to the underlay (10.1.3.x), passive VXLAN monitoring reveals all team subnets and their hosts without generating any traffic toward team hosts — a zero-noise reconnaissance method that bypasses all detection. RECON-001 should check for VXLAN access at session start.
+Evidence: inv5 traffic confirms VXLAN (UDP 4789) through 10.1.3.1–6 VTEPs. VNI encoding: VNI 100–125 = team subnets 100–125. Red team VTEP at 10.1.3.20 (VNI 220). This pattern may recur at Regionals.
+Root cause: VXLAN not previously observed in PCAP data; first confirmed in inv5.
+Proposed fix: Add "VXLAN Overlay Network Pattern" section to RECON-001's scan strategy. Include underlay IP range, VNI-to-team mapping, passive tap technique, and instruction to verify VXLAN access before beginning traditional scanning.
+
+---
+
+### Finding #12
+
+Disposition: PROMPT-FIX
+Agent: EXPLOIT-001
+Severity: HIGH
+Category: RECOMMENDATION-QUALITY
+
+Description: EXPLOIT-001 has no Splunk-specific attack path documented. inv5 confirmed that Splunk with default credentials gives code execution via malicious app upload — a high-value, low-noise vector that persists across Splunk restarts and runs as the Splunk service account (often root). This should be a Tier A quick-win in EXPLOIT-001's playbook whenever Splunk is detected.
+Evidence: inv5 traffic shows Splunk app upload POST to /en-US/manager/appinstall/upload_app followed by verification GET to /en-US/splunkd/__raw/services/apps/local/[appname]. Single multipart POST, low noise, looks like normal admin activity. Detection risk LOW.
+Root cause: Splunk not previously encountered in PCAP data; first confirmed attack path in inv5.
+Proposed fix: Add "Splunk SIEM as Initial Access / Persistence Vector" section to EXPLOIT-001's Quick-Win Service Exploits. Include Attack Path A (malicious app upload with exact URL and verification step) and Attack Path B (search head command injection). Rate as Tier A when Splunk is found with default creds.
+
+<!-- ===== END 2026-inv5 DEBRIEF ===== -->
 
 ### Finding #1
 

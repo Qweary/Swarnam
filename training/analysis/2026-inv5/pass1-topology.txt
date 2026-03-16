@@ -1,0 +1,53 @@
+=== PASS 1: TOPOLOGY EXTRACTION ===
+Competition: 2026-inv5 (2025-12-20)
+Capture timespan: 09:24:56 - 13:54:xx EST (4.5 hours)
+Total sample files processed: 15 (from 322 total)
+
+SUBNET SCHEMA:
+- Team subnets: 10.100.100.0/24 through 10.100.125.0/24 (26 teams)
+- Team numbers encoded in THIRD octet (100-125)
+- Red team subnet: 10.0.31.0/24 (jumpbox 10.0.31.17)
+- VXLAN infrastructure: 10.1.3.1-6 (tunnel endpoints), 10.1.3.20 (red team VXLAN router)
+- DNS servers: 10.1.21.207-214 (8 DNS servers serving all team .17 hosts)
+- Scoring engines (web): 10.199.132.192, 10.222.232.146, 10.228.78.75, 10.234.152.28
+- Scoring engines (SMB): 10.194.163.224, 10.208.104.225, 10.253.245.56, 10.249.80.218
+- Special IPs: 10.100.200.1-2 (management pair), 10.100.206.14, 10.100.206.22 (admin/RT hosts)
+- Additional scoring IPs (mid-competition): 10.200.124.154, 10.243.162.133, 10.255.166.156, 10.222.149.84
+
+COMPETITION DOMAIN: udderstrength.gym (dairy/farm theme)
+DNS HOSTNAME MAPPING (internal 192.168.50.x space per team):
+- milkfarm.udderstrength.gym -> .17 (Active Directory / Domain Controller)
+- Work1.udderstrength.gym -> .60 (Workstation + Splunk instance on port 8000)
+- moomail.udderstrength.gym -> .86 (Roundcube webmail on port 80)
+- ECommerce.udderstrength.gym -> .63 (E-Commerce web server on port 80)
+
+HOST ROLE PROFILES (by last octet):
+.2  - Firewall/gateway (port 443 HTTPS, possibly pfSense/ntopng or management)
+     Also: 10.100.112.2 hosts ntopng network monitoring (ports 443 and 3000)
+.17 - Active Directory Domain Controller (Windows, SMB 445, DNS via 10.1.21.x)
+     milkfarm.udderstrength.gym
+.60 - Linux workstation + Splunk SIEM (port 22 SSH, port 8000 Splunk)
+     Work1.udderstrength.gym
+.63 - E-Commerce web server (port 80 HTTP)
+     ECommerce.udderstrength.gym
+.86 - Roundcube webmail (port 80 HTTP, port 25 SMTP)
+     moomail.udderstrength.gym
+.98 - Windows machine (SMB 445, scoring via NTLM)
+.100 - Linux host (port 22 SSH)
+.103 - Linux web + SSH (ports 22 and 80)
+.175 - Linux web + SSH (ports 22 and 80)
+
+TEAM SUBNET COMPARISON vs 2026-quals:
+- SAME: 10.100.1XX.0/24 scheme with XX = team number
+- DIFFERENT: quals used XX=team (10.100.1XX), inv5 also uses 10.100.1XX but range is 100-125 (26 teams vs quals)
+- DIFFERENT: quals had .14 DC, .20 WordPress, .22 WinRM; inv5 has .17 DC, .60 Workstation, .63 E-Commerce
+- SAME: .86 mail server concept (Roundcube in inv5 vs unknown in quals)
+- DIFFERENT: No .22 WinRM in inv5; WinRM seen only briefly at .2 (team 102)
+- DIFFERENT: Splunk on .60 hosts (new in inv5, not seen in quals)
+- DIFFERENT: ntopng monitoring at 10.100.112.2 (new in inv5)
+- NEW: VXLAN overlay (UDP 4789) carrying all team traffic through 10.1.3.x routers
+
+VXLAN VNI MAPPING:
+- VNI 100-125 = team subnet numbers (team 102 = VNI 102, etc.)
+- VNI 220 = red team subnet
+- 10.1.3.20 = red team VXLAN router (all red team traffic tunneled through here)

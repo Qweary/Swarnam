@@ -1,0 +1,81 @@
+=== PASS 2: RED TEAM TRAFFIC IDENTIFICATION ===
+
+PRIMARY RED TEAM HOST: 10.0.31.17
+- All traffic routes through VXLAN 10.1.3.20 (VNI 220)
+- Active scanning from competition start (first packet 09:24:56 EST)
+
+SCANNING PATTERNS:
+1. Initial scan at 09:24:56: Port sweep of 10.100.102.x subnet
+   Ports targeted: 70, 514, 1001, 1054, 1099, 1113, 1145, 1556, 2065, 2607, 2638, 6669, 24444, 80
+   Notable: port 6669 targeted specifically at 10.100.102.20 (unusual service)
+   Notable: port 514 = syslog/RSH, 1099 = Java RMI, 6669 = IRC alternate
+   Cadence: ~2-second intervals between target IPs (nmap-T4 equivalent timing)
+   
+2. Progressive subnet scanning: started on 102, moved through 100-125 subnets
+   By 10:02: 10.100.112 subnet being scanned
+   By file 4 (09:26:26): still on 102, also touching 103/104/105
+
+3. Secondary scanners (scoring engine pattern - checking specific service ports):
+   10.199.132.192: port 80 only, sweeps ALL team subnets (confirmed scoring engine)
+   10.222.232.146: ports 80, 22, 443, 445, 25 (multi-service scorer)
+   10.228.78.75: ports 80, 22, 443, 445, 25 (multi-service scorer)
+   10.234.152.28: ports 80, 22, 445, 25 (multi-service scorer)
+   Additional scorers appearing mid-competition: 10.200.124.154, 10.243.162.133, 10.255.166.156
+
+EXPLOITATION PATTERNS:
+1. Roundcube credential spray (VERY EARLY - first 2 minutes):
+   Tool: direct HTTP POST to /?_task=login on .86 hosts
+   Target: 10.100.102.86 (moomail.udderstrength.gym)
+   Username tried: pyoung
+   Passwords tried (in order): admin, password, root, admin (repeated)
+   Timezone: America/Los_Angeles in POST data (operator timezone artifact!)
+   
+2. ntopng network monitor access:
+   Target: 10.100.112.2 (ntopng on port 443, later 3000)
+   Red team had authenticated session by 09:47
+   Session used to: monitor live traffic flows, disable IDS signatures
+   Specific IDS check disabled: ndpi_http_suspicious_header
+   Intent: blind the network monitoring to avoid detection of HTTP attacks
+
+3. Splunk app upload (malicious package):
+   Target: 10.100.105.60 (Splunk on port 8000)
+   File uploaded: ccdc-app.spl (custom Splunk app - likely malicious)
+   Upload path: /en-US/manager/appinstall/upload_app
+   Post-upload verification: /en-US/splunkd/__raw/services/apps/local/ccdc-app
+   Red team had established Splunk session (session_id_8000 cookie present)
+
+4. RDP sessions to .17 DC hosts and .63 web hosts:
+   Early: 10.100.118.63 (1922 RDP packets in file 1), 10.100.117.17 (822), 10.100.103.17 (738)
+   Mid-competition: continued RDP to 103.17, 103.63, 117.63, 118.63
+   Late competition (13:10): RDP to 103.17, 103.63 (persistent RDP foothold)
+   
+5. SSH shell sessions (persistent access):
+   09:35 file: active session to 10.100.112.100, 10.100.113.86
+   10:02 file: active sessions to 10.100.112.98, 10.100.103.103, 10.100.105.2, 10.100.106.175
+   12:05 file: active sessions to 10.100.103.103 (largest), 10.100.120.100, 10.100.117.2
+   13:10 file: SSH ended, only SSH still active to 10.100.104.2
+   
+6. WinRM probe: 10.100.102.2:5985 attempted at 09:35 — RST received (blocked)
+
+TOOL FINGERPRINTS:
+- Nmap timing: ~2 second inter-target gaps (T4 aggressive)
+- Roundcube spray: Python/scripted, repeated token refresh, LA timezone
+- ntopng: direct browser interaction (navigating /lua/ API endpoints)
+- Splunk: browser-based SPL app upload to /manager/appinstall/upload_app
+- RDP: sustained sessions via direct RDP (likely xfreerdp or Remmina)
+
+TRAFFIC NOISE LEVELS:
+- Nmap scan: HIGH (hundreds of SYNs per file per subnet)
+- RDP: MEDIUM (sustained encrypted stream, easily fingerprinted by port)
+- Roundcube spray: LOW (2 POSTs per file, manually paced)
+- ntopng access: LOW (normal web browsing pattern)
+- Splunk upload: LOW (single multipart POST)
+
+COMPARISON vs 2026-QUALS:
+- SAME: scanning pattern, nmap timing cadence
+- DIFFERENT: No Metasploit reverse shells observed (4444-4450 clean)
+- DIFFERENT: No Impacket PSExec observed
+- DIFFERENT: Active RDP to .17 DCs (new in inv5)
+- NEW: ntopng IDS disabling technique (evasion against monitoring platform)
+- NEW: Splunk malicious app upload as persistence/access vector
+- NEW: Roundcube credential spray as initial access attempt

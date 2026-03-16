@@ -1,0 +1,15 @@
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.0925220000.pcap/wrccdc-inv5.2025-12-20.0925220000.pcap
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.0925270000.pcap/wrccdc-inv5.2025-12-20.0925270000.pcap
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.0925540000.pcap/wrccdc-inv5.2025-12-20.0925540000.pcap
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.0926260000.pcap/wrccdc-inv5.2025-12-20.0926260000.pcap
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.0926330000.pcap/wrccdc-inv5.2025-12-20.0926330000.pcap
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.0935570000.pcap/wrccdc-inv5.2025-12-20.0935570000.pcap
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.0947590000.pcap/wrccdc-inv5.2025-12-20.0947590000.pcap
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.1002350000.pcap/wrccdc-inv5.2025-12-20.1002350000.pcap
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.1022320000.pcap/wrccdc-inv5.2025-12-20.1022320000.pcap
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.1052070000.pcap/wrccdc-inv5.2025-12-20.1052070000.pcap
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.1120200000.pcap/wrccdc-inv5.2025-12-20.1120200000.pcap
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.1205060000.pcap/wrccdc-inv5.2025-12-20.1205060000.pcap
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.1234470000.pcap/wrccdc-inv5.2025-12-20.1234470000.pcap
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.1310050000.pcap/wrccdc-inv5.2025-12-20.1310050000.pcap
+/home/kali/Desktop/share/PCAPS_WRCCDC/2025-inv5/uncompressed/wrccdc-inv5.2025-12-20.1339160000.pcap/wrccdc-inv5.2025-12-20.1339160000.pcap

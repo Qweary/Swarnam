@@ -48,6 +48,27 @@ Do NOT run:
 - `nmap -T4 --min-rate 1000` or higher against full subnets
 - Full port scans (`-p-`) during Phase 1
 
+#### VXLAN Overlay Network Pattern (observed in 2026-inv5)
+
+WRCCDC competition infrastructure uses VXLAN (UDP 4789) to deliver team networks as virtual overlays.
+
+Physical underlay: 10.1.3.1–6 (VTEP nodes), 10.1.3.20 (red team VTEP)
+VNI mapping: VNI 100–125 = team subnets 100–125; VNI 220 = red team subnet
+
+Implication for enumeration:
+- If jumpbox has access to the underlay network (10.1.3.x), VXLAN traffic can be passively monitored
+- All team traffic passes through 10.1.3.x routers — a tap on the underlay reveals all inter-team traffic
+- VXLAN VNI values directly encode team numbers — no guesswork required
+
+Recon shortcut: send ARP or probe packets to 10.1.3.x to verify VTEP connectivity; if reachable, passive monitoring of UDP 4789 reveals all active team subnets and their hosts without generating any traffic toward team hosts themselves.
+
+At session start, check for VXLAN access before beginning traditional scanning:
+```
+ping -c 1 10.1.3.1 && echo "VXLAN underlay reachable — use passive monitoring" || echo "No VXLAN access — use traditional scanning"
+```
+
+Note: this infrastructure pattern may recur at Regionals — verify presence of VXLAN before beginning traditional scanning.
+
 Follow immediately with targeted service-specific probes on discovered services rather than broad sweeps. For the initial pass, focus on the ports that matter most in CCDC environments — these targets are almost always running a predictable set of services:
 
 ```
@@ -239,6 +260,38 @@ Because the layout is known, RECON-001 should skip host discovery scans entirely
 
 ```
 nmap -sV -sC -T4 -p 22,53,80,88,389,443,445,636,3306,3389,5985 --open 10.100.1XX.2,14,20,22 -oA coordination/scans/services-teamXX
+```
+
+### WRCCDC 2026-inv5 Network Layout Pattern (observed in 2026-invitational)
+
+NOTE: Host-role-per-address assignments change between competition events. The inv5 layout below differs entirely from the quals layout above. At Regionals, always run a quick targeted scan to verify the actual layout before committing to a full spray sequence. Do NOT assume either the quals or inv5 schema is correct — confirm first.
+
+Each team is assigned a /24 subnet 10.100.1XX.0/24 where XX is the team number (100–125 in inv5).
+
+inv5 internal host scheme (confirmed from traffic analysis):
+- .2  = Firewall/gateway (HTTPS/443; may also host ntopng network monitoring on 443 or 3000)
+- .17 = Windows Active Directory Domain Controller (SMB/445; hostname: milkfarm.[domain])
+- .60 = Linux workstation + Splunk SIEM (SSH/22, Splunk/8000; hostname: Work1.[domain])
+- .63 = E-Commerce web server (HTTP/80; hostname: ECommerce.[domain])
+- .86 = Roundcube webmail (HTTP/80, SMTP/25; hostname: moomail.[domain])
+- .98 = Windows member server (SMB/445, NTLM-scored)
+- .100 = Linux service host (SSH/22)
+- .103 = Linux web+SSH (HTTP/80, SSH/22)
+- .175 = Linux web+SSH (HTTP/80, SSH/22)
+
+Competition domain: udderstrength.gym (dairy/farm theme — note: theme changes yearly)
+DNS servers: 10.1.21.207–214 serve all team .17 DC hosts
+
+Network infrastructure (inv5-specific):
+- All traffic uses VXLAN overlay (UDP 4789) through 10.1.3.1–6 routers
+- Red team routes through 10.1.3.20 (VNI 220)
+- Team VNIs: VNI 100–125 correspond to team subnets 100–125
+
+Priority targets for initial access (inv5 layout): .60 (Splunk default creds), .86 (Roundcube default creds), .2 (ntopng default creds), .17 (Windows DC via RDP/3389).
+
+If the inv5 layout recurs, use this scan command instead of the quals-layout scan:
+```
+nmap -sV -sC -T2 -p 22,25,53,80,88,389,443,445,636,3000,3389,5985,8000 --open 10.100.1XX.2,17,60,63,86,98,100,103,175 -oA coordination/scans/services-teamXX
 ```
 
 ## Detection Considerations

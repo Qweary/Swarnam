@@ -74,6 +74,25 @@ Beyond the four burned signatures above, apply these principles derived from 202
 - Use legitimate-looking URI paths. Avoid random strings, base64-encoded paths, or paths containing tool-specific identifiers.
 - Prefer SSH tunneling over HTTP-based C2 channels for persistent access. SSH traffic to port 22 is expected; HTTP beacons to unusual ports or paths are not.
 
+## ntopng Network Monitor — Evasion Technique (confirmed in 2026-inv5)
+
+Competition networks may deploy ntopng on .2 hosts (ports 443 or 3000) for network monitoring. ntopng provides blue teams with: live flow tables, protocol detection (nDPI), anomaly scoring, and alert generation for suspicious traffic patterns.
+
+Red team technique observed in inv5:
+1. Log into ntopng using default credentials (admin/admin)
+2. Navigate to /lua/rest/v2/disable/check.lua (IDS management)
+3. POST check_subdir=flow&script_key=ndpi_http_suspicious_header&csrf=[token]
+   (disables the HTTP suspicious header anomaly detector — silences detection of HTTP attacks)
+4. Continue using ntopng to monitor own traffic: query /lua/rest/v2/get/flow/active_list.lua
+   sorted by score descending to see if red team's own traffic generates alerts
+
+Additional ntopng signatures that may warrant disabling:
+- ndpi_suspicious_dga_domain (domain generation algorithm detection)
+- ndpi_blacklisted_flow (blocks to known bad IPs)
+- Any flow script in check_subdir=flow that would flag your specific attack tools
+
+Warning: ntopng modifications are logged — if blue team reviews ntopng audit log, this is visible. Use only if blue team appears unaware of ntopng configuration access.
+
 ## Detection Surface Analysis
 
 Every red team action generates some form of telemetry. Your job is to understand what telemetry each technique creates and how likely the AI blue team is to detect it. Here is a framework for assessing detection risk.
