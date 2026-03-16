@@ -11,6 +11,47 @@ No training activities recorded yet. Activities will be logged here as they occu
 
 ---
 
+## PCAP Analysis: 2026-03-16 (2026-inv2)
+
+Source: /home/kali/Desktop/share/PCAPS_WRCCDC/2026-inv2/
+Competition year: 2026-inv2
+Passes run: all four (topology, red team, blue team, credentials)
+Findings summary:
+  Hosts identified: 8 active roles per team, 32 teams (10.100.101–132.x)
+  Services mapped: 8 distinct scored roles (.12=DC, .37=web, .70/.76/.103/.104=services, .170=Graylog)
+  Red team patterns: 3 (pre-planted DNS C2 beacon, pivot scanning via .76 hosts, password spray)
+  Blue team responses: 2 (no firewall in 65-min window; password changes begin T+21min; DNS C2 detected by 1/32 teams)
+  Credentials extracted: 21 Keycloak user/password pairs + Graylog scoring token
+  Prompt recommendations: 6 (Recs 13–18 — EXPLOIT-001 x2, EVADE-001 x2, RECON-001, OPS-001)
+Files: 124 PCAPs (~57 GB), competition date 2025-11-02 09:03–10:08
+Agent: TRAIN-001 (sampled: first 3 files full detail + ~15 files sampled)
+
+KEY DELTA vs prior analyses:
+  - Layout changed again: .12=DC (quals .14, inv5 .17), .103=Keycloak (NEW), .170=Graylog (NEW)
+  - Competition theme: Cretaceous/dinosaurs (great.cretaceous domain)
+  - 21 cleartext Keycloak credentials harvested — most specific credential intelligence yet
+  - Pre-planted DNS C2 backdoor on all 32 DCs at T=0 — new pattern (5-sec interval, hex subdomain)
+  - Graylog scoring API token captured: 12afjthotgefe01fv714tec0ag9qeuf3qup9a36bcecicbo11fj0
+  - Blue team response: intermediate — no firewall in 65 min, but password changes at T+21 min
+
+---
+
+## Patch Applied: 2026-03-16 (2026-inv5)
+
+Patch file: training/patches/patch-20260316-2.md
+Source run: PCAP Analysis 2026-inv5
+Edits applied: 6
+Edits skipped: 0
+Edits modified: 0
+Files changed:
+  - .claude/agents/recon-specialist.md
+  - .claude/agents/initial-access.md
+  - .claude/agents/evasion-specialist.md
+  - .claude/agents/tactical-coordinator.md
+Commit: ad489fb
+
+---
+
 ## Debrief: 2026-03-16 (2026-inv5)
 
 Source: PCAP Analysis — 2026-inv5 (manual findings, Option A — no /training-run)

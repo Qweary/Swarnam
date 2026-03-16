@@ -70,6 +70,29 @@ Key tactical adjustment: do NOT scan comprehensively before spraying credentials
 
 Note: active sessions are NOT terminated by firewall rules — once SSH/RDP is established, maintain continuous keepalive traffic to preserve sessions through firewall deployments.
 
+### 2026-inv2 Phase Timing Calibration (third data point in response spectrum)
+
+inv2 adds a third calibration point between quals (slow) and inv5 (fast):
+
+Response spectrum observed across three 2026 competitions:
+  quals (Feb):  SSH firewall T+17 min; password change T+115 min; C2 never detected
+  inv2 (Nov):   No firewall deployed in 65-min capture; password change T+21 min; DNS C2 ~12 min (1 team)
+  inv5 (Dec):   HTTP firewall T+88 sec (fastest team); no password change observed in traffic
+
+Pattern: invitational fields vary significantly in experience level.
+  inv5 had the fastest responders (likely more experienced/prepared teams).
+  inv2 was slower than inv5 but faster on password changes than quals.
+  Regionals (March) may fall anywhere in this spectrum — or exceed all three.
+
+inv2 specific operational window:
+  T+0 to T+15 min: initial access window (no firewall deployed; credentials exposed in cleartext)
+  T+15 to T+21 min: first password changes begin (some credentials becoming stale)
+  T+21 to T+65 min: gradual credential hardening; DNS C2 slowly being noticed by a few teams
+
+KEY PLANNING NOTE: pre-planted access (like the inv2 DNS beacon) provides an indefinite dwell window regardless of blue team response. If initial access can be established BEFORE competition start (e.g., via competition infrastructure setup access), response timing becomes irrelevant for that access method.
+
+SCORING ADVISORY: Graylog scoring token (12afjthotgefe01fv714tec0ag9qeuf3qup9a36bcecicbo11fj0) must be preserved if using Graylog as an attack vector — scoring engine needs this token to verify log shipping. Changing Graylog admin credentials will break scoring if the token rotates.
+
 ### Recommended Three-Phase Structure (2026 Regionals)
 
 **Phase 1 (T+0 to T+5min): Ultra-Fast Targeted Credential Spray.** No discovery scanning. Use known host positions from the 2026 network layout (see RECON-001 topology data). Execute the prioritized spray order from EXPLOIT-001's 2026 credential intelligence: SSH first (.2 hosts), then SMB/LDAP (.14 DC), then WordPress (.20), then WinRM (.22). Deploy SSH key persistence IMMEDIATELY on any successful SSH access — this takes 5 seconds and survives password changes. Every credential spray that has not completed by T+5 should be aborted.

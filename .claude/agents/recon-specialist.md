@@ -294,6 +294,40 @@ If the inv5 layout recurs, use this scan command instead of the quals-layout sca
 nmap -sV -sC -T2 -p 22,25,53,80,88,389,443,445,636,3000,3389,5985,8000 --open 10.100.1XX.2,17,60,63,86,98,100,103,175 -oA coordination/scans/services-teamXX
 ```
 
+### WRCCDC 2026-inv2 Network Layout Pattern (observed in 2026-inv2)
+
+NOTE: This is the THIRD distinct layout observed across three 2026 events. Host-role-per-address assignments change between every competition event. At Regionals, always run a quick targeted scan to verify the actual layout before committing to a full spray sequence. Do NOT assume any prior schema is correct — confirm first.
+
+Each team is assigned 10.100.1XX.0/24 (XX = team number, 101-132 in inv2, 32 teams).
+
+inv2 internal host scheme:
+  .12  = Windows DC (SMB/445, LDAP/389, WinRM/5985; domain: great.cretaceous; machine: TREX$)
+  .20  = Linux host (SSH/22)
+  .37  = Dual web server (WordPress/80 as fernbank, MediaWiki/8080 as fernbank)
+  .70  = Web application (port 3000, port 8082)
+  .76  = Dinosaur gallery static server (HTTP/9000, SSH/22)
+  .103 = Multi-service Linux (Keycloak/8080, queue API/8000, rides API/8001, SSH/22)
+  .104 = Shop/park ecommerce (HTTP/80, SSH/22)
+  .170 = Graylog SIEM (HTTP/9000, SSH/22)
+
+Competition domain: great.cretaceous (dinosaur/Cretaceous theme — note: changes yearly)
+Machine account: TREX$ (domain-joined DC computer account)
+Shared services: 10.100.100.12 = shared Windows DC (same port profile as team .12 hosts)
+
+Priority targets for initial access (inv2 layout):
+  1. .103:8080 (Keycloak — known user credentials, spray popcorn1? first)
+  2. .170:9000 (Graylog — known scoring token, try admin/admin)
+  3. .12:5985 (WinRM — try Administrator with sprayed or default passwords)
+  4. .37:80 (WordPress — try admin/[theme]Is[Adjective]??)
+  5. .76:22 (SSH — try known Keycloak usernames with same passwords)
+
+Unique inv2 asset: 10.100.100.12 shared DC is accessible to all teams — compromise once, access all.
+
+If the inv2 layout recurs, use this scan command:
+```
+nmap -sV -sC -T2 -p 22,80,389,445,3000,5985,8000,8001,8080,8082,9000 --open 10.100.1XX.12,20,37,70,76,103,104,170 -oA coordination/scans/services-teamXX
+```
+
 ## Detection Considerations
 
 Your scanning activity will generate logs. During Phase 1 this is acceptable — fast enumeration outweighs stealth concerns. During Phase 2+, minimize scan noise by targeting specific ports and hosts rather than running broad sweeps, using version detection (-sV) without script scanning (-sC) for follow-up probes, spacing individual target scans by 30–60 seconds to avoid obvious scan patterns in the AI blue team's correlation, and using TCP connect scans (-sT) on already-owned systems where you have legitimate credentials to blend with normal traffic.

@@ -64,6 +64,25 @@ Detection likelihood against AI blue team: HIGH (source IP allowlisting on WinRM
 
 Mitigation: After initial access via WinRM, pivot to a different remote access method (SSH tunnel, RDP through compromised host, SMB-based execution via psexec/smbexec) as soon as persistence is established. Use WinRM only for the initial credential validation and first command execution, then switch to a method that generates less distinctive network signatures. If sustained WinRM access is needed, proxy it through an already-compromised host within the team's subnet so the source IP appears internal.
 
+### Burned Signature 5: DNS C2 Fixed-Interval Beacon (observed in 2026-inv2)
+
+Pattern: DNS A queries for [hex_id].[b58_suffix].log.jacobseunglee.com at exactly 5-second intervals, using resolver 1.1.1.1 (Cloudflare public DNS — avoids internal DNS server logging). Volume: ~12 queries/minute per host, 78 per ~60-second capture file. In inv2, this ran as a pre-planted beacon on all 32 team DCs from T=0.
+
+Detection risk assessment:
+  - By human blue teams: LOW. Only 1 of 32 teams detected within 65 minutes (~12 min response).
+  - By AI blue team with DNS log correlation: HIGH. Fixed 5-second interval is detectable immediately via entropy analysis of query timing. Hex-encoded subdomain labels trigger DGA (Domain Generation Algorithm) heuristics in any modern DNS security tool.
+
+Detection likelihood against AI blue team: HIGH (timing regularity + DGA-style subdomains = automated detection within seconds).
+
+Mitigation — if deploying DNS C2 in competition:
+  - Use variable intervals (e.g., random 30-120 seconds) to defeat timing analysis
+  - Use a domain that does not appear in threat intelligence feeds
+  - Consider using DNS TXT record queries rather than A records (less common, fewer monitors)
+  - Use a subdomain format that mimics legitimate telemetry (e.g., [machine-id].update.example.com)
+  - Avoid hex-only subdomains — they score high on DGA detection models
+
+Preferred alternative: SSH tunnel C2 (blends with legitimate SSH traffic; not flagged as C2 by DNS monitors).
+
 ### General AI Blue Team Evasion Principles (2026-Specific)
 
 Beyond the four burned signatures above, apply these principles derived from 2026 quals analysis:
@@ -92,6 +111,28 @@ Additional ntopng signatures that may warrant disabling:
 - Any flow script in check_subdir=flow that would flag your specific attack tools
 
 Warning: ntopng modifications are logged — if blue team reviews ntopng audit log, this is visible. Use only if blue team appears unaware of ntopng configuration access.
+
+## Pivot Scanning via Compromised Team Hosts (technique confirmed in 2026-inv2)
+
+In inv2, compromised team hosts were used as masscan pivots to scan internal subnets:
+  Source host: 10.100.106.76 (gallery server, .76)
+  Target: 192.16.220.0/24 (internal range not reachable from red team jumpbox)
+  Rate: 43,176 SYNs in one ~60-second file = masscan launched from inside the team network
+
+Why this works:
+  - Internal scanning from a team host bypasses any red team jumpbox IP blocking
+  - Traffic appears to originate from a trusted internal host
+  - Internal subnets (192.168.x.x, 10.x.x.x) behind the competition gateway are only reachable from inside
+
+How to execute:
+  1. Gain initial access to any team host (SSH, web shell, Keycloak post-auth RCE, etc.)
+  2. Upload masscan binary or use nmap from the compromised host
+  3. Scan the internal gateway's ARP table to discover additional subnets
+  4. Report discovered hosts back to C2 via DNS (encodes data in subdomain labels) or SSH tunnel
+
+Detection risk (from internal host): MODERATE — internal scans show up in Graylog/Splunk if the host is shipping logs, but will not trigger external IDS.
+
+Note: using a compromised host for heavy scanning (43K SYNs) generates suspicious traffic visible to Graylog. Prefer slower, targeted scans (nmap -T2 -p [specific ports]) when operating from inside a team subnet to avoid Graylog log shipping alerts.
 
 ## Detection Surface Analysis
 
