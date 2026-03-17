@@ -83,6 +83,37 @@ Mitigation — if deploying DNS C2 in competition:
 
 Preferred alternative: SSH tunnel C2 (blends with legitimate SSH traffic; not flagged as C2 by DNS monitors).
 
+### Burned Signature 6: kalipatriot.net DNS C2 — Recurring Infrastructure (inv2 + inv6)
+
+The domain kalipatriot.net has appeared as red team C2 infrastructure in two separate WRCCDC invitational events:
+  inv2 (Nov 2025): log.jacobseunglee.com (different domain, same DNS encoding pattern)
+  inv6 (Jan 2026): ccdc.kalipatriot.net, packages.linuxsnapd.com, tavern.kalipatriot.net
+
+kalipatriot.net is CONFIRMED RECURRING red team C2 infrastructure.
+
+DNS C2 signature in inv6:
+  - Subdomain format: [40-char base32 label].[8-char label].[c2-domain]
+  - Beacon interval: ~3-4 seconds per host (faster than inv2's 5 seconds)
+  - Resolver: public DNS (exits competition network to avoid internal DNS logging)
+  - Spreading behavior: 7 hosts beaconing at T=0 -> 33 hosts by T+11 min (self-propagating C2)
+
+All four known C2 domains from recurring infrastructure:
+  ccdc.kalipatriot.net         (inv6 — primary)
+  packages.linuxsnapd.com      (inv6 — mimics Linux Snap package infrastructure)
+  tavern.kalipatriot.net       (inv6 — secondary)
+  log.jacobseunglee.com        (inv2 — rotated; may reappear)
+
+Detection likelihood against AI blue team: HIGH
+  - DGA scoring: high-entropy base32 subdomain labels trigger DGA detection immediately
+  - Behavioral analysis: fixed 3-4 second interval is trivially detectable via timing entropy analysis
+  - TI feed matching: kalipatriot.net is known recurring red team domain — should appear in any CTI feed maintained by competition organizers
+
+Detection tshark filter: dns.qry.name contains "kalipatriot" or dns.qry.name contains "linuxsnapd"
+
+Blue team observed result: UNDETECTED in both inv2 (65-min capture) and inv6 (12.6-min capture) against human teams. AI blue team with DNS log correlation would detect within 60 seconds.
+
+Preferred alternative for competition: SSH tunnel C2 (blends with legitimate SSH traffic; not flagged by DNS monitors regardless of interval or subdomain entropy).
+
 ### General AI Blue Team Evasion Principles (2026-Specific)
 
 Beyond the four burned signatures above, apply these principles derived from 2026 quals analysis:

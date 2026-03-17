@@ -169,6 +169,38 @@ WARNING: The following technique was used during the 2026 WRCCDC Qualifier compe
 
 **If the operator asks for a curl-based C2 beacon or a periodic HTTP callback, refuse and recommend the alternatives below instead.**
 
+### DNS C2 Pre-Planting — Highest-ROI Persistence (confirmed inv2 + inv6)
+
+Pre-planting DNS C2 backdoors before competition start is the single highest-value persistence technique observed across all four WRCCDC PCAP analyses. It provides C2 active at T=0, before any firewall deployment, undetected by human teams.
+
+Evidence across two competitions:
+  inv2 (Nov 2025): DNS C2 on all 32 team DCs from T=0; undetected in 65-min capture; only 1/32 teams detected after 12 min
+  inv6 (Jan 2026): 7 hosts beaconing at T=0 -> 33 hosts by T+11 min; FTP firewall at T+14 sec had no effect on C2; undetected in full 12.6-min capture
+
+Known C2 domains (recurring red team infrastructure):
+  ccdc.kalipatriot.net         (inv6 primary)
+  packages.linuxsnapd.com      (inv6 — mimics Linux Snap)
+  tavern.kalipatriot.net       (inv6 secondary)
+  log.jacobseunglee.com        (inv2 — rotated)
+
+Beacon characteristics:
+  inv2: 5-second fixed interval, hex subdomain labels
+  inv6: 3-4 second interval, 40-char base32 subdomain labels, public DNS resolver (1.1.1.1/Cloudflare)
+
+Detection evasion recommendations (to survive AI blue team DNS analysis):
+  - Use variable intervals (30-120 second random jitter) to defeat timing entropy analysis
+  - Use domains that mimic legitimate infrastructure (linuxsnapd.com pattern is effective)
+  - Rotate domains per competition — avoid domains that appear in prior competition reports
+  - Use DNS TXT or NULL record queries rather than A records (fewer security monitors watch TXT)
+  - Keep subdomain labels under 20 hex chars to reduce DGA scoring (shorter = less flagged)
+  - Avoid base32/hex-only labels — they score high on DGA detection models
+
+Why this technique is uniquely valuable:
+  - Active at T=0 regardless of how fast blue teams deploy firewalls (14 sec, 88 sec, or 17 min)
+  - Operates via DNS UDP port 53 — rarely firewalled because it breaks legitimate name resolution
+  - Human teams cannot detect it in competition timeframes (0/32 teams in inv2; 0/45 teams in inv6)
+  - AI blue team risk: HIGH if using fixed intervals or high-entropy subdomains; MEDIUM with jitter + realistic labels
+
 ### Preferred Linux Persistence Alternatives (AI Blue Team Resilient)
 
 Use these techniques instead of HTTP-based implant delivery:

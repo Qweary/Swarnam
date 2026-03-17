@@ -110,6 +110,73 @@ Keycloak admin console: /auth/admin/ or /realms/master (try admin/admin or admin
 Scoring check path: /realms/master/protocol/openid-connect/token
 Keycloak admin API allows: user enumeration, password reset, role escalation, OIDC token forge
 
+### 2026-inv6 Credential Intelligence (Star Wars theme, observed 2026-01-24)
+
+Competition domain: STAR-BARS; email domain: star-bars.local
+DC machine account: KYLOREN$ (DC hostname: KYLOREN)
+
+SSO/Webmail login endpoint (on .203 hosts):
+  POST http://10.100.XXX.203/sso/login?url=/webmail/
+  Body: email=[user]@star-bars.local&pw=[password]
+
+Chat App login endpoint (on .134 hosts):
+  POST http://10.100.XXX.134/api/login
+  Body: {"username":"[user]","password":"[pass]","roomId":2,"roomPassword":""}
+
+Confirmed original credentials (identical across all 45 teams):
+
+  H.Solo / T4!@A9Z6          maul / T9#E!C2F
+  b.kenobi / R9@!E6Sd        yoda / Z9#eF6A2m
+  r2d2 / F6#A9w!R             c3po / P5@N2v!L
+  chewie / D4!9#K2E           fett / S8@R6A!P
+  leia / M4@Kp7Wc2            hutt / Z6!@K8F3
+  jango / M7!KZ3@8            vader2 / L3!8RZ@M
+  asoka / A9@F!7Cw             palpatine / R8!xS3Tq
+  woody / J8!4S@LQ             moes / C7D!3sE4
+  smalone / K2M#A9x!           gmtarkin / A7f!Q9zL
+  strooper2 / K5@!S7C9         strooper3 / Z!9M6A#E
+  strooper4 / E7@!K2P4         strooper5 / C9!R@6S
+  strooper6 / F@8!2MZK         strooper7 / A#4!7R9E
+  strooper8 / S!M9@6Z          strooper9 / K!8R3@9F
+  strooper10 / P@6F!D8R        stormtrooper101 / W!4Z8A@6
+  L.Skywalker / P7!@M8K2
+
+CRITICAL — Blue team password reset templates (spray these at T+5 min for changed accounts):
+  Template 1: rainbowandhearts23012[username]
+    Examples: rainbowandhearts23012maul, rainbowandhearts23012yoda, rainbowandhearts23012fett
+  Template 2: [Word]-[Word]-[Word]-Dajda213
+    Examples: Confused-Achieve-Airplane-Dajda213, Ordinary-Perform-Battery-Dajda213
+
+Credential reuse: chat app (.134) and SSO webmail (.203) use SAME passwords.
+If one service changes, the other may not have been updated — try both endpoints for any working credential.
+
+Original password structure: [Upper][digit][special][Upper/lower][digit][special][Upper][digit] (~8 chars alternating)
+
+### Gitea Self-Hosted Git as Scored Service (new in 2026-inv6)
+
+Gitea runs on .253 hosts (ports 80 and 3000) in inv6.
+Version: Gitea v1.21.1 (build hash c31a1cdb3d3bb9f5e0f9)
+
+Organization: star-bars
+Scored repositories:
+  /star-bars/galactic-credits-terminal — scored via issue tracker (issue count/state)
+  /star-bars/starbars-database — scored via pull request state
+
+Scoring engine checks:
+  GET /star-bars/galactic-credits-terminal/issues?state=closed
+  GET /star-bars/starbars-database/pulls?state=open
+  GET /user/login?redirect_to=[repo_path] (authentication required for repo access)
+
+Attack paths for Gitea (priority order):
+  1. Credential spray with character accounts: H.Solo/T4!@A9Z6, b.kenobi/R9@!E6Sd, etc. (SSO creds reused)
+  2. Default credential spray: admin/admin, admin/password, admin/changeme, gitea/gitea
+  3. User enumeration: GET /api/v1/users/search?q=[term] (Gitea API returns user list without auth)
+  4. Repository manipulation: if admin access achieved, create/close issues or PRs to affect scoring
+  5. Server-side hooks: admin can set pre-receive/post-receive hooks for code execution
+  6. Secret enumeration: admin can view all repository secrets and environment variables
+
+Note: Gitea v1.21.1 — check for CVEs in this version range for unauthenticated RCE before competition day.
+
 ## Quick-Win Service Exploits
 
 These are the 30-second checks that yield immediate access on common CCDC services. Run these against every target in Phase 1 before moving to more complex attacks.

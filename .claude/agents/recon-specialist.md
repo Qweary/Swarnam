@@ -328,6 +328,44 @@ If the inv2 layout recurs, use this scan command:
 nmap -sV -sC -T2 -p 22,80,389,445,3000,5985,8000,8001,8080,8082,9000 --open 10.100.1XX.12,20,37,70,76,103,104,170 -oA coordination/scans/services-teamXX
 ```
 
+### WRCCDC 2026-inv6 Network Layout (observed 2026-01-24)
+
+NOTE: This is the FOURTH distinct layout observed across four 2026 events. Host-role-per-address assignments change between every competition event. At Regionals, always run a quick targeted scan to verify the actual layout before committing to a full spray sequence. Do NOT assume any prior schema is correct — confirm first.
+
+Each team assigned 10.100.1XX.0/24 (XX = team number, 101-145 observed, 45 teams).
+Layout DIFFERS from all prior competitions — verify layout before assuming prior schema.
+
+inv6 host roles:
+  .2   = Linux host (SSH/22, HTTPS/443; may beacon DNS C2 to kalipatriot.net)
+  .9   = Windows domain host (FTP/21, RDP/3389, SMB/445, WinRM/5985, port 5466 /keeplive.html, RTSP/554)
+  .11  = Web/service host (HTTP/80, RDP/3389 on some teams)
+  .20  = Linux SSH+web host (SSH/22, HTTP/80)
+  .105 = Windows host (RDP/3389, WinRM/5985; DNS C2 beacon from competition start)
+  .134 = Chat application (HTTP/80; /api/login JSON, /api/rooms)
+  .201 = Linux web host (HTTP/80, HTTPS/443)
+  .202 = Linux web host (HTTP/80, HTTPS/443)
+  .203 = SSO + Webmail host (HTTP/80; /sso/login, /webmail/)
+  .253 = Gitea (self-hosted git) host (HTTP/80, port 3000; org: star-bars)
+
+Competition domain: STAR-BARS (Star Wars theme)
+Email domain: star-bars.local
+DC machine account: KYLOREN$ (hostname likely: KYLOREN)
+VXLAN VNI = 100 + team_number (e.g., team 114 = VNI 214)
+
+Priority targets for initial access:
+  1. .9:445 (SMB — Windows host with NTLM; known credentials from scoring traffic)
+  2. .9:5985 (WinRM — same Windows host)
+  3. .203:80 (SSO/webmail — cleartext credentials in scoring engine traffic)
+  4. .134:80 (Chat app — JSON API login with known credentials)
+  5. .253:3000 (Gitea — known organization and repo structure)
+
+CRITICAL: Firewall deployment observed at T+14 seconds in inv6 — a new record. There is NO port scanning window. Use this pre-loaded layout for immediate credential spray at T=0.
+
+If the inv6 layout recurs, use this scan command:
+```
+nmap -sV -sC -T2 -p 21,22,80,443,445,554,3000,3389,5466,5985 --open 10.100.1XX.2,9,11,20,105,134,201,202,203,253 -oA coordination/scans/services-teamXX
+```
+
 ## Detection Considerations
 
 Your scanning activity will generate logs. During Phase 1 this is acceptable — fast enumeration outweighs stealth concerns. During Phase 2+, minimize scan noise by targeting specific ports and hosts rather than running broad sweeps, using version detection (-sV) without script scanning (-sC) for follow-up probes, spacing individual target scans by 30–60 seconds to avoid obvious scan patterns in the AI blue team's correlation, and using TCP connect scans (-sT) on already-owned systems where you have legitimate credentials to blend with normal traffic.

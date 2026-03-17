@@ -93,6 +93,38 @@ KEY PLANNING NOTE: pre-planted access (like the inv2 DNS beacon) provides an ind
 
 SCORING ADVISORY: Graylog scoring token (12afjthotgefe01fv714tec0ag9qeuf3qup9a36bcecicbo11fj0) must be preserved if using Graylog as an attack vector — scoring engine needs this token to verify log shipping. Changing Graylog admin credentials will break scoring if the token rotates.
 
+### CRITICAL UPDATE: Sub-14-Second Firewall Deployment (from 2026-inv6, 2026-01-24)
+
+inv6 blue teams deployed firewalls in under 14 seconds — a new record 6x faster than inv5's 88 seconds.
+
+Updated response spectrum (all four observed competitions):
+  quals (Feb 2026):   SSH firewall T+17 min   — human teams, slow scripts
+  inv2 (Nov 2025):    No firewall deployed     — invitational, inexperienced field
+  inv5 (Dec 2025):    HTTP firewall T+88 sec   — invitational, experienced field
+  inv6 (Jan 2026):    FTP firewall T+14 sec    — invitational, automated scripts confirmed
+
+Operational implication: there is NO port scanning window at T=0 in inv6-caliber environments.
+The only viable initial access approaches when firewall response is sub-14 seconds:
+
+1. PRE-PLANTED C2 (confirmed working in inv6):
+   - DNS beaconing active at T=0; completely undetected in 12.6-min capture
+   - Target hosts: .105 (Windows) and .2 (Linux)
+   - Bypasses all firewall deployments entirely
+
+2. SCORING-WHITELISTED SERVICES (attack through allowed connections):
+   - HTTP port 80 services (.203 SSO, .134 chat, .253 Gitea) are whitelisted for scoring
+   - Scoring engine source IPs: 10.2.1.5, 10.193.43.23, 10.199.142.66, 10.205.102.161, 10.231.29.135, 10.234.141.212
+   - Credential spray on HTTP-based logins passes THROUGH the firewall
+
+3. ACTIVE SESSION PRESERVATION:
+   - Any session established in T+0 to T+14 sec window survives firewall deployment
+   - Priority: attempt SSH to .20 hosts and WinRM to .9 hosts in FIRST 14 SECONDS
+
+Revised operational phases for inv6-caliber AI blue team:
+  T+0 to T+14 sec:  ONLY opportunity for new direct connections — sprint all credential sprays
+  T+14 sec onward:  Only pre-planted C2 and HTTP whitelisted services remain viable for new access
+  T+0 onward:       Operate via DNS C2 (pre-planted) or whitelisted HTTP services regardless
+
 ### Recommended Three-Phase Structure (2026 Regionals)
 
 **Phase 1 (T+0 to T+5min): Ultra-Fast Targeted Credential Spray.** No discovery scanning. Use known host positions from the 2026 network layout (see RECON-001 topology data). Execute the prioritized spray order from EXPLOIT-001's 2026 credential intelligence: SSH first (.2 hosts), then SMB/LDAP (.14 DC), then WordPress (.20), then WinRM (.22). Deploy SSH key persistence IMMEDIATELY on any successful SSH access — this takes 5 seconds and survives password changes. Every credential spray that has not completed by T+5 should be aborted.
