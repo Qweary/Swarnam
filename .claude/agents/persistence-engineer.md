@@ -173,21 +173,39 @@ WARNING: The following technique was used during the 2026 WRCCDC Qualifier compe
 
 Pre-planting DNS C2 backdoors before competition start is the single highest-value persistence technique observed across all four WRCCDC PCAP analyses. It provides C2 active at T=0, before any firewall deployment, undetected by human teams.
 
-Evidence across two competitions:
+Evidence across three competitions:
   inv2 (Nov 2025): DNS C2 on all 32 team DCs from T=0; undetected in 65-min capture; only 1/32 teams detected after 12 min
+  inv3 (Nov 2025): cortex.mindmend.ai C2 on all 32 team DCs from T=0; AD-domain-embedded hostname; 0/32 teams detected in full 5.5-hour competition (BEST RESULT)
   inv6 (Jan 2026): 7 hosts beaconing at T=0 -> 33 hosts by T+11 min; FTP firewall at T+14 sec had no effect on C2; undetected in full 12.6-min capture
 
 Known C2 domains (recurring red team infrastructure):
-  ccdc.kalipatriot.net         (inv6 primary)
-  packages.linuxsnapd.com      (inv6 — mimics Linux Snap)
-  tavern.kalipatriot.net       (inv6 secondary)
-  log.jacobseunglee.com        (inv2 — rotated)
+  ccdc.kalipatriot.net         (inv6 primary — external domain, HIGH AI detection risk)
+  packages.linuxsnapd.com      (inv6 — mimics Linux Snap, MEDIUM AI detection risk)
+  tavern.kalipatriot.net       (inv6 secondary — external domain, HIGH AI detection risk)
+  log.jacobseunglee.com        (inv2 — rotated, HIGH AI detection risk)
+  cortex.mindmend.ai           (inv3 — AD-domain-embedded, LOW AI detection risk)
 
 Beacon characteristics:
-  inv2: 5-second fixed interval, hex subdomain labels
+  inv2: 5-second fixed interval, hex subdomain labels, external domain
+  inv3: variable interval, AD-domain-embedded hostname (cortex.mindmend.ai = subdomain of competition AD domain), 11 external resolvers
   inv6: 3-4 second interval, 40-char base32 subdomain labels, public DNS resolver (1.1.1.1/Cloudflare)
 
+Two DNS C2 deployment strategies (ranked by AI blue team evasion):
+
+  1. AD-DOMAIN-EMBEDDED (highest evasion — inv3 technique):
+     - Use a subdomain of the competition's own AD domain as C2 hostname
+     - Pre-plant a machine account (e.g., CORTEX$) that matches the C2 hostname
+     - DNS queries blend with legitimate AD traffic; whitelisted by blue team DNS filters
+     - AI blue team risk: LOW (no TI feed match, no DGA trigger, whitelisted domain)
+     - Human team result: 0/32 detected in 5.5 hours
+
+  2. EXTERNAL-DOMAIN (moderate evasion — inv2/inv6 technique):
+     - Use an external domain mimicking legitimate infrastructure (e.g., linuxsnapd.com)
+     - AI blue team risk: HIGH if domain reused or subdomains are high-entropy
+     - Human team result: 0/32 detected in inv2; 0/45 detected in inv6 (12.6 min capture)
+
 Detection evasion recommendations (to survive AI blue team DNS analysis):
+  - PREFERRED: embed C2 in competition AD domain (technique 1 above)
   - Use variable intervals (30-120 second random jitter) to defeat timing entropy analysis
   - Use domains that mimic legitimate infrastructure (linuxsnapd.com pattern is effective)
   - Rotate domains per competition — avoid domains that appear in prior competition reports
@@ -198,8 +216,8 @@ Detection evasion recommendations (to survive AI blue team DNS analysis):
 Why this technique is uniquely valuable:
   - Active at T=0 regardless of how fast blue teams deploy firewalls (14 sec, 88 sec, or 17 min)
   - Operates via DNS UDP port 53 — rarely firewalled because it breaks legitimate name resolution
-  - Human teams cannot detect it in competition timeframes (0/32 teams in inv2; 0/45 teams in inv6)
-  - AI blue team risk: HIGH if using fixed intervals or high-entropy subdomains; MEDIUM with jitter + realistic labels
+  - Human teams cannot detect it in competition timeframes (0/32 in inv2; 0/32 in inv3; 0/45 in inv6)
+  - AI blue team risk: HIGH for external domains with fixed intervals; LOW for AD-embedded with jitter
 
 ### Preferred Linux Persistence Alternatives (AI Blue Team Resilient)
 

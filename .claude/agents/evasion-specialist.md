@@ -114,6 +114,114 @@ Blue team observed result: UNDETECTED in both inv2 (65-min capture) and inv6 (12
 
 Preferred alternative for competition: SSH tunnel C2 (blends with legitimate SSH traffic; not flagged by DNS monitors regardless of interval or subdomain entropy).
 
+### Burned Signature 7: AD-Domain-Embedded C2 Hostname — Best-Practice Evasion (inv3, 0% detection in 5.5h)
+
+In inv3, the red team used cortex.mindmend.ai as the DNS C2 hostname — a subdomain of the competition's own AD domain (mindmend.ai). The DC machine account CORTEX$ was pre-planted as a legitimate AD computer object, making the C2 hostname indistinguishable from legitimate AD DNS traffic.
+
+Result: 0/32 teams detected in 5.5 hours of competition. This is the best evasion result observed across all six analyzed WRCCDC events.
+
+How it works:
+  - Competition AD domain: mindmend.ai (registered by organizers for the event)
+  - DC hostname: CORTEX (machine account: CORTEX$)
+  - C2 subdomain: cortex.mindmend.ai (resolves via the domain's own DNS infrastructure)
+  - DNS queries for cortex.mindmend.ai appear identical to legitimate AD DNS resolution
+  - Blue team DNS filters that whitelist the competition domain inadvertently whitelist the C2
+  - 11 external DNS resolvers (10.192-10.254 range) answered cortex.mindmend.ai queries
+
+Why AD-domain-embedded C2 defeats detection:
+  1. Domain whitelisting: blue teams whitelist *.mindmend.ai because it is the competition domain
+  2. DNS baseline: cortex.mindmend.ai traffic blends with legitimate AD DNS (DC lookups, SRV records)
+  3. No TI feed match: the domain is event-specific, not in any threat intelligence database
+  4. DGA bypass: "cortex" is a real English word, not a random/encoded string — scores 0 on DGA models
+  5. Volume camouflage: AD DNS generates high query volume; C2 queries hide in the noise
+
+Detection risk comparison — C2 domain strategies:
+  External domain (kalipatriot.net):     HIGH detection risk against AI blue team
+    - Appears in TI feeds if reused across events
+    - DGA-style encoded subdomains trigger automated detection
+    - Not in DNS whitelist — any query is anomalous
+  AD-domain-embedded (cortex.mindmend.ai): LOW detection risk against AI blue team
+    - In DNS whitelist by design
+    - Human-readable subdomain defeats DGA detection
+    - Indistinguishable from legitimate AD traffic
+  SSH tunnel C2:                          LOW detection risk (encrypted, expected protocol)
+    - But requires initial SSH access — not available at T=0 without pre-planted keys
+
+Recommendation for Regionals:
+  If DNS C2 pre-planting is available, embed the C2 hostname in the competition's own AD domain.
+  Use a subdomain that matches a plausible AD computer name (e.g., [hostname].domain.tld).
+  This is strictly superior to external-domain C2 for evasion.
+  Combine with variable beacon intervals (30-120s jitter) for maximum stealth.
+
+### Wazuh SIEM — Active Blue Team Detection Capability (inv4+)
+
+Starting with inv4 (December 2025), WRCCDC competition environments deploy Wazuh SIEM on dedicated hosts (.240 in inv4) with agents on team workstations (.180) and potentially all scored hosts. Wazuh is the most comprehensive blue team monitoring capability observed across all analyzed events — it surpasses ntopng (network-only), Graylog (log aggregation only), Splunk (log search only), and Prometheus (metrics only).
+
+Wazuh detection capabilities relevant to red team operations:
+  1. File integrity monitoring (FIM): detects changes to /etc/passwd, /etc/shadow, crontab files, SSH authorized_keys, systemd service files, and web roots. Any persistence mechanism that writes to monitored paths triggers an alert.
+  2. Rootkit detection: active scanning for known rootkit signatures, hidden processes, and hidden ports.
+  3. Log analysis: aggregates and correlates auth.log, syslog, Windows Security Event Log, and application logs across all agents. Authentication failures from credential sprays appear immediately.
+  4. Vulnerability detection: correlates installed package versions against CVE databases. Known-vulnerable services are flagged.
+  5. Active response: can automatically block IPs, kill processes, or quarantine files when rules trigger. This means Wazuh can take automated defensive action without human blue team intervention.
+  6. CTI feed (cti.wazuh.com): real-time threat intelligence updates. Known malicious IPs, domains, and file hashes are blocked. Red team C2 domains that appear in any public threat feed will be flagged.
+
+Five evasion implications when Wazuh is present:
+  1. Credential spray must use valid credentials only — any failed auth attempt generates a Wazuh alert. Spray fewer passwords per account (1-2 max) and use high-confidence candidates only.
+  2. No nmap probes against hosts with Wazuh agents — Wazuh detects port scanning via connection attempt logging. Use passive reconnaissance (traffic sniffing, DNS enumeration) instead.
+  3. Minimize process execution on compromised hosts — every new process is logged with full command line. Prefer living-off-the-land binaries that the blue team cannot distinguish from administrative use.
+  4. C2 domains must not appear in any public CTI feed — Wazuh's cti.wazuh.com subscription means known-bad domains are blocked in real time. Use AD-domain-embedded C2 (see Burned Signature 7) or fresh domains.
+  5. File-based persistence (SSH keys, cron, web shells) triggers FIM alerts — prefer in-memory persistence or modify existing files rather than creating new ones. If writing files, use paths that Wazuh's default FIM configuration does not monitor (e.g., /tmp, /var/tmp, user home directories outside /root).
+
+SIEM capability comparison across 2026 events:
+  quals:    None observed (no central SIEM)
+  inv2:     Graylog on .170 (log aggregation; API token known; LOW detection risk)
+  inv3:     None observed (no central SIEM on dedicated host)
+  inv4:     Wazuh on .240 (HIDS + SIEM + CTI + active response; HIGH detection risk)
+  inv5:     Splunk on .60 + ntopng on .2 (log search + network monitoring; MEDIUM detection risk)
+  inv6:     None observed (no central SIEM on dedicated host)
+
+Trend: SIEM deployment is escalating. Expect Regionals to have Wazuh-class or better monitoring. Plan all operations assuming HIDS-level visibility on every host.
+
+### ntopng IDS Signature Disabling via REST API (technique confirmed in 2026-inv5)
+
+ntopng runs on .2 hosts in inv5+ competition environments (ports 443 and 3000). It provides blue teams with live flow tables, nDPI protocol detection, anomaly scoring, and alert generation. If the red team gains ntopng admin access, specific IDS signatures can be disabled via the REST API.
+
+Prerequisites: ntopng admin credentials (default: admin/admin — factory default, confirmed working in inv5)
+
+Disable a specific IDS signature:
+  POST https://10.100.XXX.2/lua/rest/v2/disable/check.lua
+  Body: check_subdir=flow&script_key=ndpi_http_suspicious_header&csrf=[TOKEN]
+
+  CSRF token: obtain from any authenticated GET request (e.g., GET /lua/admin/check_scripts.lua)
+  inv5 observed token: b3816cfda082a30d0292a49ecfc42ada (persistent across 3+ hours of session)
+
+Effect: ntopng stops alerting on HTTP requests with suspicious headers (obfuscated URIs, unusual user-agents, tool signatures). This blinds the blue team's network monitoring to HTTP-based attack patterns.
+
+Additional signatures to consider disabling:
+  ndpi_suspicious_dga_domain    — domain generation algorithm detection (protects DNS C2)
+  ndpi_blacklisted_flow         — blocks to known bad IPs (protects C2 infrastructure)
+  ndpi_http_suspicious_content  — suspicious HTTP content detection
+  Any flow script in check_subdir=flow matching your attack tool signatures
+
+Late-game intelligence use — monitor own detection score:
+  GET https://10.100.XXX.2/lua/rest/v2/get/flow/active_list.lua?sort_column=alert_score&order=desc
+  This shows all active flows ranked by threat score — use it to see what your traffic looks like from the blue team's perspective.
+
+Attack sequence:
+  1. GET https://10.100.XXX.2/ — load ntopng login page
+  2. POST login with admin/admin
+  3. GET /lua/admin/check_scripts.lua — view active IDS checks and obtain CSRF token
+  4. POST to /lua/rest/v2/disable/check.lua with target signature keys
+  5. Verify by re-running an HTTP attack that was previously generating alerts
+
+Detection risk:
+  - ntopng login appears as admin access to the firewall/gateway (may raise suspicion)
+  - Signature modification IS logged in ntopng audit log
+  - Best timing: first 2 minutes while blue team is overwhelmed with initial access tasks
+  - If blue team reviews ntopng audit log, this modification is visible
+
+Note: requires ntopng admin access first. If default credentials have been changed, this technique is not available. Check early — blue teams rarely change ntopng credentials in the first few minutes.
+
 ### General AI Blue Team Evasion Principles (2026-Specific)
 
 Beyond the four burned signatures above, apply these principles derived from 2026 quals analysis:

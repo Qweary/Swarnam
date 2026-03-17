@@ -268,19 +268,27 @@ NOTE: Host-role-per-address assignments change between competition events. The i
 
 Each team is assigned a /24 subnet 10.100.1XX.0/24 where XX is the team number (100–125 in inv5).
 
-inv5 internal host scheme (confirmed from traffic analysis):
-- .2  = Firewall/gateway (HTTPS/443; may also host ntopng network monitoring on 443 or 3000)
-- .17 = Windows Active Directory Domain Controller (SMB/445; hostname: milkfarm.[domain])
-- .60 = Linux workstation + Splunk SIEM (SSH/22, Splunk/8000; hostname: Work1.[domain])
-- .63 = E-Commerce web server (HTTP/80; hostname: ECommerce.[domain])
-- .86 = Roundcube webmail (HTTP/80, SMTP/25; hostname: moomail.[domain])
-- .98 = Windows member server (SMB/445, NTLM-scored)
-- .100 = Linux service host (SSH/22)
-- .103 = Linux web+SSH (HTTP/80, SSH/22)
-- .175 = Linux web+SSH (HTTP/80, SSH/22)
+inv5 internal host scheme (confirmed from full 4-pass traffic analysis):
+- .2   = Firewall/gateway — scored HTTPS/443; ntopng on ports 443 and 3000 (default creds: admin/admin)
+- .17  = Windows AD Domain Controller — scored DNS; SMB/445; hostname: milkfarm.[domain]; domain: COWBUNTU (NetBIOS)
+- .60  = Work1 Linux workstation — scored SSH/22 only (Splunk on port 8000 is NOT externally scored)
+- .63  = ECommerce web server — scored HTTP/80; connects to competition framework (10.213.37.72:443)
+- .86  = moomail Roundcube webmail — scored HTTP/80 + SMTP/25; scoring RCPT TO: ajohnson@udderstrength.gym
+- .98  = Windows member server — scored SMB/445 via NTLM (scoring accounts: moomoo, ceo; domain: COWBUNTU)
+- .100 = Linux service host — scored SSH/22
+- .103 = Linux web+SSH — scored HTTP/80 + SSH/22
+- .175 = Linux web+SSH — scored HTTP/80 (NEW: confirmed in second-pass analysis; also present in inv6)
 
 Competition domain: udderstrength.gym (dairy/farm theme — note: theme changes yearly)
+NetBIOS domain: COWBUNTU (used in NTLM authentication against .98 hosts)
 DNS servers: 10.1.21.207–214 serve all team .17 DC hosts
+
+Email accounts confirmed via SMTP scoring traffic:
+  ajohnson, pyoung, gwilliams, rking, dlee, ceo, moomail, wp-admin @udderstrength.gym
+  Primary scoring recipient: ajohnson@udderstrength.gym (must not be locked — see EXPLOIT-001)
+
+VXLAN mapping: VNI = team third octet + 100 (team 112 = VNI 212; red team = VNI 220 via 10.1.3.20)
+Admin/test team: 10.100.100.x — connects to TEST-NET 192.0.2-6.x, no competition activity
 
 Network infrastructure (inv5-specific):
 - All traffic uses VXLAN overlay (UDP 4789) through 10.1.3.1–6 routers
@@ -365,6 +373,142 @@ If the inv6 layout recurs, use this scan command:
 ```
 nmap -sV -sC -T2 -p 21,22,80,443,445,554,3000,3389,5466,5985 --open 10.100.1XX.2,9,11,20,105,134,201,202,203,253 -oA coordination/scans/services-teamXX
 ```
+
+### WRCCDC 2026-inv3 Network Layout (mindmend.ai — observed 2025-11-15)
+
+NOTE: This is the FIFTH distinct layout observed across five 2026 events. Host-role-per-address assignments change between every competition event. At Regionals, always run a quick targeted scan to verify the actual layout before committing to a full spray sequence. Do NOT assume any prior schema is correct — confirm first.
+
+Each team assigned 10.100.1XX.0/24 (XX = team number, 101-132 observed, 32 teams).
+
+inv3 host roles:
+  .5   = Prometheus node_exporter (HTTP/9100 — scored; monitoring metrics endpoint)
+  .35  = Windows Active Directory Domain Controller (SMB/445, LDAP/389, WinRM/5985; hostname: CORTEX; machine account: CORTEX$; domain: MINDMEND / mindmend.ai)
+  .37  = Application server (HTTP/80, SSH/22)
+  .97  = Windows WinRM host (WinRM/5985, SMB/445; kliu@MINDMEND access confirmed at T+9s)
+  .103 = FTP + MySQL server (FTP/21, MySQL/3306, SSH/22; universal FTP password; MySQL scoring query: SELECT age FROM scoring.person)
+  .111 = Transmission BitTorrent (HTTP/9091 — scored; BitTorrent web interface)
+  .113 = Exchange mail server (SMTP/25, HTTP/80, HTTPS/443)
+
+Competition domain: mindmend.ai (MINDMEND NetBIOS; mental health / neuroscience theme)
+DC hostname: CORTEX (machine account CORTEX$)
+Scoring engine: 10.195.168.65 — confirmed hitting .5:9100, .103:3306, .111:9091, .113
+
+Priority targets for initial access (inv3 layout):
+  1. .103:21 (FTP — universal password FixTheBrain123! for all 7 users)
+  2. .97:5985 (WinRM — kliu@MINDMEND pre-staged at T+9s)
+  3. .35:5985 (DC WinRM — domain admin target)
+  4. .113:80 (Exchange webmail — credential spray)
+  5. .5:9100 (Prometheus — information disclosure, not direct access)
+
+DNS C2 observed: cortex.mindmend.ai (AD-domain-embedded; 0% detection in 5.5h — see EVADE-001)
+
+If the inv3 layout recurs, use this scan command:
+```
+nmap -sV -sC -T2 -p 21,22,25,80,389,443,445,3306,5985,9091,9100 --open 10.100.1XX.5,35,37,97,103,111,113 -oA coordination/scans/services-teamXX
+```
+
+### WRCCDC 2026-inv4 Network Layout (auto.auto — observed 2025-12-06)
+
+NOTE: This is the SIXTH distinct layout observed across six 2026 events. Host-role-per-address assignments change between every competition event. At Regionals, always run a quick targeted scan to verify the actual layout before committing to a full spray sequence. Do NOT assume any prior schema is correct — confirm first.
+
+Each team assigned 10.100.1XX.0/24 (XX = team number, 101-142 observed, 42 teams — largest field).
+
+inv4 host roles:
+  .2   = MinIO object storage (FTP/21 — returns 500 to all commands; HTTP API on :9000; console on :9001; default creds: minioadmin/minioadmin)
+  .25  = Windows Active Directory Domain Controller (SMB/445, LDAP/389, WinRM/5985, Kerberos/88; hostname: JEEP; domain: auto.auto)
+  .30  = Competition gRPC agent host (HTTP/2 POST to 10.213.37.72:80 /c2.C2/ClaimTasks every 5s — NOT red team C2)
+  .60  = Linux service host (SSH/22, HTTP/80)
+  .63  = Web application host (HTTP/80)
+  .88  = Web application host (HTTP/80)
+  .120 = Linux host (SSH/22)
+  .145 = Linux host (SSH/22)
+  .180 = Windows workstation (SMB/445, RDP/3389; Wazuh agent installed)
+  .240 = Wazuh SIEM server (HTTPS/443; active from T=0; cti.wazuh.com threat intelligence feed)
+  .250 = Competition gRPC agent host (same as .30 — polls /c2.C2/ClaimTasks)
+
+Competition domain: auto.auto (automotive industry theme)
+DC hostname: JEEP (SPN: jeep.auto.auto)
+VXLAN: 6 VTEPs at 10.1.3.1-6, teams distributed across VNIs
+WireGuard VPN: 10.100.10.x management subnet observed
+
+WARNING: .30 and .250 hosts run competition infrastructure agents (gRPC framework polling /c2.C2/ClaimTasks to 10.213.37.72:80). Do NOT block, scan aggressively, or interfere with this traffic — it is competition infrastructure, not red team C2. See "Competition gRPC Agent Framework" section below.
+
+WARNING: .240 (Wazuh SIEM) is actively monitoring from T=0 with live threat intelligence from cti.wazuh.com. All scanning and spray activity generates alerts. See EVADE-001 for Wazuh evasion guidance.
+
+Priority targets for initial access (inv4 layout):
+  1. .25:5985 (WinRM — DC, highest value; try domain admin creds)
+  2. .25:445 (SMB — same DC; NTLM spray)
+  3. .60:22 (SSH — Linux host; theme-based password spray)
+  4. .63:80 (Web app — WordPress with user "supra")
+  5. .2:9000 (MinIO API — default creds minioadmin/minioadmin)
+
+If the inv4 layout recurs, use this scan command:
+```
+nmap -sV -sC -T2 -p 21,22,80,88,389,443,445,3306,5985,9000,9001 --open 10.100.1XX.2,25,30,60,63,88,120,145,180,240,250 -oA coordination/scans/services-teamXX
+```
+
+#### New Service Fingerprints in inv4: MinIO and Wazuh
+
+**MinIO Object Storage** (first observed inv4, .2 hosts):
+  FTP port 21: banner "220 Welcome to 'MinIO' FTP Server Version='GNU AGPLv3...'"
+    WARNING: MinIO FTP returns 500 to all standard FTP commands (USER, PASS, HELP, LIST)
+    This is NOT a broken FTP server — MinIO implements FTP partially and rejects most commands
+    Do NOT diagnose this as a misconfigured service or waste time debugging FTP
+  HTTP API port 9000: responds to "GET / HTTP/1.0" — this is the correct access path
+    Test: curl -s http://10.100.XXX.2:9000/minio/health/live
+    Default credentials: minioadmin / minioadmin (MinIO factory default)
+  Console port 9001: web management interface
+    Default credentials: minioadmin / minioadmin
+  Attack path: if credentials work, MinIO provides full object storage access (read/write/delete buckets)
+
+**Wazuh SIEM** (first observed inv4, .240 hosts):
+  Identification via DNS: hosts connecting to cti.wazuh.com (threat intelligence) and packages.wazuh.com
+  Wazuh is a host-based intrusion detection system (HIDS) + SIEM with active threat intelligence
+  Default credentials:
+    API (port 55000): wazuh / wazuh
+    Dashboard (port 443): admin / admin
+  Detection capabilities: file integrity monitoring, rootkit detection, log analysis, vulnerability detection
+  CRITICAL: Wazuh agents (.180 workstations observed) report to the .240 manager from T=0
+    This means ALL host-level activity (process creation, file changes, auth events) is centrally logged
+    This is the most comprehensive blue team monitoring observed across all analyzed events
+  Also observed: some teams actively installing additional Wazuh packages during competition (packages.wazuh.com downloads)
+
+**Wiki.js** (possible, inv4):
+  Identification via DNS: hosts connecting to graph.requarks.io (Wiki.js telemetry)
+  If present, likely on a web application host (.63 or .88)
+
+#### Competition gRPC Agent Framework — NOT Red Team C2 (first observed inv4)
+
+Starting in inv4, WRCCDC competition environments include a gRPC-based agent framework running on dedicated hosts within each team subnet. This is competition infrastructure (likely the scoring/scenario engine), NOT red team C2.
+
+Server IPs observed (changes per event — do NOT use IP alone for identification):
+  inv4: 10.213.37.72 port 80
+  inv5: 10.193.202.204 port 80 (primary); 10.213.37.72 port 443 (secondary, TLS)
+Endpoint: POST /c2.C2/ClaimTasks (stable across events — use this for identification)
+Protocol: HTTP/2 with gRPC content-type (application/grpc), protobuf-encoded body
+Beacon interval: exactly 5 seconds (machine-precise)
+Agent hosts (inv4): .30 and .250 in every team subnet; also 10.100.100.30 (shared services)
+Agent hosts (inv5): ALL scored hosts — .17, .63, .86, .98, .100, .103, .175 per team (expanded from inv4)
+
+Five identification characteristics (distinguishes from red team C2):
+  1. Known host positions: agents run on specific, consistent host offsets across ALL teams
+  2. Fixed destination: all agents connect to same server IP (which is outside team subnets)
+  3. gRPC content-type: application/grpc header — red team DNS/HTTP C2 does not use gRPC
+  4. Machine-precise 5-second interval: exactly 5.000s between POSTs — no jitter, no variation
+  5. Active on ALL teams simultaneously: 42 teams x 2+ hosts = 84+ identical streams — no red team C2 operates at this scale
+
+Agent startup behavior (inv5):
+  - Queries ip-api.com/json/<ip> to geolocate observed external IPs
+  - Queries ipecho.net/plain, ident.me/, api.ipify.org/ to get own external IP
+  - This fires before tasks are assigned — the agent is self-orienting
+
+DO NOT:
+  - Block traffic to 10.213.37.72 or 10.193.202.204 (disrupts competition framework)
+  - Scan these server IPs aggressively (they are competition infrastructure)
+  - Misclassify this as red team beaconing (the gRPC content-type and 5s precision are diagnostic)
+  - Attempt to intercept or modify the gRPC stream (protobuf-encoded, not useful for attacks)
+
+Note: the server IP changes each event but the endpoint path /c2.C2/ClaimTasks and 5-second interval are stable identifiers.
 
 ## Detection Considerations
 

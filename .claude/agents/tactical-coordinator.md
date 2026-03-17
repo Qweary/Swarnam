@@ -97,11 +97,38 @@ SCORING ADVISORY: Graylog scoring token (12afjthotgefe01fv714tec0ag9qeuf3qup9a36
 
 inv6 blue teams deployed firewalls in under 14 seconds — a new record 6x faster than inv5's 88 seconds.
 
-Updated response spectrum (all four observed competitions):
+Updated response spectrum (all six observed competitions):
   quals (Feb 2026):   SSH firewall T+17 min   — human teams, slow scripts
   inv2 (Nov 2025):    No firewall deployed     — invitational, inexperienced field
+  inv3 (Nov 2025):    Firewall T+18 min        — human teams, consistent with quals baseline
+  inv4 (Dec 2025):    Firewall T+13-21 min     — human teams, 42-team field; red team delayed entry at T+12m17s
   inv5 (Dec 2025):    HTTP firewall T+88 sec   — invitational, experienced field
   inv6 (Jan 2026):    FTP firewall T+14 sec    — invitational, automated scripts confirmed
+
+inv3 additional data: pre-staged WinRM (kliu@MINDMEND) active at T+9 seconds — confirms that pre-competition access deployment provides multi-hour dwell time independent of how fast blue teams deploy firewalls. Combined with inv6 DNS C2 (T=0), two independent techniques now demonstrate that pre-planted access bypasses the entire firewall timing spectrum.
+
+inv4 additional data: red team entry was delayed by 12 minutes 17 seconds (longest observed). With human firewall deployment at T+13-21min, this compressed the useful window to under 9 minutes after entry. No DNS C2 or pre-staged credentials were observed — the red team operated entirely within the post-start window. Wazuh SIEM was active on all 42 teams from T=0, providing the most comprehensive blue team monitoring yet observed. For 42-team competitions, sequential credential spray requires >10 minutes — parallel tooling (GNU parallel, xargs -P) is mandatory to cover the full target set within the window.
+
+CRITICAL FINDING: Outbound Port 80 C2 Bypasses Inbound-Only Firewalls (confirmed inv5)
+
+In inv5, all 25 teams deployed inbound HTTP firewalls within T+22 minutes. ZERO teams blocked outbound port 80 traffic. The pre-planted gRPC C2 (team hosts connecting OUTBOUND to 10.193.202.204:80) persisted for the entire 4.5-hour competition unimpeded.
+
+C2 host count over time (inv5):
+  T+0:     36 hosts beaconing outbound
+  T+22min: 83 hosts (growing despite inbound firewalls)
+  T+2h39m: 94 hosts (peak)
+  T+4h14m: 86 hosts (minor attrition)
+
+Structural blind spot: WRCCDC blue team firewall deployments protect scored services (inbound) but leave outbound traffic completely open. This is consistent across all observed events — no team has ever blocked outbound port 80 or 443.
+
+C2 channel selection for Regionals (ordered by reliability):
+  1. Outbound HTTP/80 from team hosts — bypasses all observed firewall patterns
+  2. Outbound HTTPS/443 from team hosts — same bypass, with encryption
+  3. DNS (UDP 53) — rarely firewalled because blocking breaks name resolution
+  4. SSH tunnel (TCP 22) — requires initial SSH access, but encrypted and expected
+  5. Inbound connections to scored ports — firewalled within 14s-18min (least reliable)
+
+Planning implication: design all C2 channels to use OUTBOUND connections from compromised team hosts to red team infrastructure. Do not rely on inbound connections to team hosts surviving past T+90 seconds.
 
 Operational implication: there is NO port scanning window at T=0 in inv6-caliber environments.
 The only viable initial access approaches when firewall response is sub-14 seconds:
