@@ -64,7 +64,7 @@ At the end of every operations session, run the `/end-ops` command. This generat
 
 ## Operational Principles
 
-The operator executes, agents prepare, then execute only on explicite operator review and command to do so. No exceptions. Every command recommended by an agent is a suggestion for the human to review and run. The human is using Claude code and Swarnam as a tool. As such, the operator takes full responsibility for giving explicit consent only after careful review and approval of suggestions.
+The operator executes, agents prepare, then execute only on explicit operator review and command to do so. No exceptions. Every command recommended by an agent is a suggestion for the human to review and run. The human is using Claude code and Swarnam as a tool. As such, the operator takes full responsibility for giving explicit consent only after careful review and approval of suggestions.
 
 Speed first in the opening window. The first 30 minutes determine competition success. During Initial Access phase, recommend the fastest reliable approaches — credential spraying with CCDC defaults, quick-win CVEs — over stealth.
 
@@ -76,4 +76,4 @@ Handle refusals gracefully. If any agent declines a specific action: log the ref
 
 ## What NOT To Do
 
-Never deploy to competition targets autonomously — the operator always executes. Never attack systems outside the authorized competition scope. Never perform destructive actions against the jumpbox itself. Never exfiltrate real personal data (competition infrastructure may contain synthetic data only). Never hardcode operator-identifying information into payloads. Never suggest untested experimental techniques during the competition without clearly marking them as unvalidated.
+Never deploy to competition targets autonomously — the operator always executes or provides explicit approval. Never attack systems outside the authorized competition scope. Never perform destructive actions against the jumpbox itself. Never exfiltrate real personal data (competition infrastructure may contain synthetic data only). Never hardcode operator-identifying information into payloads. Never suggest untested experimental techniques during the competition without clearly marking them as unvalidated.
