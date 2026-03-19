@@ -53,6 +53,27 @@ Credential reuse is the most reliable lateral movement vector in CCDC. Organizat
 
 When credentials are harvested from any target, immediately assess their reuse potential. The workflow is: receive credentials from EXPLOIT-001 or from coordination files, determine credential type (plaintext, NTLM hash, Kerberos ticket, SSH key), test against all other targets in scope, and document which credentials work where.
 
+### CCDC Priority Reuse Pattern — Administrator Password Reuse
+
+For EVERY recovered cleartext password, immediately test it against Administrator (both local and domain) on ALL WinRM-accessible and SMB-accessible hosts before testing any other username combinations. CCDC teams frequently reuse the same password for regular user accounts and the local Administrator account — this is one of the most reliable lateral movement patterns in competition environments.
+
+Execute this sequence for each new cleartext password:
+```
+netexec smb <subnet>/24 -u Administrator -p '<password>' --local-auth --continue-on-success
+netexec smb <subnet>/24 -u Administrator -p '<password>' -d <domain> --continue-on-success
+netexec winrm <subnet>/24 -u Administrator -p '<password>' --local-auth --continue-on-success
+netexec winrm <subnet>/24 -u Administrator -p '<password>' -d <domain> --continue-on-success
+```
+
+If Administrator hits on ANY host, immediately escalate: this likely grants access to multiple (or all) Windows hosts in the team range. Run the full subnet spray and report all "Pwn3d!" results to OPERATION-LOG and CREDENTIALS.md.
+
+Also test against root on all SSH-accessible Linux hosts:
+```
+netexec ssh <subnet>/24 -u root -p '<password>' --continue-on-success
+```
+
+This pattern fires BEFORE testing the original username across other hosts. The Administrator/root reuse test takes under 30 seconds per subnet and has the highest payoff of any single credential reuse action.
+
 For plaintext passwords, test with NetExec against all targets:
 ```
 netexec smb <subnet>/24 -u <user> -p '<password>' --continue-on-success

@@ -9,7 +9,9 @@ Purpose: Quantitative metrics from each training run, enabling objective measure
 
 | Run | Date | Environment | Duration | T2FO | Owned@30m | Cmds Modified | Refusals (H/S/C) | Consistency % | Rotation Success % | Persist Survival % | Tokens | Tokens/Target |
 |-----|------|-------------|----------|------|-----------|---------------|-------------------|---------------|--------------------|--------------------|--------|---------------|
-| — | — | No training runs completed yet | — | — | — | — | — | — | — | — | — | — |
+| 1 | 2026-03-17/18 | Win11 VM 192.168.56.102, host-only, single target | ~120m | N/M (no persistence confirmed) | 0 (access established, persistence unverified) | 5 | 0/0/0 (1 TOOL-UNAVAILABLE) | 72% (8/11 expected updates) | N/M (no /rotate cycles) | 0% (0/3 mechanisms verified at 60m) | N/M (not instrumented) | N/M |
+| 2 | 2026-03-18 | Win11 VM 192.168.56.102, host-only, single target (VirtualBox lab) | ~180m | N/M (no shell obtained; persistence partially deployed) | 0 (svcMonitor account functional, task registered but payload null) | 8 (upload path, TP check, firewall cmds, payload cmds, meme cmd, schtask verify, ASR fallback, $true boolean) | 0/0/0 (1 TOOL-UNAVAILABLE — subagent MCP access) | 81% (9/11 expected updates; OPERATION-LOG partial, TARGET-STATUS not promoted to OWNED) | N/M (no /rotate cycles) | 50% (1/2 deployed mechanisms functional: svcMonitor VALID, schtask PAYLOAD-NULL) | N/M (not instrumented) | N/M |
+| 3 | 2026-03-19 | inv4 environment, 10.100.100.0/24 via OpenVPN, 11 targets (DC + 3 Win + 7 Linux/mix) | ~66m | ~51m (.79 first OWNED at 02:10) | 0 (creds arrived at T+49m, all 3 Windows owned at T+51m) | ~4 (MySQL svc name wrong, cmd semicolon syntax, evil-winrm unstable, --rid-range unsupported) | 2/0/0 | ~90% (all 5 coordination files updated; training-log env description stale) | N/M | N/M (no blue team) | N/M | N/M |
 
 ### Column Legend
 

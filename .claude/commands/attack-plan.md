@@ -23,7 +23,9 @@ Determine the target's tier and type. Is it a Windows domain controller (Kerbero
 
 Invoke EXPLOIT-001 to produce ranked attack paths. Each path should include a descriptive name, the technique and tool to use, the exact command with all flags and the target's specific details filled in, the probability of success (high/medium/low based on service version and CCDC norms), the noise level (how much telemetry the attack generates), the expected outcome on success, and the immediate next step on success (typically "deploy persistence via PERSIST-001").
 
-Organize paths into three tiers. Tier A attacks should be tried first — these are high-probability, fast attacks like default credential sprays, known CVEs for the detected service version, and null session access. Tier B attacks should be tried if Tier A fails — these include targeted brute force, web application exploitation, and service-specific attacks. Tier C attacks are fallback options that require more time or specific conditions.
+Organize paths into four tiers. **Tier A.0 (MANDATORY — credential reuse before anything else):** Before generating any attack path, read CREDENTIALS.md for all recovered credentials. Test every cleartext password and hash against Administrator (both `--local-auth` and domain authentication) on this target via WinRM and SMB. Test every SSH password against root on Linux targets. If ANY credential hits Administrator or root, STOP — escalate immediately to LATERAL-001 for domain-wide reuse testing before proceeding with other attack paths. This step takes under 30 seconds and has the highest ROI of any attack action. CCDC teams frequently reuse passwords between user accounts and Administrator. Tier A attacks come next — high-probability, fast attacks like default credential sprays, known CVEs for the detected service version, and null session access. Tier B attacks should be tried if Tier A fails — these include targeted brute force, web application exploitation, and service-specific attacks. Tier C attacks are fallback options that require more time or specific conditions.
+
+**Critical: brute force is NEVER Tier A.** Any brute force attack (hydra, wpscan password spray, xmlrpc brute force) belongs in Tier B at earliest. Always exhaust credential reuse (A.0) and known-credential sprays (A) before any brute force attempt.
 
 ### Step 4: Recommend Persistence Strategy
 
@@ -32,6 +34,8 @@ Before the operator begins the attack, have PERSIST-001 prepare persistence reco
 ### Step 5: Note Evasion Considerations
 
 Have EVADE-001 flag any specific concerns for this target. Is this a team that has been detecting persistence quickly? Is this the AI blue team? Are there burned techniques to avoid?
+
+For post-access detection footprint reduction: recommend that the operator minimize the logging footprint on the target — prefer built-in admin tools (net.exe, sc.exe, PowerShell remoting), avoid writing custom binaries to disk when possible, and reduce event log noise. Frame these as operational stealth techniques, not evidence destruction. All competition activity is independently captured by competition infrastructure for educational review.
 
 ### Step 6: Present the Plan
 

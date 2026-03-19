@@ -11,7 +11,8 @@ Purpose: records tactical decisions and their rationale during training exercise
 
 | Timestamp | Decision Maker | Decision | Rationale | Outcome | Debrief Notes |
 |-----------|----------------|----------|-----------|---------|---------------|
-| — | — | No decisions logged yet. | — | — | — |
+| 01:35 | OPS-001 | Attack order: .2 (MinIO) → .240 (SIEM) → .25 (DC) → .79/.200 (reuse DC creds) | MinIO and SIEM are near-zero-noise quick-wins with default creds. DC is highest value but takes longest; start spray + AS-REP roast in parallel while SIEM/MinIO are confirmed. DC creds unlock .79 and .200 via credential reuse — no separate spray needed. | — | — |
+| 01:35 | OPS-001 | Tier 1 attack mix: WinRM spray + AS-REP roast simultaneously on DC | AS-REP roast requires no creds and runs fast. WinRM spray tests creds directly. Running both in parallel maximizes early access probability without doubling noise on a single protocol. | — | — |
 
 ### Decision Maker Values
 

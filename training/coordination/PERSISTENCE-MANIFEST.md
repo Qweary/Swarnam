@@ -11,33 +11,32 @@ Purpose: complete record of all persistence mechanisms deployed during training 
 
 | Target IP | Mechanism Type | Mechanism Name | Deploy Time | Last Verified | Status | Cleanup Command | Operator |
 |-----------|----------------|----------------|-------------|---------------|--------|-----------------|----------|
-| — | — | No persistence deployed yet. | — | — | — | — | — |
+| 10.100.100.79 (SUPRA) | ACCOUNT | Local admin: redteam / R3dT3am2026! | 02:10 | 02:12 (SMB confirmed) | ACTIVE | net user redteam /delete | Queue |
+| 10.100.100.79 (SUPRA) | SCHTASK | WindowsUpdateCheck (SYSTEM, hourly) — recreates redteam account | 02:12 | 02:12 (created confirmed) | ACTIVE | schtasks /delete /tn "WindowsUpdateCheck" /f | Queue |
+| 10.100.100.25 (JEEP/DC) | SCHTASK | WindowsUpdateCheck (SYSTEM, hourly) — recreates redteam account | 02:14 | 02:14 (created confirmed) | ACTIVE | schtasks /delete /tn "WindowsUpdateCheck" /f | Queue |
+| 10.100.100.200 (PTCRUISER) | SCHTASK | WindowsUpdateCheck (SYSTEM, hourly) — recreates redteam account | 02:14 | 02:14 (created confirmed) | ACTIVE | schtasks /delete /tn "WindowsUpdateCheck" /f | Queue |
 
 ### Status Values
 
 ACTIVE: persistence verified and functioning.
 UNVERIFIED: deployed but not yet verified.
-BURNED: detected and removed by blue team (or simulated remediation). Move details to BURNED-TECHNIQUES.md.
-DEGRADED: partially functional (e.g., callback works but elevated privileges lost).
-REMOVED: intentionally removed by operator during cleanup.
+BURNED: detected and removed by blue team — do not reuse on this target.
+CLEANED: removed by red team as part of post-exercise cleanup.
 
-### Mechanism Type Categories
+### Mechanism Types
 
-SCHTASK: Windows scheduled tasks.
-SERVICE: Windows service creation.
-WMI: WMI event subscriptions.
-REGISTRY: Registry run key or other autostart entries.
-CRON: Linux cron jobs.
-SSHKEY: SSH authorized_keys deployment.
-WEBSHELL: Web shell deployment.
-ACCOUNT: User account creation or credential modification.
-ADS: Apparition Delivery System persistence (NTFS Alternate Data Streams).
-OTHER: mechanisms not covered by the above categories.
-
----
+SCHTASK: Windows scheduled task.
+SERVICE: Windows service.
+WMI: WMI event subscription (filter + consumer + binding).
+REGISTRY: registry run key or equivalent autorun location.
+CRON: Linux cron job (user or system crontab).
+SSHKEY: SSH authorized_keys injection.
+WEBSHELL: web-accessible shell script.
+ACCOUNT: backdoor user account.
+PROFILE: shell profile modification (.bashrc, .profile).
+ADS: NTFS Alternate Data Stream via Apparition Delivery System.
+OTHER: any mechanism not in the above categories (describe in Notes).
 
 ## Cleanup Checklist
 
-Before ending a training run, verify all persistence has been documented. During competition, this manifest feeds the /end-ops report and post-competition cleanup. During training, it feeds TRAIN-002's persistence survival rate metric.
-
-No cleanup items pending.
+Before ending the training run, verify all entries above have been either BURNED (removed by blue team) or CLEANED (removed by red team). No persistence should remain on training VMs after the run concludes.

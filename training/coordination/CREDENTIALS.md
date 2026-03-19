@@ -11,7 +11,12 @@ Purpose: centralized record of all harvested, discovered, or known credentials d
 
 | Source Target | Username | Password/Hash | Credential Type | Domain | Access Level | Discovered By | Status | Targets Tested Against |
 |---------------|----------|---------------|-----------------|--------|--------------|---------------|--------|------------------------|
-| — | — | No credentials collected yet. | — | — | — | — | — | — |
+| 10.100.100.2 | minioadmin | minioadmin | DEFAULT | — (MinIO local) | Admin — full R/W all buckets | EXPLOIT-001 | VALID | .2:8080 console, .2:9000 S3 API |
+| 10.100.100.25 (DC) | supra | OttoBot4TheWin! | CLEARTEXT | auto.auto | Domain User + PS Remoting on DC (Pwn3d! via WinRM) | Operator (external share) | VALID | .25:5985 WinRM |
+| 10.100.100.25 (DC) | Administrator | OttoBot4TheWin! | CLEARTEXT | auto.auto | Domain Admin — full admin on all domain hosts | LATERAL-001 | VALID | .25, .79, .200 WinRM all Pwn3d! |
+| 10.100.100.79 (SUPRA) | redteam | R3dT3am2026! | CLEARTEXT | SUPRA (local) | Local Admin on SUPRA (.79) | PERSIST-001 | VALID | .79 SMB confirmed |
+| DC (krbtgt) | krbtgt | 1db16b46673148de692bc66209d75ed4 | NTLM | auto.auto | Golden Ticket capability — forge any Kerberos ticket | EXPLOIT-001 (DCSync) | VALID | Domain-wide |
+| DC (Administrator) | Administrator | e38bf956897b0360d346396cc7ca8c50 | NTLM | auto.auto | Domain Admin NTLM hash (pass-the-hash) | EXPLOIT-001 (DCSync) | VALID | .25, .79, .200 |
 
 ### Credential Type Values
 

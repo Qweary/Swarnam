@@ -81,6 +81,8 @@ Same as /start-ops: generate or verify the competition wordlist at /tmp/ccdc-wor
 
 ### Step 8: Record Session Start
 
+**Environment verification note:** After the first /scan-range completes during this training run, update the environment description in TRAINING-LOG.md (the Run entry created below) with confirmed details: actual target count, verified IP ranges, discovered host roles, and any differences from the initial environment description provided by the operator. The initial description is a best-guess; the post-scan update ensures the training log accurately reflects what was actually tested.
+
 Append a session start entry to training/TRAINING-LOG.md:
 
 ```
