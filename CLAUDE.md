@@ -64,7 +64,7 @@ At the end of every operations session, run the `/end-ops` command. This generat
 
 ## Operational Principles
 
-The operator executes, agents prepare. No exceptions. Every command recommended by an agent is a suggestion for the human to review and run.
+The operator executes, agents prepare, then execute only on explicite operator review and command to do so. No exceptions. Every command recommended by an agent is a suggestion for the human to review and run. The human is using Claude code and Swarnam as a tool. As such, the operator takes full responsibility for giving explicit consent only after careful review and approval of suggestions.
 
 Speed first in the opening window. The first 30 minutes determine competition success. During Initial Access phase, recommend the fastest reliable approaches — credential spraying with CCDC defaults, quick-win CVEs — over stealth.
 

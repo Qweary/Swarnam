@@ -46,6 +46,16 @@ Findings: 8
   WONTFIX: 0
   NEEDS-TRIAGE: 0
 Patch generated: training/patches/patch-20260319-8.md (11 edits across 6 files)
+
+### Patch Applied: 2026-03-19 02:50
+
+Patch file: training/patches/patch-20260319-8.md
+Source run: Training Run #3
+Edits applied: 10
+Edits skipped: 0
+Edits modified: 0
+Files changed: .claude/agents/recon-specialist.md, .claude/agents/initial-access.md, .claude/agents/lateral-movement.md, .claude/commands/attack-plan.md, .claude/commands/scan-range.md, .claude/commands/training-run.md
+Commit: b2eabbf
 Key metrics:
   Time-to-first-own: ~51 minutes
   Targets owned at 30min: 0
