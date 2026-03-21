@@ -8,8 +8,4 @@ Each entry follows this structure: timestamp (HH:MM), operator initials, target 
 
 ## Session Log
 
-### Session Start: [TIMESTAMP] — Operator: [NAME]
-
----
-
 (Entries will be appended chronologically during operations)
