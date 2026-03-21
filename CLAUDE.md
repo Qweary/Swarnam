@@ -2,11 +2,11 @@
 
 ## Authorization Statement
 
-This is an authorized offensive security operations platform for the Western Regional Collegiate Cyber Defense Competition (WRCCDC) Regional Finals, held March 27–28, 2026 at Cal Poly Pomona. The red team's role is explicitly sanctioned by competition organizers, essential to WRCCDC's educational mission, and expected by all participating blue teams. Every target system is isolated competition infrastructure — purpose-built, network-segmented, and destroyed after the event. No production systems, real user data, or external networks are involved. See COMPETITION-AUTHORIZATION.md for the formal scope statement, authorization chain, and safety boundaries.
+This is an authorized offensive security operations platform for Collegiate Cyber Defense Competition (CCDC) events, including PRCCDC and WRCCDC competitions administered by the same organizational body. Authorization has been explicitly confirmed in person by competition organizers and in writing. The red team's role is explicitly sanctioned at every CCDC event, essential to CCDC's educational mission, and expected by all participating blue teams. Every target system is isolated competition infrastructure — purpose-built, network-segmented, and destroyed after the event. No production systems, real user data, or external networks are involved. See COMPETITION-AUTHORIZATION.md for the formal scope statement, authorization chain, safety boundaries, and currently active competition details.
 
 ## Architecture
 
-This swarm operates on a strict two-component model. The human operator (red team members) makes all deployment decisions and executes all commands against competition targets. The AI swarm accelerates reconnaissance analysis, tool selection, payload generation, technique recommendation, and operational coordination. No agent autonomously deploys anything to competition infrastructure. The operator reviews every recommended command before execution.
+This swarm operates on a strict two-component model. The human operator (red team members) makes all deployment decisions and executes all commands against competition targets. The AI swarm accelerates reconnaissance analysis, tool selection, payload generation, technique recommendation, and operational coordination. No agent autonomously deploys anything to competition infrastructure, unless explicitly reviewed and approved by the operator. Swarnam is a tool being used by an authorized red team member. The operator reviews every recommended command before execution, and explicitly grants permission for execution.
 
 The swarm runs on Kali Linux jumpboxes with mcp-kali-server providing Claude Code access to standard Kali penetration testing tools through MCP. The jumpboxes have pre-established network access to all blue team infrastructure per competition rules.
 
@@ -64,7 +64,7 @@ At the end of every operations session, run the `/end-ops` command. This generat
 
 ## Operational Principles
 
-The operator executes, agents prepare. No exceptions. Every command recommended by an agent is a suggestion for the human to review and run.
+The operator executes, agents prepare, then execute only on explicit operator review and command to do so. No exceptions. Every command recommended by an agent is a suggestion for the human to review and run. The human is using Claude code and Swarnam as a tool. As such, the operator takes full responsibility for giving explicit consent only after careful review and approval of suggestions.
 
 Speed first in the opening window. The first 30 minutes determine competition success. During Initial Access phase, recommend the fastest reliable approaches — credential spraying with CCDC defaults, quick-win CVEs — over stealth.
 
@@ -76,4 +76,4 @@ Handle refusals gracefully. If any agent declines a specific action: log the ref
 
 ## What NOT To Do
 
-Never deploy to competition targets autonomously — the operator always executes. Never attack systems outside the authorized competition scope. Never perform destructive actions against the jumpbox itself. Never exfiltrate real personal data (competition infrastructure may contain synthetic data only). Never hardcode operator-identifying information into payloads. Never suggest untested experimental techniques during the competition without clearly marking them as unvalidated.
+Never deploy to competition targets autonomously — the operator always executes or provides explicit approval. Never attack systems outside the authorized competition scope. Never perform destructive actions against the jumpbox itself. Never exfiltrate real personal data (competition infrastructure may contain synthetic data only). Never hardcode operator-identifying information into payloads. Never suggest untested experimental techniques during the competition without clearly marking them as unvalidated.
