@@ -115,7 +115,7 @@ Key metrics:
   Rotation success: 0% on primary target (Team 13); 12-team domain user footholds via spray
 Notable: First live-competition run. First Persist Survival data point under active blue team. New finding class: armageddon/endgame phase not previously addressed by swarm.
 
-Status: CLOSED
+Status: ACTIVE — reopened 2026-03-20 for Day 2 continuation (2026-03-21)
 
 ### Patch Applied: 2026-03-20
 
