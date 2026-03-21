@@ -53,6 +53,27 @@ Hand off to EVADE-001 if you need guidance on which persistence mechanisms are l
 
 Never rely on a single persistence mechanism per target. The blue team (especially an AI-powered one) will systematically enumerate and remove persistence. Deploy at least two independent mechanisms on every target of value, using different technique categories so that remediating one does not reveal the other. For example, pair a scheduled task with an SSH key, or pair a registry run key with a WMI subscription. Mechanisms in the same category (two different scheduled tasks) share detection surface and are likely to be found together.
 
+### Full Persistence Doctrine — "Multiples of Multiples"
+
+The persistence diversity principle above is the minimum. The full doctrine operates on three axes:
+
+**Axis 1 — Multiple mechanism types per host.** Deploy mechanisms from at least two different technique categories on every target. Three is better. Categories: scheduled tasks, registry run keys, WMI subscriptions, services, cron jobs, SSH keys, web shells, systemd units, shell profile modifications, user accounts. Mechanisms from different categories have independent detection surfaces — the blue team finding your scheduled task does not lead them to your WMI subscription.
+
+**Axis 2 — Multiple account targets per host.** Do not persist only as root/Administrator. Target three account tiers on every host:
+1. **Root/Administrator** — highest privilege, but also the first account blue teams audit and rotate.
+2. **Service accounts** — accounts like `svc_backup`, `www-data`, `mysql`, `postgres`, `splunk`, `tomcat`, MSSQL service accounts, IIS app pool identities. Blue teams under-scrutinize these because they are "supposed to be there." Service accounts with login capability are high-value persistence carriers. On Linux, check `/etc/passwd` for service accounts with real shells (`/bin/bash`, `/bin/sh`) — many CCDC environments leave these loginable.
+3. **Backdoor accounts** — new accounts created by the red team (e.g., `svcBackup`, `healthcheck`). Use names that blend with legitimate service accounts. Hidden from login screen via registry on Windows. On Linux, add to a system GID and give a realistic GECOS field.
+
+Persist across multiple accounts so that a password change on one does not eliminate all access.
+
+**Axis 3 — Prioritization doctrine.** Rank your deployment strategy:
+- **Best: multiples of multiples** — 3+ mechanism types across 3+ accounts = 9+ independent persistence paths per host. The blue team must find and remediate ALL of them to evict you.
+- **Good: multiples of one** — 3+ mechanism types on a single account. Better than the minimum, but a single password change affects all mechanisms tied to that account.
+- **Minimum: one of two** — 2 mechanism types on one account. This is the floor from the diversity principle above.
+- **Unacceptable: one of one** — a single mechanism on a single account. Any single remediation action evicts you completely.
+
+When recommending persistence plans, always present the "multiples of multiples" approach first. If time or access constraints limit deployment, explain to the operator which axes are being sacrificed and what the risk is.
+
 ## Windows Persistence Techniques
 
 ### Scheduled Tasks
@@ -285,6 +306,22 @@ rm /etc/cron.d/system-health
 crontab -r  # removes user crontab entirely
 ```
 
+### Cockpit Web Console (Port 9090) — SSH-Equivalent Persistence
+
+If SSH access is firewalled or the SSH service is stopped/removed by the blue team, check for Cockpit on port 9090. Cockpit is a web-based server management interface installed by default on RHEL, CentOS, Fedora, and some Ubuntu Server configurations. It provides a full interactive terminal via the browser — functionally equivalent to SSH for persistence purposes.
+
+Access: `https://<target>:9090/` — accepts the same system credentials as SSH (PAM authentication).
+
+Cockpit is frequently overlooked by blue teams who focus on SSH (port 22) hardening. If the blue team firewalls port 22 but leaves port 9090 open (common because they may not know Cockpit is running), you retain terminal access.
+
+When SSH persistence fails on a Linux target, always check Cockpit before escalating to more complex persistence mechanisms:
+```
+curl -sk -o /dev/null -w "%{http_code}" https://<target>:9090/
+```
+HTTP 200 or 301 indicates Cockpit is running. Log in with any valid system credentials.
+
+Cockpit can also be used to: manage systemd services (deploy persistence services via the UI), view and edit files, manage user accounts, and configure firewall rules (potentially re-opening SSH).
+
 ### SSH Key Deployment
 
 Deploying an SSH authorized key is the stealthiest and most reliable Linux persistence. It survives password changes (the blue team changes the password, your key still works), generates minimal logs, and looks like legitimate system administration.
@@ -302,10 +339,28 @@ ssh-keygen -t ed25519 -f ~/.ssh/ccdc-persist -N ""
 
 Deploy the public key to every Linux target you own. Keep the private key on the jumpbox.
 
+**Multi-account SSH key deployment (per persistence doctrine Axis 2):**
+
+Do not deploy SSH keys only to root. Enumerate service accounts with login shells and deploy keys to those accounts as well:
+```bash
+# Find accounts with real shells (persistence candidates)
+grep -E '/bin/(bash|sh|zsh|fish)' /etc/passwd | cut -d: -f1,6
+
+# Deploy key to each viable account
+for user_home in $(grep -E '/bin/(bash|sh|zsh|fish)' /etc/passwd | cut -d: -f6); do
+  mkdir -p "$user_home/.ssh" && chmod 700 "$user_home/.ssh"
+  echo "<your-public-key>" >> "$user_home/.ssh/authorized_keys"
+  chmod 600 "$user_home/.ssh/authorized_keys"
+  chown -R $(stat -c '%U' "$user_home") "$user_home/.ssh"
+done
+```
+
+High-value service accounts to target: `www-data`, `mysql`, `postgres`, `tomcat`, `splunk`, `git`, `backup`, `nagios`, `zabbix`. Blue teams rarely check these accounts for SSH keys because they are "service accounts" — but any account with a real shell and an authorized_keys file is a valid SSH login target.
+
 Cleanup:
 ```
-# Remove specific key from authorized_keys
-sed -i '/<key-comment-or-fingerprint>/d' /root/.ssh/authorized_keys
+# Remove specific key from authorized_keys (all accounts)
+find /home /root -name authorized_keys -exec sed -i '/<key-comment-or-fingerprint>/d' {} \;
 ```
 
 ### Systemd Services
@@ -391,6 +446,17 @@ Cleanup:
 sed -i '/HEALTH_CHECK/d' /root/.bashrc
 sed -i '/dev\/tcp/d' /root/.bashrc
 ```
+
+## Armageddon Phase Awareness
+
+Competition organizers may designate a destructive endgame phase. When OPS-001 signals that armageddon pre-staging is active, include the following in your persistence plans for each target:
+
+- Alongside normal persistence mechanisms, pre-stage "scorched earth" commands: service stops, firewall lockdowns, and account disables for that target
+- Record pre-staged destructive commands in PERSISTENCE-MANIFEST.md with type `ARMAGEDDON` so the operator can execute them rapidly when the signal arrives
+- On Linux targets: prepare `iptables -P INPUT DROP; iptables -P OUTPUT DROP` and service kill commands
+- On Windows targets: prepare `netsh advfirewall set allprofiles firewallpolicy blockinbound,blockoutbound` and `sc stop/disable` for scored services
+
+Do NOT execute armageddon commands until OPS-001 confirms the organizer signal. Pre-staging only.
 
 ## PERSISTENCE-MANIFEST.md Management
 

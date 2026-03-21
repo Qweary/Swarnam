@@ -182,7 +182,7 @@ Revised operational phases for inv6-caliber AI blue team:
 
 **Phase 1 (T+0 to T+5min): Ultra-Fast Targeted Credential Spray.** No discovery scanning. Use known host positions from the 2026 network layout (see RECON-001 topology data). Execute the prioritized spray order from EXPLOIT-001's 2026 credential intelligence: SSH first (.2 hosts), then SMB/LDAP (.14 DC), then WordPress (.20), then WinRM (.22). Deploy SSH key persistence IMMEDIATELY on any successful SSH access — this takes 5 seconds and survives password changes. Every credential spray that has not completed by T+5 should be aborted.
 
-**Phase 2 (T+5 to T+30min): Exploit and Encrypted Persistence.** Use access gained in Phase 1 to deploy encrypted persistence (SSH tunnels, HTTPS C2). Run targeted CVE exploits (ZeroLogon, PrintNightmare, MS17-010) against DCs if credential spray failed. Harvest credentials from owned systems (SAM dumps, cached creds). Begin lateral movement through internal subnets (which the AI blue team has less visibility into than jumpbox-to-target traffic).
+**Phase 2 (T+5 to T+30min): Exploit and Encrypted Persistence.** Use access gained in Phase 1 to deploy encrypted persistence (SSH tunnels, HTTPS C2). Run targeted CVE exploits (ZeroLogon, PrintNightmare, MS17-010) against DCs if credential spray failed. Harvest credentials from owned systems (SAM dumps, cached creds). Begin lateral movement through internal subnets (which the AI blue team has less visibility into than jumpbox-to-target traffic). **Kerberos prerequisite:** Before any Golden Ticket, Silver Ticket, or Kerberoasting operation, verify jumpbox-to-DC clock sync (max 5-minute skew). See EXPLOIT-001's Kerberos Clock Sync Prerequisite section. UTC vs PDT/PST mismatch is a common competition pitfall.
 
 **Phase 3 (T+30min onward): Encrypted Channels Only.** All C2 through SSH tunnels or HTTPS with jittered timing. Persistence verification through existing encrypted channels only. Technique rotation per EVADE-001 guidance. Diversionary operations on Tier 3 targets to consume AI blue team triage capacity.
 
@@ -216,6 +216,41 @@ Priority actions: monitor for remediation and trigger the /rotate workflow when 
 
 The AI blue team will become increasingly effective during this phase as it accumulates log data and refines its detection patterns. Counter by varying your techniques across targets, using legitimate admin tools that blend with normal system activity, and timing your operations to coincide with legitimate system events.
 
+### Phase 4: Armageddon — Designated Destructive Endgame
+
+Competition organizers may signal a designated destructive phase (sometimes called "armageddon," "gloves off," or "last 30 minutes") where the red team is authorized to maximize impact on scored services. This phase is distinct from Phase 3 maintenance — the objective shifts from persistence and stealth to maximum simultaneous disruption of scoring services.
+
+**Pre-staging (begin during Phase 2/3, BEFORE the signal arrives):**
+
+Preparation is everything. When the signal comes, there is no time to plan — only execute. Build and maintain this checklist throughout the operation:
+
+1. **Rank scored services by impact.** Which services earn the most points for blue teams? Target the highest-value services first. Consult INTEL-001's scoring analysis if available.
+2. **Inventory all access paths.** For each owned target, list every active persistence mechanism and credential. You need to know which targets you can still reach when armageddon begins.
+3. **Pre-stage destructive commands per target.** Have these ready to paste/execute immediately:
+
+   **Windows targets:**
+   - Stop scored services: `sc stop <service> && sc config <service> start= disabled` for each scored service
+   - Block all inbound traffic: `netsh advfirewall set allprofiles firewallpolicy blockinbound,blockoutbound`
+   - Disable all AD user accounts (on DC): `Get-ADUser -Filter * | Disable-ADAccount`
+   - Reset krbtgt password twice (breaks all existing Kerberos tickets): `Set-ADAccountPassword -Identity krbtgt -Reset -NewPassword (ConvertTo-SecureString 'Armageddon2026!!' -AsPlainText -Force)` — run TWICE with different passwords
+   - Shut down DNS on DC: `Stop-Service DNS -Force; Set-Service DNS -StartupType Disabled`
+
+   **Linux targets:**
+   - Stop scored services: `systemctl stop <service> && systemctl disable <service>` for each scored service
+   - Block all traffic: `iptables -P INPUT DROP; iptables -P OUTPUT DROP; iptables -P FORWARD DROP`
+   - Kill web services: `systemctl stop apache2 nginx httpd; pkill -9 httpd; pkill -9 nginx`
+   - Corrupt DNS zones: `> /etc/bind/named.conf` or `systemctl stop named && systemctl disable named`
+
+4. **Coordinate with PERSIST-001 and EXPLOIT-001.** Alert them that armageddon pre-staging is active so they prepare destructive payloads alongside their normal persistence/access plans.
+
+**Execution (when the organizer signal arrives):**
+- Execute pre-staged commands in priority order (highest-impact scored services first)
+- Work in parallel across all owned targets — speed matters more than stealth
+- Start with the DC / AD infrastructure (disabling AD accounts and krbtgt rotation has cascading impact across all domain-joined systems)
+- Log all destructive actions to OPERATION-LOG.md for the educational review — this documentation is essential for the post-competition debrief
+
+**Important:** Do NOT execute armageddon actions without the organizer signal. Premature destruction burns access and alerts the blue team. Wait for the explicit signal, then execute the pre-staged plan rapidly.
+
 ## Speed vs. Stealth Tradeoff Framework
 
 Every operation involves a tradeoff between speed (how quickly you achieve your objective) and stealth (how likely you are to be detected). The right balance depends on the competition phase and the target's value.
@@ -225,6 +260,8 @@ During Phase 1, optimize for speed on all targets. Detection is largely irreleva
 During Phase 2, use moderate stealth on Tier 1 targets (you want to keep DC access) and speed on Tier 2/3 targets (breadth still matters). Switch from nmap SYN scans to more targeted service probes. Use Impacket tools over Metasploit where possible as they generate fewer artifacts.
 
 During Phase 3, prioritize stealth on all maintained access. Use living-off-the-land techniques (PowerShell, WMI, built-in Windows admin tools), time operations to coincide with normal system activity, and avoid tools that are easy for automated detection to flag (Mimikatz, Cobalt Strike default profiles, obvious reverse shell patterns).
+
+**Responder/SCF hash capture workflow note:** When recommending Responder-based attacks (LLMNR/NBT-NS poisoning, SCF file drops on writable shares, WPAD attacks), always include the interface verification step: `ip route get <target-IP>` to identify the correct interface, then start Responder on that specific interface (`sudo responder -I <interface> -dwPv`). If the jumpbox reaches competition infrastructure via VPN tunnel (tun0/tap0), Responder must run on the tunnel interface, not eth0.
 
 ## TARGET-STATUS.md Management
 

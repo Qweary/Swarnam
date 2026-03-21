@@ -30,17 +30,34 @@ Read training/TRAINING-LOG.md to determine the next sequential run number. If th
 
 The training coordination files in training/coordination/ must start clean for each run. Reset them to their template state:
 
-Check each file in training/coordination/ against its template. If any file contains data from a previous training run (non-template content), ask the operator whether to reset or preserve. The default is reset — training runs should start from clean coordination state to produce comparable metrics.
+**Path A — Session Resume (check first):**
 
-Reset files to their templates:
-- training/coordination/TARGET-STATUS.md → clean template with headers only
-- training/coordination/RECON-FINDINGS.md → clean template with headers only
-- training/coordination/PERSISTENCE-MANIFEST.md → clean template with headers only
-- training/coordination/BURNED-TECHNIQUES.md → clean template with "No techniques burned yet" entry
-- training/coordination/OPERATION-LOG.md → clean template, session start entry will be added below
-- training/coordination/DECISION-LOG.md → clean template with headers only
-- training/coordination/REFUSAL-LOG.md → clean template with "No refusals logged" entry
-- training/coordination/CREDENTIALS.md → clean template with headers only
+Before resetting anything, check training/TRAINING-LOG.md for an active (unclosed) run. A run is active if it has a `Started:` line but no `Status: CLOSED` line. If found:
+
+1. Present the active run's number, start date, environment, and current state.
+2. Ask: **"Resume Training Run #N or start a new run?"**
+   - **RESUME:** Skip all file resets. Add a SESSION RESUMED entry to training/coordination/OPERATION-LOG.md with the resume time, reason (crash/shutdown/day-change), and a brief state snapshot (owned count, persistence verified/unverified, techniques burned). Re-activate TRAIN-002 with existing run context. Skip to Step 5 (Initialize TRAIN-002).
+   - **NEW RUN:** Increment the run number and proceed with Path B below.
+
+**Path B — New Run (full reset):**
+
+CRITICAL: "reset" means truncating ALL data rows below the header/template structure — not just clearing the header. Every table must have column headers preserved but ALL data rows removed. Every log section must have section headers preserved but ALL log entries removed. Residual IPs, timestamps, or findings from previous runs contaminate metrics and confuse agents.
+
+Reset each file with complete clean template content:
+- training/coordination/TARGET-STATUS.md → column headers only, zero data rows
+- training/coordination/RECON-FINDINGS.md → column headers only, zero data rows
+- training/coordination/PERSISTENCE-MANIFEST.md → column headers only, zero data rows
+- training/coordination/BURNED-TECHNIQUES.md → "No techniques burned yet" entry only
+- training/coordination/OPERATION-LOG.md → column headers only, zero data rows; session start entry added in Step 8
+- training/coordination/DECISION-LOG.md → column headers only, zero data rows
+- training/coordination/REFUSAL-LOG.md → "No refusals logged" entry only
+- training/coordination/CREDENTIALS.md → column headers only, zero data rows
+
+**Post-reset validation (mandatory):** After writing all template files, verify:
+1. No IP addresses from any 10.x.x.x range appear in any data row (stale targets)
+2. No timestamps from previous dates appear in any data row (stale log entries)
+3. Each file contains only template headers/structure and placeholder entries
+If any check fails, re-write the file. Report validation results before proceeding.
 
 ### Step 3: Verify Environment
 

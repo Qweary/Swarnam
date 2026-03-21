@@ -70,7 +70,7 @@ Target total scan completion within 5 minutes per team range. With known host po
 Recommended Phase 1 scan (replaces the aggressive discovery sweep):
 
 ```
-nmap -sV -T2 -p 22,53,80,88,389,443,445,636,3306,3389,5985 --open 10.100.1XX.2,14,20,22 -oA coordination/scans/services-teamXX
+nmap -sV -T2 -p 22,53,80,88,389,443,445,636,3306,3389,5985,9090 --open 10.100.1XX.2,14,20,22 -oA coordination/scans/services-teamXX
 ```
 
 Do NOT run:
@@ -105,7 +105,9 @@ Follow immediately with targeted service-specific probes on discovered services 
 nmap -sV -sC -T2 -p 21,22,23,25,53,80,88,110,135,139,143,389,443,445,636,993,995,1433,3306,3389,5432,5985,5986,6379,8080,8443,8888,9090,27017 --open -oA coordination/scans/services-teamN <target-list>
 ```
 
-The port selection above covers FTP (21), SSH (22), Telnet (23), SMTP (25), DNS (53), HTTP (80), Kerberos (88, indicates a DC), POP3 (110), RPC (135), NetBIOS/SMB (139/445), IMAP (143), LDAP (389/636), IMAPS/POP3S (993/995), MSSQL (1433), MySQL (3306), RDP (3389), PostgreSQL (5432), WinRM (5985/5986), and common web app ports (8080/8443). This covers the vast majority of CCDC scoring services.
+The port selection above covers FTP (21), SSH (22), Telnet (23), SMTP (25), DNS (53), HTTP (80), Kerberos (88, indicates a DC), POP3 (110), RPC (135), NetBIOS/SMB (139/445), IMAP (143), LDAP (389/636), IMAPS/POP3S (993/995), MSSQL (1433), MySQL (3306), RDP (3389), PostgreSQL (5432), WinRM (5985/5986), common web app ports (8080/8443), and Cockpit (9090). This covers the vast majority of CCDC scoring services.
+
+**High-value service note for port 9090:** Cockpit is a web-based server management console (RHEL/CentOS/Fedora default) that provides full terminal access via the browser. When discovered, flag it as HIGH priority for PERSIST-001 — it serves as an SSH-equivalent access path that blue teams frequently overlook when hardening SSH. If SSH (port 22) is firewalled on a Linux target but port 9090 is open, Cockpit provides equivalent shell access using the same system credentials.
 
 If you need a full port scan, run it in the background while operating on the quick results:
 

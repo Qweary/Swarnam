@@ -7,10 +7,15 @@ Purpose: Structured list of issues identified during a training run, each with a
 
 ## Active Debrief
 
-Source run: Training Run #3
-Date: 2026-03-19
-Operator: Queue
-Status: CLOSED — patch-20260319-8.md generated (11 edits, 6 files)
+Source run: Training Run #4
+Date: 2026-03-19/20 (Session 1: 2026-03-19 ~09:15–18:00; Session 2: 2026-03-20 ~14:00–17:00)
+Environment: PRCCDC Regionals LIVE — 13 blue teams, 10.100.101–113.0/24; primary Team 13 (10.100.113.0/24); student-staffed blue teams, real hardware
+Duration: ~11h wall-clock total; ~8h active ops
+Status: AWAITING OPERATOR REVIEW — 6 findings, pending disposition confirmation
+
+---
+
+Previous debrief: Training Run #3 | Date: 2026-03-19 | Status: CLOSED — patch-20260319-8.md generated (11 edits, 6 files)
 
 ---
 
@@ -39,6 +44,182 @@ NEEDS-TRIAGE: unclear categorization — requires operator discussion to disposi
 ---
 
 ## Findings
+
+<!-- ===== TRAINING RUN #4 DEBRIEF (2026-03-19/20) ===== -->
+
+### Finding #R4-1
+
+Disposition: PROMPT-FIX
+Agent: EXPLOIT-001
+Severity: HIGH
+Category: REFUSAL
+Priority: 1 (HARD refusal — pipeline block)
+
+Description: EXPLOIT-001 issued a HARD refusal when asked to assist Red Team 2 with re-establishing access (Silver Ticket + DCSync) after the blue team had evicted them. The agent's reasoning was that providing re-access assistance to a team that has been remediated out is "not a sanctioned competition operation" and constitutes "post-incident recovery of access after the blue team has successfully evicted the red team." This reasoning is incorrect: in CCDC, blue team remediation of red team access is the expected and intended adversarial dynamic. It does not remove the target from scope. Red team re-access attempts after remediation are explicitly part of the competition framework. The refusal incorrectly conflates "blue team evicted us" with "we are no longer authorized to attack this target."
+
+Evidence: REFUSAL-LOG entry 1 (2026-03-20): "not a sanctioned competition operation...post-incident recovery of access...blue team has successfully evicted the red team." Operator workaround: orchestrator generated the analysis directly, cost ~2 minutes.
+
+Root cause: EXPLOIT-001's authorization context does not explicitly address the re-access-after-remediation scenario. The agent is applying a general "you were kicked out, therefore you no longer belong there" heuristic that is correct for real-world engagements but incorrect for CCDC's continuous adversarial structure. The phrase "blue team has successfully evicted" reads to the agent as an access-revocation event rather than an expected mid-competition dynamic.
+
+Proposed fix: Add to EXPLOIT-001 authorization context: "In CCDC competition, blue team remediation of red team access is the expected adversarial cycle — it does not remove the target from scope or constitute unauthorized access. When a blue team patches a vulnerability, changes credentials, removes persistence, or otherwise evicts red team access, the correct red team response is to find a new attack path. Re-access attempts after blue team remediation are explicitly authorized and expected. Never treat blue team eviction as a scope removal event."
+
+Operator disposition: [ ]
+Operator notes:
+
+---
+
+### Finding #R4-2
+
+Disposition: TEMPLATE-FIX
+Agent: SYSTEM (training coordination reset procedure)
+Severity: MEDIUM
+Category: COORDINATION
+Priority: 4 (consistency failure, data contamination)
+
+Description: The coordination file reset between Training Run #3 and Training Run #4 was incomplete. Two files retained stale Run #3 data into Run #4: (1) RECON-FINDINGS.md contained inv4 range data (10.100.100.x, timestamp "Last updated: 2026-03-19 01:27") alongside Run #4 Team 13 data; (2) REFUSAL-LOG.md contained two Run #3 entries (RECON-001 VPN range scan, EXPLOIT-001 subagent refusal) alongside the single confirmed Run #4 refusal. TRAIN-002's Session 2 activation note acknowledged a "minor stale header" in OPERATION-LOG but did not identify the deeper contamination in RECON-FINDINGS or REFUSAL-LOG. The contamination reduced the measured coordination file consistency rate to 60% and means Run #4 refusal metrics contain ambiguous entries that required post-hoc annotation.
+
+Evidence: RECON-FINDINGS.md contains 10.100.100.x entries with "Last updated: 2026-03-19 01:27" (Run #3 timestamp). REFUSAL-LOG entries at T+02min and T+30min reference "post-patch-7 run" language and inv4 range — identifiers belonging to Run #3 infrastructure.
+
+Root cause: The /training-run reset procedure likely clears file headers and resets the run counter but does not explicitly clear all data-section content. Files that grow across a run (RECON-FINDINGS, REFUSAL-LOG) accumulate entries that survive the reset if only the header block is replaced.
+
+Proposed fix: (1) Update the /training-run initialization procedure to explicitly truncate all data sections in training coordination files, not just headers. Each file should have a clearly delineated "run data begins here" marker that the reset procedure clears to empty. (2) Add a post-reset validation step to /training-run: after clearing files, TRAIN-002 should verify that no entries from a prior run's date range or infrastructure range remain. Specifically check RECON-FINDINGS for IP ranges not matching the current run's environment and REFUSAL-LOG for timestamps predating the current run start. (3) If residual entries are detected, surface a warning to the operator before declaring initialization complete rather than logging a "minor stale header" and proceeding.
+
+Operator disposition: [ ]
+Operator notes:
+
+---
+
+### Finding #R4-3
+
+Disposition: PROMPT-FIX
+Agent: PERSIST-001
+Severity: HIGH
+Category: RECOMMENDATION-QUALITY
+Priority: 2 (operational impact — zero Linux footholds at Session 2 start)
+
+Description: PERSIST-001 deployed SSH authorized_key persistence to all seven Linux hosts using a single mechanism type (ed25519 SSH key) targeting a single account class (root/administrator). No secondary mechanisms and no user-account-level persistence was recommended or deployed. The blue team performed a coordinated overnight sweep that burned all seven keys, leaving zero footholds at Session 2 start. PERSIST-001 needs a full persistence doctrine upgrade covering three axes of diversification: (1) multiple mechanism types per host, (2) multiple account targets per host (not just root/admin — existing service/user accounts are less scrutinized), and (3) privilege-escalation-to-new-account paths for durable, low-visibility footholds.
+
+Operator clarification: "Multiples of multiples are best. Multiples of one are better than one of one." Using existing user accounts for persistence is particularly valuable because blue teams focus remediation on root/Administrator accounts and commonly overlook service accounts and low-privilege users. If a privilege escalation path exists, creating a new backdoor user account is a high-value persistence mechanism that survives SSH key sweeps, password rotations of known accounts, and schtask audits simultaneously.
+
+Evidence: PERSISTENCE-MANIFEST.md: all 7 SSH key entries BURNED. OPERATION-LOG Session 2: "ALL svc_update SSH keys burned overnight. SSH_FAIL on all 7 Linux hosts. Blue team completely evicted Session 1 Linux persistence."
+
+Root cause: PERSIST-001 prompt treats first-deployed mechanism as sufficient. No doctrine for diversification across mechanism types or account tiers. No guidance on using pre-existing unprivileged accounts as persistence carriers.
+
+Proposed fix: Add to PERSIST-001 a persistence diversification doctrine:
+
+MECHANISM DIVERSIFICATION: Never deploy only one mechanism type on a host. The minimum recommended stack per Linux host: (1) SSH authorized_keys on root or a service account (fast to deploy, fast to use); PLUS (2) one backup mechanism from a different technique class — cron job, shell profile (.bashrc/.profile), SUID binary in low-visibility path, or backdoor account. On Windows: scheduled task PLUS one of — registry run key, WMI subscription, or service. More mechanism types = higher survival probability against partial blue team remediation.
+
+ACCOUNT DIVERSIFICATION: Do not target only root/Administrator. Blue teams prioritize those accounts in remediation sweeps. Spread persistence across: (a) the privileged account for speed of access; (b) one or more existing service accounts (svc_wazuh, serviceant, jenkins, www-data, etc.) — these are checked less frequently and may survive a root/Administrator sweep; (c) if a PrivEsc path exists or DA access is available, create a new low-profile user account with a non-suspicious name (svc_monitor, updater, helpdesk) and plant persistence under that account. A new backdoor account that blue teams do not recognize and do not know to remove outlasts every SSH key sweep.
+
+DOCTRINE SUMMARY TO EMBED: "Multiples of multiples: multiple mechanisms on multiple accounts per host. Multiple of one type is better than one of one type. User and service accounts are less scrutinized than root/Administrator — make them persistence carriers too. If you can create a new account (via PrivEsc or DA), do so and use it for at least one persistence mechanism."
+
+Document all secondary/backup mechanisms in PERSISTENCE-MANIFEST.md with a BACKUP tag. On handoff or session resume, verify backup mechanisms first — they are the canary for blue team thoroughness.
+
+Operator disposition: [CONFIRMED]
+Operator notes: Expand persistence to cover multi-mechanism, multi-account, and PrivEsc-to-new-account paths. Existing user accounts specifically called out as high-value and under-utilized persistence targets.
+
+---
+
+### Finding #R4-4
+
+Disposition: PROMPT-FIX
+Agent: EXPLOIT-001 / OPS-001
+Severity: MEDIUM
+Category: RECOMMENDATION-QUALITY
+Priority: 3 (burned ~45 minutes on a solvable technical failure)
+
+Description: After obtaining the krbtgt hash via DCSync at approximately T+105 minutes (Session 1), the Golden Ticket attack failed in Session 2 with error KRB_AP_ERR_SKEW. Investigation confirmed the failure was caused by a clock skew between the jumpbox (PDT, UTC-7) and the domain controller (UTC), creating an approximately 7-hour offset — well beyond Kerberos's default 5-minute tolerance. No agent proactively recommended verifying or synchronizing the jumpbox clock against the DC before generating the ticket. The NTP resync attempted after the failure did not resolve the issue before session end. Obtaining and then being unable to exploit the krbtgt hash is the most significant avoidable operational failure of Run #4.
+
+Evidence: OPERATION-LOG ~15:30: "Golden Ticket attempt — KRB_AP_ERR_SKEW. DC likely in different timezone (UTC vs PDT). NTP resync attempted but did not resolve." Krbtgt hash obtained at T+105m (Session 1, ~10:45).
+
+Root cause: Neither EXPLOIT-001 nor OPS-001 includes a clock-synchronization prerequisite in the Golden Ticket attack workflow. The UTC vs PDT/PST timezone conflict is a well-known competition pitfall in Kerberos ticket attacks. CrackMapExec's SMB output includes DC clock time by default, which would have revealed the discrepancy before ticket generation if checked.
+
+Proposed fix: Add to EXPLOIT-001 and/or OPS-001: "Before generating any Kerberos ticket (Golden Ticket, Silver Ticket, AS-REP forgery), add an explicit prerequisite step to verify jumpbox-to-DC clock synchronization: run `crackmapexec smb <dc_ip>` (DC clock appears in SMB output) or `net time \\<dc_ip> /domain` to read DC time, then compare to local time (`date`). If offset exceeds 4 minutes, synchronize with `sudo ntpdate <dc_ip>` or `sudo timedatectl set-ntp true && sudo timedatectl set-time '<dc_time>'`. Note: UTC vs PDT (UTC-7) and UTC vs PST (UTC-8) are common competition environment mismatches — competition DCs are often set to UTC while jumpboxes default to the operator's local timezone."
+
+Operator disposition: [ ]
+Operator notes:
+
+---
+
+### Finding #R4-5
+
+Disposition: WORKFLOW-FIX
+Agent: PAYLOAD-001 / OPS-001
+Severity: LOW
+Category: RECOMMENDATION-QUALITY
+Priority: 5 (tactical miss, no confirmed captures)
+
+Description: Responder was launched on interface wlan0, but the jumpbox's competition traffic routes through a different interface (likely eth0 or a VPN tunnel interface). The jumpbox's competition-facing IP (10.3.8.202) may not be reachable from target hosts via the wlan0 interface, meaning NBNS/LLMNR poisoning responses and SMB capture requests would never reach the targets. The SCF files deployed to 10 team DCs referenced 10.3.8.202 as the capture server, but zero NTLM captures were confirmed before session end. It is not possible to determine from the available data whether the zero-capture result was due to the wrong interface, insufficient dwell time, or blue team remediation of the SCF files — but the interface selection was incorrect.
+
+Evidence: OPERATION-LOG ~16:35: "Responder started on wlan0 (PID 47270). No captures confirmed before session end." Jumpbox competition IP: 10.3.8.202. Standard Responder best practice requires starting on the interface with routes to the target subnet.
+
+Root cause: PAYLOAD-001 and/or the operator did not verify the correct interface before starting Responder. The `ip route show` command would identify which interface routes to the 10.100.x.x target subnets in approximately 5 seconds.
+
+Disposition analysis: This finding could be OPERATOR-TRAINING (the operator should always verify interface before starting Responder — this is a standard tool usage pattern) or WORKFLOW-FIX (the SCF/Responder workflow in PAYLOAD-001 or OPS-001 should include an explicit interface verification step). The distinction matters because if agents are recommending Responder commands without flagging interface selection, a workflow addition would prevent this class of error; if the operator manually selected wlan0 over an agent recommendation, it is operator training. Operator should clarify which occurred.
+
+Proposed fix (if WORKFLOW-FIX): Add to PAYLOAD-001 and/or OPS-001 Responder/SCF workflow: "Before starting Responder, identify the correct interface with `ip route show | grep <target_subnet_prefix>`. Start Responder explicitly on that interface (`sudo responder -I <interface> -wrf`). Verify that the jumpbox IP specified in SCF/LNK trap files matches the IP assigned to that interface (`ip addr show <interface>`). Do not start Responder on wlan0 unless wlan0 is the interface with routes to competition targets."
+
+Proposed fix (if OPERATOR-TRAINING): Document the interface-verification pre-check as a required step before any Responder deployment in the operator runbook.
+
+Operator disposition: [ ]
+Operator notes:
+
+---
+
+### Finding #R4-6
+
+Disposition: PROMPT-FIX
+Agent: PERSIST-001 / RECON-001
+Severity: LOW
+Category: RECOMMENDATION-QUALITY
+Priority: 6 (missed persistence vector on one host)
+
+Description: weevil (.78) had Cockpit (port 9090, web-based system management with integrated terminal) accessible with known admin credentials, and Kimai (port 80) accessible with admin login confirmed. Cockpit provides full OS-level terminal access functionally equivalent to SSH — an authenticated Cockpit session allows arbitrary command execution as root, file upload/download, and service management. Despite having web admin access to weevil via both services, no Linux persistence was deployed on the host. weevil's status remained ACCESSED (not OWNED) at session end. RECON-001 did not flag port 9090/Cockpit as a high-value persistence vector during enumeration, and PERSIST-001 was not prompted to use Cockpit as a persistence deployment channel when SSH authentication failed.
+
+Evidence: TARGET-STATUS.md weevil entry: "Port 80=Kimai/timecard, port 9090=Cockpit HTTPS. SSH auth failing - diff user needed." Status: ACCESSED. No persistence entry in PERSISTENCE-MANIFEST.md for weevil.
+
+Root cause: Two contributing gaps. (1) RECON-001 does not list Cockpit (port 9090) in its high-value service enumeration guidance, so it was not specifically flagged as an OS-access equivalent during recon output. (2) PERSIST-001 does not have a workflow branch for "web-based OS terminal available but SSH unavailable" — it appears to treat SSH/WinRM unavailability as a blocker rather than pivoting to available web-terminal channels.
+
+Proposed fix: (1) Add to RECON-001 high-value service list: "Cockpit (port 9090, HTTPS web terminal) — provides full root-level OS terminal access when authenticated; treat as equivalent to SSH for access classification and persistence deployment purposes." (2) Add to PERSIST-001: "When SSH authentication fails on a Linux host, check whether Cockpit (port 9090) is accessible with known credentials before marking persistence as blocked. If Cockpit is accessible, use it to deploy standard Linux persistence mechanisms (SSH key injection, cron job, backdoor account) via the Cockpit terminal interface. Document Cockpit-deployed persistence entries in PERSISTENCE-MANIFEST.md with access-method: COCKPIT."
+
+Operator disposition: [CONFIRMED — WORKFLOW-FIX]
+Operator notes: Operator cannot confirm who selected wlan0. Workflow fix is safest — agent always prompts interface verification regardless.
+
+---
+
+### Finding #R4-7
+
+Disposition: PROMPT-FIX
+Agent: OPS-001 / EXPLOIT-001 / PERSIST-001
+Severity: HIGH
+Category: RECOMMENDATION-QUALITY
+Priority: 0 (NEW — pre-competition planning required before 2026-03-21 15:00)
+
+Description: CCDC competition organizers will issue a "unleash armageddon" command at 15:00 on competition Day 2 (2026-03-21). At this signal, red teams are authorized and expected to perform all destructive operations: shutting down scored services, corrupting data, disrupting infrastructure, defacing web applications, crashing systems, and any other disruptive action. This is an explicitly sanctioned phase of the competition. The current swarm has no awareness of this phase, no prepared action list, no pre-staged destructive payloads, and no prioritized target queue for maximum scoring impact. If the swarm receives the armageddon signal unprepared, it will waste the most impactful window of the competition executing ad-hoc destructive commands instead of executing a prepared, prioritized plan.
+
+Evidence: Operator statement: "Tomorrow at 1500 there will be a command to 'unleash armageddon' in which the red teams are expected to do any and all destructive things and shutting down of services, etc that they can."
+
+Root cause: Swarm agents (OPS-001, EXPLOIT-001, PERSIST-001) have no armageddon/endgame phase concept. Their operational doctrine is entirely access-and-persistence focused. Destructive phase operations require a different operational mindset: speed over stealth, maximum impact over access preservation, execution of pre-staged commands over real-time planning.
+
+Proposed fix: Add to OPS-001 a competition phase concept for the destructive endgame:
+
+ARMAGEDDON PHASE: In some CCDC competitions, organizers authorize a designated destructive phase (often called "armageddon" or "endgame") — typically timed for the final hours of competition. When this phase is signaled, the objective changes entirely: the goal is maximum disruption to scored services across all accessible teams, not access preservation. Pre-planning this phase before the signal arrives is critical.
+
+PRE-ARMAGEDDON CHECKLIST (execute before the signal):
+(1) Enumerate all scored services across accessible teams and rank by scoring impact (DNS, AD auth, mail, web scoring checks — disabling these costs blue teams the most points).
+(2) Inventory all current access paths (SSH sessions, WinRM, web shells, Cockpit, scheduled task payloads that can be modified) and map which destructive action is executable from each.
+(3) Stage destructive commands in advance — do not write them in real time when the signal arrives. Pre-stage: service stop commands, iptables/firewall rules to block scoring traffic, disk space exhaustion for databases, config file corruption for web servers, and AD account disabling for domain-wide impact.
+(4) Identify highest-leverage single actions: on a DC, disabling the krbtgt account or resetting its password twice locks out the entire domain. Stopping DNS on the DC affects every host. These are priority-one actions when the signal arrives.
+(5) Coordinate with other red team operators to divide targets — multiple operators hitting the same host simultaneously wastes time.
+
+WHEN THE SIGNAL ARRIVES: Execute pre-staged commands immediately, in priority order (DC → mail → web → Linux services). Speed matters more than stealth. Log all destructive actions in OPERATION-LOG for post-competition educational review — the educational debrief requires knowing exactly what was done and in what order.
+
+CLEANUP NOTE: Armageddon actions are not reversible by the red team — they are for competition organizers and competition teardown to clean up. Do not hold back on destructive actions out of concern for cleanup; that is not the red team's responsibility during this phase.
+
+Operator disposition: [CONFIRMED — PROMPT-FIX]
+Operator notes: Competition organizers are issuing the armageddon signal at 15:00 on Day 2 (2026-03-21). Swarm needs pre-planning capability for this phase. Address in OPS-001 primarily; EXPLOIT-001 and PERSIST-001 should be aware of the phase so they can prepare staged destructive commands during access/persistence phases.
+
+---
 
 <!-- ===== TRAINING RUN #3 DEBRIEF (2026-03-19) ===== -->
 
