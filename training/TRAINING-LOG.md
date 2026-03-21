@@ -117,6 +117,16 @@ Notable: First live-competition run. First Persist Survival data point under act
 
 Status: CLOSED
 
+### Patch Applied: 2026-03-20
+
+Patch file: training/patches/patch-20260320-9.md
+Source run: Training Run #4
+Edits applied: 14
+Edits skipped: 0
+Edits modified: 1 (Edit 2 — operator added session resume path to /training-run)
+Files changed: .claude/agents/initial-access.md, .claude/agents/payload-engineer.md, .claude/agents/persistence-engineer.md, .claude/agents/recon-specialist.md, .claude/agents/tactical-coordinator.md, .claude/commands/training-run.md
+Commit: 308b172
+
 ---
 
 ## Debrief: 2026-03-16 (2026-inv6)
