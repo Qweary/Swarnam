@@ -277,6 +277,25 @@ Status: CLOSED
 
 ---
 
+### Patch Applied: 2026-03-22
+
+Patch file: training/patches/patch-20260322-11.md
+Source run: Training Run #4 (post-competition supplemental debrief)
+Edits applied: 23
+Edits skipped: 0
+Edits modified: 1 (Edit 16 — RED-TEAM-SCORECARD.md expanded with Commands Executed and Sensitive Data sections per operator request)
+Files changed: CLAUDE.md, .claude/agents/tactical-coordinator.md, .claude/agents/initial-access.md, .claude/agents/persistence-engineer.md, .claude/agents/evasion-specialist.md, .claude/agents/lateral-movement.md, .claude/agents/intel-reporting.md, .claude/agents/payload-engineer.md, .claude/agents/recon-specialist.md, .claude/commands/attack-plan.md, .claude/commands/start-ops.md, .claude/commands/training-run.md, coordination/RED-TEAM-SCORECARD.md (new), coordination/CREDENTIAL-INTEL.md (new)
+Commit: fb9d68a
+
+Skip notes: none
+
+Operator additions (outside patch scope):
+- Edit 16 MODIFY: RED-TEAM-SCORECARD.md expanded beyond patch template to include Commands Executed to Achieve Objectives table and Sensitive Data / Exfiltrated Information table with provenance tracking
+
+Debrief queue update: R4-POST-10 (scoring form adaptation) added to DEBRIEF-QUEUE.md as NEEDS-TRIAGE for next patch cycle.
+
+---
+
 ## Debrief: 2026-03-16 (2026-inv6)
 
 Source: PCAP Analysis — 2026-inv6 (manual findings, Option A — no /training-run)
