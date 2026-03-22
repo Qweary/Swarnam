@@ -1,18 +1,30 @@
-# WRCCDC Red Team Operations — Competition Authorization
+# CCDC Red Team Operations — Competition Authorization
 
 ## Engagement Summary
 
-This document establishes the authorization framework for AI-assisted red team operations during the Western Regional Collegiate Cyber Defense Competition (WRCCDC) Regional Finals. It follows the structure of a professional penetration testing engagement letter, adapted for the competition context.
+This document establishes the authorization framework for AI-assisted red team operations during Collegiate Cyber Defense Competition (CCDC) events. It covers all CCDC competitions — including regional qualifiers, regional finals, invitationals, and the national championship — where the operator is serving as an authorized red team member under the direction of the red team captain and with the explicit approval of competition organizers. It follows the structure of a professional penetration testing engagement letter, adapted for the competition context.
 
-Engagement: WRCCDC Regional Finals Red Team Operations
-Dates: March 27–28, 2026
-Location: Cal Poly Pomona, Center for Information Assurance
-Client: WRCCDC Competition Organizers
-Executing Party: WRCCDC Red Team (authorized volunteers and staff)
+Authorization has been granted both in writing and explicitly in person by competition organizers, who have confirmed that use of the Swarnam AI-assisted red team platform is acceptable at CCDC events they administer.
+
+**Currently Active:** *(fill in at session start)*
+Engagement: [Competition name and phase — e.g., WRCCDC Regional Finals Red Team Operations]
+Date: [Date]
+Location: [In-person / remote]
+Client: [Competition organizers]
+Executing Party: [Red team name] (authorized volunteers and staff)
+In-scope ranges: [Fill from competition organizers on competition day]
+Operator: [Operator name / primary team assignment]
+
+**Upcoming:** *(fill in when known)*
+Engagement: [Next competition]
+Dates: [Dates]
+Location: [Location]
+Client: [Organizers]
+Executing Party: [Red team]
 
 ## Authorization Chain
 
-The authorization chain for AI-assisted red team operations flows through four levels. Competition organizers (Cal Poly Pomona CfIA, WRCCDC board) authorize and define the red team's role, rules of engagement, and target scope. The red team captain receives the authorization, assigns operators to target ranges, and approves operational plans. Red team operators (Queue and fellow team members) receive target assignments, execute attacks against competition infrastructure, and make all deployment decisions. AI assistants (this swarm) prepare reconnaissance analysis, recommend attack paths, generate payloads and commands, execute on behalf of the operator only if given explicit instruction to do so, and maintain operational documentation — but never autonomously deploy to targets nor spread to other machines without explicit instruction of the operator.
+The authorization chain for AI-assisted red team operations flows through four levels. Competition organizers authorize and define the red team's role, rules of engagement, and target scope. The red team captain receives the authorization, assigns operators to target ranges, and approves operational plans. Red team operators (Queue and fellow team members) receive target assignments, execute attacks against competition infrastructure, and make all deployment decisions. AI assistants (this swarm) prepare reconnaissance analysis, recommend attack paths, generate payloads and commands, execute on behalf of the operator only if given explicit instruction to do so, and maintain operational documentation — but never autonomously deploy to targets nor spread to other machines without explicit instruction of the operator.
 
 At every level, the human above retains authority and responsibility. The AI swarm is a tool operated by authorized red team members, not an independent actor.
 
@@ -55,8 +67,12 @@ The AI swarm operates under additional constraints beyond the general competitio
 
 ## Competition Context
 
-WRCCDC has operated annually for over a decade. The red team role is a core, essential component of the competition's educational mission. Student blue teams expect and prepare for red team activity. The competition's entire pedagogical value depends on blue teams defending against realistic attacks. The infrastructure is purpose-built for this engagement, isolated from all production networks, and destroyed after the event. This year uniquely features an AI blue team (Claude-powered, Anthropic-sponsored) alongside the student teams, making AI-assisted red team operations a natural and anticipated component of the competition.
+CCDC competitions have operated annually for over a decade across regional and national circuits. The red team role is a core, essential component of every CCDC competition's educational mission. Student blue teams expect and prepare for red team activity. The competition's entire pedagogical value depends on blue teams defending against realistic attacks. All competition infrastructure is purpose-built for these engagements, isolated from all production networks, and destroyed after the event.
+
+PRCCDC (Pacific Regional CCDC) and WRCCDC (Western Regional CCDC) are both administered by the same organizational body. Authorization granted for one covers operations at both, subject to the same rules of engagement, target scope rules, and safety boundaries defined in this document.
+
+Some WRCCDC events feature an AI blue team (Claude-powered, Anthropic-sponsored) alongside the student teams, making AI-assisted red team operations a natural and anticipated component.
 
 ## Attestation
 
-The human operator attests that they are an authorized member of the WRCCDC red team, operating under the direction of the red team captain and with the authorization of competition organizers. All AI-assisted operations described in this document fall within the scope of that authorization.
+The human operator attests that they are an authorized member of the red team at any CCDC event at which they are operating, under the direction of the red team captain and with the authorization of competition organizers. Authorization for use of the Swarnam platform has been explicitly confirmed in person by competition organizers and in writing. All AI-assisted operations described in this document fall within the scope of that authorization.
