@@ -1,0 +1,76 @@
+=== PASS 3: BLUE TEAM RESPONSE DETECTION ===
+
+KEY FINDING: HTTP firewall at T+88 seconds confirmed for team 102 only; broader deployment by T+10-22min.
+
+FIREWALL DEPLOYMENT TIMELINE:
+1. Team 102 (.86 mail server port 80) — FASTEST response:
+   - Competition start: 09:24:56 EST
+   - Last SYN-ACK from 10.100.102.86:80 to red team scan: 09:26:12 EST
+   - First RST from 10.100.102.86:80: 09:26:24 EST (to scoring engine)
+   - T+88 seconds = team 102 had HTTP firewall up
+   - Note: .63 and .175 hosts also showing RSTs by 09:26:33 for some teams (103, 105)
+
+2. RST/SYN-ACK ratio progression (port 80 firewall spread):
+   09:25:22 (T+26s):  21% RST ratio (normal baseline, 2-3 teams firewalled)
+   09:35 (T+10min):   76% RST ratio (majority of teams deployed firewalls)
+   09:47 (T+22min):   83% RST ratio (nearly all teams firewalled on port 80)
+   11:20 (T+115min):  99% of port 80 blocked from external scanning
+
+3. Firewall scope — teams deploying HTTP firewall:
+   - At T+88s: team 102 confirmed, teams 103 and 105 close behind (within 1-2 minutes)
+   - By T+10min: ~76% of 25 teams
+   - By T+22min: ~83% of 25 teams
+   - By T+115min: ~99% of 25 teams
+   - 1-2 teams still had port 80 open at T+155min (possibly left open deliberately for scoring)
+
+WHAT REMAINS ACCESSIBLE (late competition):
+- Port 443 (.2 hosts): remained accessible throughout (gateway management)
+- SSH port 22 (.60, .100, .103 hosts): remained accessible (scoring and red team)
+- Port 80 on .63, .86, .103, .175: blocked by ~T+22min for most teams
+- RDP (3389 on .17, .63): accessible for targeted teams (103, 117) throughout
+- SMB port 445 (.98): accessible to scoring engines throughout competition
+- SMTP port 25 (.86): accessible for mail scoring throughout
+
+BLUE TEAM TECHNIQUES OBSERVED:
+1. Rapid HTTP firewall deployment (network-level blocking, not service restart)
+   - RST pattern: sudden transition from SYN-ACK to RST on port 80
+   - No service downtime gap — firewall deployed in front of running services
+   - Scoring engines maintained access (firewall allowed scoring source IPs)
+
+2. WinRM blocked at .2 hosts by default (RST on 5985 when probed at T+35min)
+
+3. No password changes detected in sampled files (no NTLM auth pattern changes)
+
+4. No service restarts detected — services stay up behind firewalls
+
+BLUE TEAM RESPONSE TIMING vs OTHER YEARS:
+| Year   | Fastest firewall | Broad coverage  |
+|--------|-----------------|-----------------|
+| quals  | T+17 min        | T+30-45 min     |
+| inv5   | T+88 seconds    | T+10-22 min     |
+| inv4   | T+13-21 min     | ~T+30 min       |
+| inv3   | T+18 min        | ~T+30 min       |
+| inv6   | T+14 seconds    | ~T+15 min       |
+
+INFERENCE: inv5 teams were the fastest historically (before inv6). T+88s represents experienced teams
+or pre-prepared firewall scripts. The inv6 T+14s response is even faster, suggesting AI-assisted
+blue teams or automated firewall playbooks becoming standard by early 2026.
+
+CRITICAL IMPLICATION FOR RED TEAM:
+- HTTP-based attacks (web scanning, Roundcube spray) are viable for <90 seconds
+- After T+88s-T+22min, most HTTP attack surface is behind firewalls
+- The gRPC C2 (port 80, outbound from team hosts) was NOT blocked by blue team firewalls
+  because it is OUTBOUND from team hosts — internal firewall rules protect inbound, not outbound
+- C2 remained active 4.5 hours despite HTTP firewalls (C2 beaconing is outbound traffic)
+
+SCORING ENGINE BEHAVIOR (for distinguishing from red team):
+- IP range: 10.194.x.x, 10.199.x.x, 10.208.x.x, 10.210.x.x, 10.218.x.x, 10.233.x.x,
+            10.236.x.x, 10.242.x.x, 10.248.x.x, 10.249.x.x, 10.253.x.x, 10.255.x.x
+- Port 80/HTTP: targets .63, .86, .103, .175 hosts (GET / only)
+- Port 22/SSH: targets .60, .100, .103 hosts (and .17 in some checks)
+- Port 25/SMTP: targets .86 hosts (MAIL FROM:<ceo@udderstrength.gym> and <wp-admin@udderstrength.gym>)
+- Port 445/SMB: targets .98 hosts (NTLM auth with moomoo/ceo)
+- Port 443/HTTPS: targets .2 (gateway) and other hosts
+- DNS queries use hostnames: milkfarm/Work1/moomail/ECommerce.udderstrength.gym
+- SMTP scoring recipient: ajohnson@udderstrength.gym (must be a valid mailbox)
+- SMTP scoring senders: ceo@, wp-admin@, pyoung@, gwilliams@, rking@, dlee@

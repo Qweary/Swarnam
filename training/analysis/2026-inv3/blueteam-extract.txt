@@ -1,0 +1,47 @@
+# 2026-inv3 Pass 3: Blue Team Response Detection
+# Competition Date: 2025-11-15
+
+## Timeline of Red Team Actions
+- T+0s   (11:59:28): 10.234.234.234 begins SMB/LDAP operations on .35 hosts
+- T+1s   (11:59:29): 10.198.227.157 begins WinRM/HTTP/FTP scans
+- T+9s   (11:59:37): cortex.mindmend.ai C2 beaconing from ALL 32 .35 hosts
+- T+9s   (11:59:37): WinRM (5985) connections from C2 servers to .97 hosts
+- T+63s  (12:00:31): 10.234.234.234 first NTLM auth spray (CORTEX$ then Administrator)
+- T+3.5m (12:02:58): 10.197.224.186 begins SSH/FTP/service scanning
+- T+10m  (12:09:23): 10.192.70.196 begins masscan full port sweep
+
+## Blue Team Response Evidence
+
+### Team 1 (10.100.100.x) - Firewall/Block Analysis
+- First RST to red team: 12:17:50 (10.100.100.2 RST to 10.234.234.234) = T+18min
+- RST source: .2 host (Linux SSH host) blocking SMB/WinRM attempts
+- Red team still attempting WinRM to .2 at 12:17:50 and 12:18:11
+
+### Firewall Deployment Timing
+- Team 1 firewall: ~T+18min (earliest observed RST response)
+- No evidence of earlier firewall deployment in any team
+- At T+24min: 10.198.227.157 reduced activity, 10.234.234.234 reduced activity
+- At T+30min: masscan (10.192.70.196) and 10.234.234.234 still active against team 1
+
+### C2 Persistence vs Blue Team Response
+- cortex.mindmend.ai beaconing from .35 hosts: NEVER stopped during competition
+- At T+2h: All 32 teams still beaconing cortex.mindmend.ai
+- At T+3.5h: All 32 teams still beaconing cortex.mindmend.ai
+- Conclusion: NO team successfully identified or removed the CORTEX$ C2 implant
+
+### Response Timing Distribution (observed)
+- Median firewall deployment: ~T+18min (Team 1 data point)
+- No evidence of sub-15min response from any team
+- No teams removed C2 within 5.5 hours
+
+## Blue Team Artifacts
+- Scoring engine RSTs: Very rare - services stayed mostly available throughout
+- No evidence of password changes blocking CORTEX$ auth
+- FTP service .111: Accessible throughout competition (no blocks observed)
+
+## Key Observations for EVADE-001
+1. CORTEX$ machine account C2 went UNDETECTED for entire 5h competition
+2. Masscan (10.192.70.196) ran continuously for 5.5h without being blocked
+3. Blue team response (first firewall) was ~18min - slower than inv6 (T+14s) and inv5 (T+88s)
+4. Red teams did NOT rely on noisy tools like PSExec (no PSEXESVC observed)
+5. Impacket SMB/SAMR is the primary attack tool - generates modest traffic volume

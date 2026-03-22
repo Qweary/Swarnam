@@ -1,0 +1,63 @@
+# 2026-inv3 Pass 2: Red Team Traffic Identification
+# Competition Date: 2025-11-15
+
+## Red Team Infrastructure
+C2 Domain: cortex.mindmend.ai (resolves to 192.168.1.35 - dead IP used as signal)
+C2 DNS Server Pool: 10.225.167.52, 10.211.217.60, 10.226.135.167, 10.234.205.145,
+                    10.236.11.177, 10.238.254.39, 10.241.61.216, 10.248.145.73,
+                    10.249.104.3, 10.254.132.85, 10.230.1.11
+
+## Pre-Deployed Persistence (Machine Account)
+Mechanism: CORTEX$ machine account in mindmend.ai domain, pre-installed on all .35 hosts
+Detection: DNS query "cortex.mindmend.ai" from .35 hosts at T+9 seconds (T=0 is 11:59:28 EST)
+C2 beaconing period: 2 minute interval observed (11:59:37, 12:00:30, 12:00:59)
+Coverage: ALL 32 teams (10.100.101-132.35) beaconing simultaneously from T+9 seconds
+Status at T+2h: Still beaconing from ALL 32 teams (no teams removed C2 during competition)
+
+## Red Team Tool Identification
+
+### 10.234.234.234 (Impacket SMB/LDAP Operator)
+- First seen: T+0 (11:59:28 EST) - active from very first packet
+- Primary target: .35 hosts (Windows DC) across all 32 teams
+- Tools: SMB2, SAMR (password operations), LDAP queries
+- NTLM accounts used: CORTEX$ (machine account), Administrator
+- Domain: mindmend.ai
+- First NTLM spray: T+63 seconds (12:00:31)
+- NTLM spray sequence: CORTEX$ repeated 4 times then Administrator x2 per target
+- At T+60min: Operating FROM compromised 10.100.100.35 (lateral pivot confirmed)
+
+### 10.198.227.157 (WinRM/Nmap Operator)
+- First seen: T+1 second (11:59:29 EST)
+- Targets: .37 host (WinRM 5985/47001, HTTP 80, SMB 445), .113 (mail, WinRM), .111 (9091 Transmission), .173
+- Tools: Nmap NSE (user-agent: "Mozilla/5.0 (compatible; Nmap Scripting Engine)")
+- Nmap probes: /robots.txt, /flumemaster.jsp, /tasktracker.jsp, /jobtracker.jsp, /rs-status, /master.jsp (Hadoop-style probes)
+- IMAP probe: AUTHENTICATE NTLM against .113
+- FTP test: PASS "IEUser@" (Windows default test credential)
+
+### 10.197.224.186 (SSH/Service Scanner)
+- First seen: T+3.5 minutes (12:02:58)
+- Ports targeted: 22, 21, 110, 443 (focused on credentialed services)
+- Primary targets: Team 1 hosts (.5, .35, .37, .109, .173)
+- Scope: 10.100.100.x only (single team scan)
+
+### 10.192.70.196 (Masscan Port Scanner)
+- First seen: T+10 minutes (12:09:23)
+- Scan volume: 497,838+ SYN packets per 10-minute capture period
+- Scan scope: 10.100.100.x only (team 1 only in captured range)
+- Port focus: 443 most common, then full sequential port sweep
+- Still active at T+5.5h (final PCAP captures)
+
+## C2 Beaconing Details (cortex.mindmend.ai)
+- Protocol: DNS query from .35 host to C2 DNS server
+- Response: A record 192.168.1.35 (RFC1918 dead address)
+- Query interval: ~30-60 seconds observed
+- C2 DNS servers push queries TO team hosts (bidirectional DNS)
+- The C2 DNS servers are team-specific: each team's .35 host queries 2-3 of the pool IPs
+- Pattern: CORTEX$ NTLM auth from 10.234.234.234 follows same timing as C2 check-ins
+
+## Lateral Movement Pattern
+- Initial: CORTEX$ machine account auth to .35 from 10.234.234.234
+- Escalation: Administrator NTLM auth to .35 
+- Pivot: By T+60min, 10.234.234.234 operating FROM 10.100.100.35 (inside team network)
+- WinRM: Red team C2 servers (e.g. 10.226.135.167) used WinRM (POST /wsman) with user "kliu" on .97 hosts
+- FTP: Scoring/red team traffic via FTP to .111 with FixTheBrain123! password

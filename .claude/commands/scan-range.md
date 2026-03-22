@@ -25,6 +25,21 @@ Invoke RECON-001 to generate the discovery commands. The commands should be prov
 
 For the quick profile, the sequence is a ping sweep to identify live hosts, followed by a targeted service scan on discovered hosts. For the full profile, skip the ping sweep and scan all IPs in the range. For the stealth profile, probe specific ports on specific hosts based on intelligence from prior scanning.
 
+#### Background Execution Model
+
+Any scan command expected to take longer than 30 seconds MUST be launched in the background so the operator and agents can immediately proceed to other targets or actions. Use this pattern:
+
+```
+nohup <scan-command> > /tmp/scan-<target-description>.log 2>&1 &
+echo "PID: $! — Log: /tmp/scan-<target-description>.log"
+```
+
+Record the PID and log path in OPERATION-LOG with status RUNNING. When pivoting back to this target later, check the log file for results.
+
+**Resource gate:** Before launching a new background scan, check active background tasks. If more than 3 background scan/brute-force processes are running, or any single process is consuming >60% CPU (check with `ps aux --sort=-%cpu | head -5`), add the new task to OPERATION-LOG with status QUEUED and revisit after an existing task completes. Oversubscribing the jumpbox during a time-critical competition window risks destabilizing all concurrent operations.
+
+Do NOT wait for scan completion before recommending next actions. After launching a background scan, immediately proceed to Step 3 for any already-available results and recommend the operator's next action (e.g., /attack-plan on a target with existing recon, or /scan-range on the next team range).
+
 ### Step 3: Analyze Results
 
 RECON-001 parses the scan output and updates coordination/RECON-FINDINGS.md with discovered hosts, open ports, service versions, and OS fingerprints. Each target is assessed for attack priority.

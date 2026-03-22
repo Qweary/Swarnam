@@ -1,0 +1,36 @@
+# 2026-inv3 Pass 1: Network Topology Extraction
+# Competition Date: 2025-11-15
+# PCAP Range: 09:07:58 - 14:17 (first packet: 11:59:28 EST)
+
+## Subnet Scheme
+- Team subnets: 10.100.{team_number}.0/24 where team numbers 101-132 (32 teams)
+- Shared/Admin network: 10.100.200.x
+- Scoring engine: 10.195.168.65
+- Competition domain: mindmend.ai (AD domain: MINDMEND)
+
+## Host Roles (per last octet, consistent across all team subnets)
+- .2   - Linux host (SSH/22 only responds to scoring)
+- .5   - Linux monitoring host (9100=Prometheus node_exporter, 80=HTTP, 22=SSH, 9090=Prometheus)
+- .35  - Windows DC (53=DNS, 389=LDAP, 445/139/135=SMB, 88=Kerberos, 636=LDAPS, 3268=GC, 3389=RDP, 22=SSH, 9389=AD Web Services, 5985=WinRM)
+- .37  - Windows Server (80=HTTP, 445/139/135=SMB, 3389=RDP, 22=SSH, 5985=WinRM, 47001=WinRM alt)
+- .97  - Windows host (5985=WinRM, 443=HTTPS)
+- .103 - Linux host (21=FTP, 22=SSH, 3306=MySQL)
+- .109 - Linux web server (80=HTTP, 443=HTTPS, 22=SSH, 3306=MySQL)
+- .111 - Linux Transmission BitTorrent host (9091=Transmission Web UI, 21=FTP, 22=SSH, 3306=MySQL, 51413=BitTorrent peer)
+- .113 - Windows mail server (587=SMTP/TLS, 110=POP3, 143=IMAP, 465=SMTPS, 445=SMB, 5985=WinRM, 47001=WinRM alt)
+- .173 - Windows/Linux host (21=FTP, 22=SSH, 3389=RDP, 445=SMB, 631=IPP)
+
+## Shared Services
+- 10.100.100.x = "Team 0" shared services / competition infrastructure
+- 10.100.200.x = Admin subnet (blue team management, Windows hosts)
+
+## Key Unique IPs (non-team)
+- 10.195.168.65  = Scoring engine
+- 10.234.234.234 = Red team operator (SMB/LDAP/SAMR/NTLM spray) - active from T+0
+- 10.198.227.157 = Red team operator (WinRM/SMB/HTTP attacks) - active from T+0
+- 10.197.224.186 = Red team scanner (SSH/FTP/mail ports) - active from T+3.5min
+- 10.192.70.196  = Red team masscan (all ports) - active from T+10min
+- 10.197.27.170  = Red team operator (HTTP/8000) - appeared T+28min
+- 10.225.167.52, 10.211.217.60, 10.226.135.167, 10.234.205.145,
+  10.236.11.177, 10.238.254.39, 10.241.61.216, 10.248.145.73,
+  10.249.104.3, 10.254.132.85, 10.230.1.11 = C2 DNS server pool / scoring proxies

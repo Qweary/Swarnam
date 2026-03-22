@@ -1,0 +1,81 @@
+=== PASS 1: TOPOLOGY EXTRACTION ===
+Competition: 2026-inv5 (2025-12-20)
+Capture timespan: 09:24:56 - 13:54:xx EST (~4.5 hours). 322 files x ~500MB each.
+Total sample files processed: 15 (first 5 + every ~30th)
+Infrastructure: VXLAN overlay network — all team traffic carried inside UDP port 4789 tunnels through 10.1.3.x routers.
+
+SUBNET SCHEMA:
+- Team subnets: 10.100.100.0/24 through 10.100.125.0/24 (26 /24 subnets)
+- Team numbers encoded in THIRD octet (100-125)
+- ACTIVE TEAMS: 25 (team 100 appears to be admin/test; connects to TEST-NET 192.0.2-6.x instead of C2)
+- Red team subnet: 10.0.31.0/24 (jumpbox 10.0.31.17)
+- VXLAN infrastructure: 10.1.3.1-6 (tunnel VTEPs), 10.1.3.20 (red team VXLAN router, VNI 220)
+- DNS servers: 10.1.21.207-214 (8 DNS servers serving all team .17 hosts)
+- Management segment: 10.100.200.0/24 (DNS-only activity between .200.1 and .200.2)
+
+SCORING ENGINE IPs (confirmed):
+  Web scoring (port 80/HTTP): 10.199.132.192, 10.199.54.112, 10.248.35.189, 10.242.126.81,
+                               10.242.7.152, 10.210.51.164, 10.218.179.192, 10.255.60.247,
+                               10.211.204.83, 10.206.63.14, 10.230.85.214, 10.194.185.210
+  Multi-service (80/22/25/443/445): 10.194.163.224, 10.208.104.225, 10.253.245.56, 10.249.80.218
+  SSH-specific: 10.218.37.193, 10.233.168.130
+  NTLM/SMB: 10.248.35.189 (also does port 445)
+  gRPC C2 controller: 10.193.202.204 (port 80) — NOT a standard scorer; see Pass 2
+  Possible framework mgmt: 10.213.37.72 (TLS/443; team .63 and .17 hosts connect TO it)
+
+VXLAN VNI MAPPING:
+- VNI 202-225 = team subnets (VNI 217 = team 117 traffic; VNI 220 = red team)
+- VNI offset: +100 from team subnet third octet (team 102 = VNI 202, etc.)
+  Exception: VNI 220 = red team (10.0.31.x)
+
+COMPETITION DOMAIN: udderstrength.gym (dairy/farm theme)
+NTLM DOMAIN NAME: COWBUNTU (Windows domain short name for udderstrength.gym)
+
+DNS HOSTNAME MAPPING (from scoring DNS queries):
+- milkfarm.udderstrength.gym  → .17 (Active Directory Domain Controller)
+- Work1.udderstrength.gym     → .60 (Linux workstation + Splunk SIEM on port 8000)
+- moomail.udderstrength.gym   → .86 (Roundcube webmail on port 80)
+- ECommerce.udderstrength.gym → .63 (E-Commerce web server on port 80)
+
+HOST ROLE PROFILES (by last octet, all 25 team subnets consistent):
+.2   = Firewall/gateway (HTTPS/443 — scored; ntopng on 10.100.112.2 ports 443+3000)
+.17  = Active Directory Domain Controller (Windows, SMB/445, NTLM; milkfarm hostname)
+       Also connects to 10.213.37.72:443 (see Pass 2 for C2 details)
+.60  = Linux workstation + Splunk SIEM (SSH/22 scored; Splunk on 8000)
+       hostname: Work1.udderstrength.gym
+.63  = E-Commerce web server (HTTP/80; hostname: ECommerce.udderstrength.gym)
+       Also connects to 10.213.37.72:443 (see Pass 2)
+.86  = Roundcube webmail (HTTP/80, SMTP/25; hostname: moomail.udderstrength.gym)
+.98  = Windows member server (SMB/445 scored via NTLM; domain: COWBUNTU)
+.100 = Linux host (SSH/22 scored)
+.103 = Linux web + SSH (HTTP/80, SSH/22 scored)
+.175 = Linux web + SSH (HTTP/80 scored)
+
+SCORED SERVICES (confirmed from scoring engine traffic):
+| Service       | Port  | Host   | Notes                                        |
+|---------------|-------|--------|----------------------------------------------|
+| HTTPS         | 443   | .2     | Firewall/gateway management                  |
+| SSH           | 22    | .60    | Work1 / Splunk host                          |
+| HTTP          | 80    | .63    | ECommerce web server                         |
+| HTTP+SMTP     | 80/25 | .86    | Roundcube webmail                            |
+| SMB/NTLM      | 445   | .98    | Windows member server (users: moomoo, ceo)   |
+| SSH           | 22    | .100   | Linux service host                           |
+| HTTP+SSH      | 80/22 | .103   | Linux web+SSH host                           |
+| HTTP          | 80    | .175   | Linux web host                               |
+| SSH           | 22    | .17    | DC also SSH-checked in some scoring passes   |
+| HTTP          | 80    | .17    | DC HTTP checked by gRPC C2 engine            |
+
+NOT PRESENT in inv5 (present in other years):
+- No port 9000 (Graylog) — Graylog was inv2 only
+- No port 8000 (Splunk) scoring — Splunk present but not externally scored
+- No port 8080 (MediaWiki/Keycloak) — inv2 only
+- No port 3389 (RDP) as scored service — only red team target
+
+COMPARISON vs PRIOR YEARS:
+- SAME as inv2: 10.100.1XX team scheme, VXLAN overlay
+- SAME as inv2: .17 DC (inv2 used .12), .86 webmail concept
+- DIFFERENT: DC at .17 (inv2=.12, quals=.14)
+- DIFFERENT: Splunk on .60 (inv2 had Graylog on .170)
+- DIFFERENT: No Keycloak (inv2 had .103:8080)
+- NEW: .175 as additional scored web host
+- NEW: 192.168.50.x internal addressing visible inside VXLAN (broadcast traffic from .60 and .98 hosts)
