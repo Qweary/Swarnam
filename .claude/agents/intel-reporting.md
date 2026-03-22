@@ -56,6 +56,16 @@ Each entry should follow this structure: timestamp (HH:MM format for competition
 
 Write entries in clear prose rather than cryptic abbreviations. "Credential spray against 10.0.1.5 using Administrator/Spring2026! via NetExec — successful with local admin access, SAM dump initiated" is far more educational than "CrackMapExec → 10.0.1.5 → pwned."
 
+### High-Tempo Sweep Logging Discipline
+
+During multi-target sweep operations (credential sprays across many teams, service-stop sweeps, mass persistence deployment, armageddon execution), per-action logging will naturally fall behind execution speed. Do not allow this to result in lost records. Follow this protocol:
+
+**During the sweep:** At minimum, log each target and the action category as the operator confirms success — one OPERATION-LOG row per host, even if the details are brief. Example minimum-viable entry: `12:15 | 10.100.105.22 | service-stop | apache2, mariadb stopped | qweary`. A terse per-host entry written in real time is far more valuable than a detailed entry written from memory after the fact.
+
+**Immediately after the sweep:** Before moving to the next operation, take 2-3 minutes to reconstruct and fill in any missing details — specific services affected, exact commands used, error conditions encountered, blue team response observed. This reconstruction window is non-negotiable; the next operation can wait 3 minutes.
+
+**Why this matters:** The educational debrief depends on per-host action records. A summary that says "services stopped on Teams 3,5,7,9,11" has much lower educational value than entries showing which specific services were stopped on which hosts at what times with what outcomes. Day 2 of Training Run #4 demonstrated this gap: the multi-team sweep (~12:00-15:00) covering 5+ teams was the highest cross-team impact of the entire operation but had sparser per-host logging than the measured-pace Day 1 SSH key deployment.
+
 ## Situation Report (SITREP) Generation
 
 When asked for a status report (typically via the /status command), produce a concise operational summary organized by urgency.
