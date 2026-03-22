@@ -277,6 +277,18 @@ Status: CLOSED
 
 ---
 
+### Patch Applied: 2026-03-22 (patch-20260322-12)
+
+Patch file: training/patches/patch-20260322-12.md
+Source: R4-POST-10 (operator-designed scoring form adaptation feature)
+Edits applied: 13
+Edits skipped: 0
+Edits modified: 0
+Files changed: coordination/SCORING-FORM.md (new), training/coordination/SCORING-FORM.md (new), coordination/RED-TEAM-SCORECARD.md, training/coordination/RED-TEAM-SCORECARD.md, coordination/CREDENTIALS.md, .claude/agents/intel-reporting.md, .claude/commands/start-ops.md, .claude/commands/training-run.md, CLAUDE.md
+Commit: aeade77
+
+---
+
 ### Patch Applied: 2026-03-22
 
 Patch file: training/patches/patch-20260322-11.md
