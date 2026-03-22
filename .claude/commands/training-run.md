@@ -96,6 +96,10 @@ Same as /start-ops: check whether the MCP Kali server is available. If not, repo
 
 Same as /start-ops: generate or verify the competition wordlist at /tmp/ccdc-wordlist.txt. If PCAP analysis has produced credential patterns (in training/PCAP-INTELLIGENCE.md), incorporate those patterns into the wordlist for this training run.
 
+### Step 7b: Review Credential Intelligence File
+
+Check if `training/coordination/CREDENTIAL-INTEL.md` exists (note: training runs use the training/coordination/ path). If it does, summarize its contents for the operator. If it does not exist, copy or create it from the competition template at `coordination/CREDENTIAL-INTEL.md`. Ask the operator if they have training-environment-specific credentials to add (e.g., passwords from the training scenario documentation, known defaults for the lab VMs). Additions go in the "Operator-Added Entries" section.
+
 ### Step 8: Record Session Start
 
 **Environment verification note:** After the first /scan-range completes during this training run, update the environment description in TRAINING-LOG.md (the Run entry created below) with confirmed details: actual target count, verified IP ranges, discovered host roles, and any differences from the initial environment description provided by the operator. The initial description is a best-guess; the post-scan update ensures the training log accurately reflects what was actually tested.

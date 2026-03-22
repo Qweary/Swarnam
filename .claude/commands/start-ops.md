@@ -119,6 +119,14 @@ echo "[OK] Competition wordlist generated at /tmp/ccdc-wordlist.txt ($(wc -l < /
 
 Ask the operator if they have additional competition-specific passwords to add (organizer-provided defaults, passwords observed in prior invitationals, etc.) and append them.
 
+### Step 3b: Review Credential Intelligence File
+
+Check if `coordination/CREDENTIAL-INTEL.md` exists. If it does, briefly summarize its contents for the operator: how many per-event credential sets are loaded, whether the operator-added entries section has content, and the total credential count. Ask the operator if they have additional intelligence to add — event-specific passwords from briefings, passwords shared by other red team members, or custom wordlist entries. Any additions should go in the "Operator-Added Entries" section.
+
+If `coordination/CREDENTIAL-INTEL.md` does not exist, create it from the template (see coordination/CREDENTIAL-INTEL.md in the repository). Inform the operator: "CREDENTIAL-INTEL.md has been initialized with universal CCDC defaults and historical event data. Review and supplement it with any event-specific intelligence before running /attack-plan."
+
+**Note:** This file is distinct from `coordination/CREDENTIALS.md`, which tracks credentials harvested during the operation. CREDENTIAL-INTEL.md holds pre-loaded intelligence that exists before the operation begins.
+
 ### Step 4: Prepare Listener Infrastructure
 
 Brief the operator on listener setup. They will need listeners ready before payloads are deployed. Recommend:

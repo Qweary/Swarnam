@@ -43,6 +43,14 @@ Present the complete attack plan to the operator in a clear, actionable format. 
 
 Log the attack plan to coordination/DECISION-LOG.md with the rationale for the prioritization.
 
+### Optional: Cultural Touchpoint Reminder
+
+If the target is already accessed or owned (this is a Phase 2+ attack plan for an established foothold), and the plan includes consolidation or persistence actions, append a brief note at the end of the attack plan:
+
+> **Cultural note:** Access is established on this target. If you have a moment between operational actions, consider whether any non-destructive cultural touchpoints are appropriate — MOTD changes, desktop messages, custom banners. These are optional and part of CCDC tradition. Ask PAYLOAD-001 for ready-made templates if interested.
+
+This reminder should be light and unobtrusive — a single paragraph at the end of the plan, never interrupting operational content. Omit it entirely during Phase 1 (initial access urgency) or when the operator has indicated they want purely operational output.
+
 ## Example Invocations
 
 ```
