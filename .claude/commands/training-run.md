@@ -52,6 +52,9 @@ Reset each file with complete clean template content:
 - training/coordination/DECISION-LOG.md → column headers only, zero data rows
 - training/coordination/REFUSAL-LOG.md → "No refusals logged" entry only
 - training/coordination/CREDENTIALS.md → column headers only, zero data rows
+- training/coordination/RED-TEAM-SCORECARD.md → all data rows cleared, persistence count rows reset to empty, Last Updated cleared
+
+**Note on CREDENTIAL-INTEL.md:** Do NOT reset this file between training runs. It holds pre-loaded intelligence that persists across runs. If it does not exist in training/coordination/, copy from coordination/CREDENTIAL-INTEL.md. This is handled in Step 7b.
 
 **Post-reset validation (mandatory):** After writing all template files, verify:
 1. No IP addresses from any 10.x.x.x range appear in any data row (stale targets)
