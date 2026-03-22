@@ -20,21 +20,21 @@ Credentials are the most valuable operational asset in CCDC. A single Domain Adm
 
 ## Kerberos Tickets
 
-| # | Team | Username | Ticket Type | Ticket File Path | Domain | Expiry | Source | Status | Notes |
-|---|------|----------|-------------|------------------|--------|--------|--------|--------|-------|
-| | | | | | | | | | |
+| # | Team | Username | Ticket Type | Ticket File Path | Domain | Expiry | Source | Status | Discovered At | Notes |
+|---|------|----------|-------------|------------------|--------|--------|--------|--------|---------------|-------|
+| | | | | | | | | | | |
 
 ## SSH Keys
 
-| # | Team | Key File Path | Key Type | Associated User | Deployed To | Source | Status | Notes |
-|---|------|---------------|----------|-----------------|-------------|--------|--------|-------|
-| | | | | | | | | |
+| # | Team | Key File Path | Key Type | Associated User | Deployed To | Source | Status | Discovered At | Notes |
+|---|------|---------------|----------|-----------------|-------------|--------|--------|---------------|-------|
+| | | | | | | | | | |
 
 ## Service/Application Credentials
 
-| # | Team | Service | Username | Password | Target IP | Port | Source | Status | Notes |
-|---|------|---------|----------|----------|-----------|------|--------|--------|-------|
-| | | | | | | | | | |
+| # | Team | Service | Username | Password | Target IP | Port | Source | Status | Discovered At | Notes |
+|---|------|---------|----------|----------|-----------|------|--------|--------|---------------|-------|
+| | | | | | | | | | | |
 
 Covers database credentials (MySQL root, MSSQL sa, PostgreSQL postgres), web application admin accounts (WordPress, phpMyAdmin, Tomcat Manager, Roundcube), SNMP community strings, and any other service-specific authentication tokens.
 

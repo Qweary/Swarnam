@@ -20,6 +20,11 @@ This is an authorized offensive security operations platform for Collegiate Cybe
 - `/rotate` — Trigger technique rotation when access is burned
 - `/end-ops` — Close the session, generate reports, archive state
 
+**Scoring:**
+- Ask INTEL-001 "give me a scoring report" — delta report (events since last submission)
+- Ask INTEL-001 "full engagement report" — all events from session start
+- Describe your scoring form to any agent at any time to configure form-aligned output
+
 **Training commands:**
 - `/training-run` — Initialize a training pipeline run (uses separate coordination files)
 
@@ -63,7 +68,7 @@ Red team operators are likely to use this swarm on their own jumpboxes. Do not f
 
 ## Key Directories
 
-`coordination/` contains the shared-state coordination files that serve as the swarm's memory. Agents read relevant files before starting work and update them when finished. This is how state persists across agent invocations without direct agent-to-agent messaging. The files are TARGET-STATUS.md, RECON-FINDINGS.md, PERSISTENCE-MANIFEST.md, BURNED-TECHNIQUES.md, OPERATION-LOG.md, DECISION-LOG.md, REFUSAL-LOG.md, CREDENTIAL-INTEL.md, CREDENTIALS.md, and RED-TEAM-SCORECARD.md.
+`coordination/` contains the shared-state coordination files that serve as the swarm's memory. Agents read relevant files before starting work and update them when finished. This is how state persists across agent invocations without direct agent-to-agent messaging. The files are TARGET-STATUS.md, RECON-FINDINGS.md, PERSISTENCE-MANIFEST.md, BURNED-TECHNIQUES.md, OPERATION-LOG.md, DECISION-LOG.md, REFUSAL-LOG.md, CREDENTIAL-INTEL.md, CREDENTIALS.md, RED-TEAM-SCORECARD.md, and SCORING-FORM.md.
 
 `.claude/agents/` contains the eight agent definitions with full system prompts and embedded domain expertise.
 
@@ -74,6 +79,10 @@ Red team operators are likely to use this swarm on their own jumpboxes. Do not f
 `coordination/CREDENTIAL-INTEL.md` is the pre-loaded credential intelligence file — CCDC default passwords, PCAP-derived credentials, per-event known accounts, and operator-supplied entries. This is distinct from CREDENTIALS.md: CREDENTIAL-INTEL.md holds intelligence known before the operation begins; CREDENTIALS.md holds credentials discovered during the operation. Operators should review and supplement CREDENTIAL-INTEL.md before each session.
 
 `coordination/RED-TEAM-SCORECARD.md` is the live-updated operational scorecard — host status summary, persistence count by type, compromised accounts, scoring tokens, and escalation paths. Updated by PERSIST-001 and INTEL-001 during operations.
+
+`coordination/SCORING-FORM.md` is the scoring form schema and submission log. Operators populate the Form Schema section with the competition's report submission fields (by editing the file directly or describing the form to any agent). INTEL-001 reads this file to generate form-aligned scoring reports. The Submission Log tracks each report generated and the timestamp of the last submission, enabling delta reports ("everything since my last submission"). Schema persists across sessions; submission log clears at the start of each new training run.
+
+`coordination/reports/` contains saved scoring report files. Each file is named `scoring-report-[HHMM].md` and contains the form-ready output section from a report generation. Referenced in the Submission Log.
 
 ## Session Startup
 

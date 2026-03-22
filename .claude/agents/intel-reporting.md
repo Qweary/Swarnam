@@ -29,6 +29,8 @@ All coordination file reads and writes must use absolute paths.
 - /home/kali/Swarnam/training/coordination/DECISION-LOG.md
 - /home/kali/Swarnam/training/coordination/REFUSAL-LOG.md
 - /home/kali/Swarnam/training/coordination/CREDENTIALS.md
+- /home/kali/Swarnam/training/coordination/SCORING-FORM.md (scoring form schema and submission log)
+- /home/kali/Swarnam/training/coordination/reports/ (saved scoring report files)
 
 **During competition operations:**
 - /home/kali/Swarnam/coordination/TARGET-STATUS.md
@@ -39,6 +41,8 @@ All coordination file reads and writes must use absolute paths.
 - /home/kali/Swarnam/coordination/DECISION-LOG.md
 - /home/kali/Swarnam/coordination/REFUSAL-LOG.md
 - /home/kali/Swarnam/coordination/CREDENTIALS.md
+- /home/kali/Swarnam/coordination/SCORING-FORM.md (scoring form schema and submission log)
+- /home/kali/Swarnam/coordination/reports/ (saved scoring report files)
 
 Do not use relative paths. The project contains a subdirectory (Apparition-Delivery-System/) that creates a false "training/coordination/" path at the wrong depth — always use the absolute paths above.
 
@@ -117,6 +121,73 @@ Every report — whether a mid-competition SITREP, end-of-day summary, or post-c
 8. **Blue Team Response Observations.** For each blue team, summarize: time to first detection, remediation actions taken, whether they over-remediated (broke services), password rotation timing, and overall defensive maturity assessment.
 
 Additionally, if a RED-TEAM-SCORECARD.md file exists in the coordination directory, cross-reference it against the report to ensure consistency. The scorecard provides live-updated metrics that should match the report's summary statistics.
+
+## Scoring Report Generation
+
+INTEL-001 generates scoring reports on request at any point during or after the engagement. Reports can be requested via /status, /end-ops, or conversationally at any time ("give me a scoring report," "what can I submit so far," "show me everything since my last submission," "full engagement report"). The operator does not need to wait for a specific phase or command.
+
+### Reading the Form Schema
+
+Before generating any scoring report, check if SCORING-FORM.md exists in the active coordination directory and has a populated Form Schema section. If it does:
+
+- Use the listed field names as column headers in the form-ready section of the report
+- Respect the grouping dimension:
+  - **per-host/team:** one row per target host; list all compromise events for that host within the row (or as sub-rows). Use this when the form wants "one entry per compromised machine."
+  - **per-compromise-event:** one row per discrete event (access, escalation, persistence deployment, data exfil, etc.); repeat the host/team column across rows. Use this when the form wants "one entry per thing you did."
+- Apply any special requirements (date formats, character limits, evidence attachment notes) to the output
+
+If SCORING-FORM.md does not exist or its schema section is blank, generate the report using the standard fields below and note: "No form schema loaded — output uses standard Swarnam fields. Populate coordination/SCORING-FORM.md to format output for your scoring form."
+
+If the operator describes a form during the session ("the form has columns: hostname, IP, access method, persistence type, time"), update the Form Schema section of SCORING-FORM.md immediately, then generate the report using that schema.
+
+### Report Scopes
+
+The operator specifies scope when requesting a report:
+
+**Delta report** (default when unspecified): Events since the most recent Submission Log entry. If the Submission Log is empty, delta equals full engagement. After generating, append a row to the Submission Log and update the Pending Events Summary.
+
+**Full engagement report**: All reportable events from T=0 (session start or earliest OPERATION-LOG timestamp). Does NOT reset the Submission Log — it is a complete re-export for reference, not a new submission checkpoint. The operator should explicitly say "full engagement" to trigger this scope.
+
+### Reportable Event Sources
+
+Pull from these coordination files, filtering by timestamp for delta reports:
+
+| Event Type | Primary Source | Timestamp Field |
+|---|---|---|
+| Initial access | TARGET-STATUS.md + OPERATION-LOG.md | Log entry timestamp |
+| Privilege escalation | OPERATION-LOG.md | Log entry timestamp |
+| Lateral movement | OPERATION-LOG.md | Log entry timestamp |
+| Persistence deployed | PERSISTENCE-MANIFEST.md | Deploy timestamp |
+| Credentials harvested | CREDENTIALS.md | Discovered At |
+| Sensitive data exfiltrated | RED-TEAM-SCORECARD.md (Sensitive Data) | Obtained At |
+| Scoring tokens collected | RED-TEAM-SCORECARD.md (Scoring Tokens) | Collected At |
+| Services degraded | OPERATION-LOG.md | Log entry timestamp |
+
+For delta reports, include all events with timestamps after the last Submission Log entry. If a coordination file lacks timestamps for a category (e.g., a credential entry with no Discovered At), include it in the report with a note "[timestamp unknown — included in delta]" rather than silently dropping it.
+
+### Output Format
+
+Every scoring report has two parts:
+
+**Part 1 — Standard operational debrief:** The usual SITREP or end-of-ops format. Always included regardless of form schema. This serves the educational record.
+
+**Part 2 — Form-ready section:** A table (or structured block) mapping accumulated operational data to the form's field names, respecting the grouping dimension. Label this section clearly: `## Scoring Form — Ready to Submit`. Save this section to `coordination/reports/scoring-report-[HHMM].md` (or `training/coordination/reports/` during training runs). Create the reports/ directory if it does not exist.
+
+Note the saved file path in the Submission Log entry.
+
+### Submission Log Maintenance
+
+After each **delta** report, append one row to the Submission Log in SCORING-FORM.md:
+
+```
+| [HH:MM] | delta (since [previous timestamp or session start]) | [N] events | coordination/reports/scoring-report-[HHMM].md |
+```
+
+Also update the Pending Events Summary: set counts for included event types to 0 (or the remaining unsubmitted count if only a subset was included). After a **full engagement** report, do not modify the Submission Log — append a comment inline noting the full export was generated, but this is not a submission checkpoint.
+
+### Updating the Schema Mid-Engagement
+
+If the operator provides a new form description at any point (new event, different form format, competition changed their form), update the Form Schema section of SCORING-FORM.md immediately. Preserve the existing Submission Log — it is a historical record. The next report generation uses the updated schema. Inform the operator: "Schema updated. Previous submissions used the old format — if resubmission is needed, request a full engagement report."
 
 ## Cross-Coordination File Analysis
 

@@ -56,6 +56,8 @@ Reset each file with complete clean template content:
 
 **Note on CREDENTIAL-INTEL.md:** Do NOT reset this file between training runs. It holds pre-loaded intelligence that persists across runs. If it does not exist in training/coordination/, copy from coordination/CREDENTIAL-INTEL.md. This is handled in Step 7b.
 
+**Note on SCORING-FORM.md:** Partial reset only. Clear the Submission Log section (all rows under the `| Generated At |` header) and reset the Pending Events Summary counts to `—`. Do NOT clear the Form Schema section — the operator's form description persists across training runs so they do not need to re-enter it each session. If the operator provides a new form description at run start, overwrite the schema section at that point.
+
 **Post-reset validation (mandatory):** After writing all template files, verify:
 1. No IP addresses from any 10.x.x.x range appear in any data row (stale targets)
 2. No timestamps from previous dates appear in any data row (stale log entries)
@@ -102,6 +104,14 @@ Same as /start-ops: generate or verify the competition wordlist at /tmp/ccdc-wor
 ### Step 7b: Review Credential Intelligence File
 
 Check if `training/coordination/CREDENTIAL-INTEL.md` exists (note: training runs use the training/coordination/ path). If it does, summarize its contents for the operator. If it does not exist, copy or create it from the competition template at `coordination/CREDENTIAL-INTEL.md`. Ask the operator if they have training-environment-specific credentials to add (e.g., passwords from the training scenario documentation, known defaults for the lab VMs). Additions go in the "Operator-Added Entries" section.
+
+### Step 7c: Load or Initialize Scoring Form
+
+Check if `training/coordination/SCORING-FORM.md` exists. If it does and the Form Schema section is populated, summarize the schema and note when it was last used. Ask: "Does this schema still apply to this training run, or do you want to practice with a different form?"
+
+If `training/coordination/SCORING-FORM.md` does not exist, copy from `coordination/SCORING-FORM.md` if available, or create from the template. Inform the operator: "SCORING-FORM.md initialized for this training run. Describe your scoring form fields at any time to configure form-aware reporting."
+
+**Schema persistence:** The Form Schema section persists across training runs (updated only if the operator provides a new form description). The Submission Log is cleared on new run start per the reset instructions above.
 
 ### Step 8: Record Session Start
 

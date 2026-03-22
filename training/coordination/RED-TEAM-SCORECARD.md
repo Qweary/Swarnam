@@ -46,9 +46,9 @@ Tracks extracted files, PII, documents, database contents, and other collected i
 
 ## Scoring Tokens Collected
 
-| Team | Token/Service | Token Value | Status |
-|------|---------------|-------------|--------|
-| | | | |
+| Team | Token/Service | Token Value | Collected At | Status |
+|------|---------------|-------------|--------------|--------|
+| | | | | |
 
 ## Escalation Paths
 

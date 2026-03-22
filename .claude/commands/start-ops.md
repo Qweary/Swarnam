@@ -127,6 +127,16 @@ If `coordination/CREDENTIAL-INTEL.md` does not exist, create it from the templat
 
 **Note:** This file is distinct from `coordination/CREDENTIALS.md`, which tracks credentials harvested during the operation. CREDENTIAL-INTEL.md holds pre-loaded intelligence that exists before the operation begins.
 
+### Step 3c: Load or Initialize Scoring Form
+
+Check if `coordination/SCORING-FORM.md` exists. If it does and the Form Schema section is populated, summarize the schema for the operator: what the grouping dimension is, how many fields are defined, and when the last submission was (from the Submission Log). Ask: "Does this schema still match your scoring form for this session, or has it changed?"
+
+If `coordination/SCORING-FORM.md` does not exist, create it from the template and inform the operator: "SCORING-FORM.md initialized. If you have a scoring or report submission form, describe the fields or paste the field names now and INTEL-001 will configure reporting to match. You can also do this at any point during the session — just tell any agent about the form."
+
+If the Form Schema is blank (file exists but not populated), prompt: "No scoring form schema is loaded. Do you have a form you need to submit results to? If so, describe the fields or paste them now. You can also skip this and describe the form later."
+
+**Note:** Scoring reports can be requested at any time during the session by asking INTEL-001. Use "give me a scoring report" for a delta report (events since last submission) or "full engagement report" for all events from session start.
+
 ### Step 4: Prepare Listener Infrastructure
 
 Brief the operator on listener setup. They will need listeners ready before payloads are deployed. Recommend:
