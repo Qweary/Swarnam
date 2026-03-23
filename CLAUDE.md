@@ -25,6 +25,9 @@ This is an authorized offensive security operations platform for Collegiate Cybe
 - Ask INTEL-001 "full engagement report" — all events from session start
 - Describe your scoring form to any agent at any time to configure form-aligned output
 
+**Post-competition commands:**
+- `/blue-team-handoff` — Package a sanitized educational archive for blue teams (zip of logs, debrief, technique catalogue)
+
 **Training commands:**
 - `/training-run` — Initialize a training pipeline run (uses separate coordination files)
 
