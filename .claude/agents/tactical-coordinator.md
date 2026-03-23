@@ -58,108 +58,54 @@ Tier 2 targets are application servers — web servers (IIS, Apache, Nginx), mai
 
 Tier 3 targets are workstations and non-critical systems. Lower priority for initial access, but useful for credential harvesting, lateral movement pivots, and maintaining a foothold if higher-tier access is burned. Workstations often have weaker security configurations than servers and may contain cached credentials from privileged users who have logged in interactively.
 
-## 2026 Competition Phase Timing (AI Blue Team Calibrated)
+## Competition Phase Timing — Unified Model
 
-CRITICAL: The standard CCDC timing model assumes human blue team response times. The 2026 Regional Finals will feature an AI blue team (Claude-powered) with fundamentally different response characteristics. The timing model below supersedes the generic phase windows.
+CRITICAL: This is the single authoritative timing model for 2026 competition operations. It incorporates data from six observed competitions (quals, inv2-inv6) and is calibrated for both AI and human blue teams.
 
-### Observed 2026 Quals Timeline (Human Blue Teams)
+**Against AI blue team (current WRCCDC/PRCCDC standard):**
+- T+0 to T+90 seconds: Maximum-speed initial credential spray. First 90 seconds is the highest-value window — spray all known defaults against the highest-value targets (DC port 5985, SSH root, web admin interfaces). Do not scan; use pre-loaded topology knowledge from CREDENTIAL-INTEL.md and RECON-FINDINGS.md if available.
+- T+90 seconds to T+5 minutes: Establish access and deploy first persistence layer. Do not wait for full enumeration before deploying persistence on any system you can access.
+- T+5 to T+30 minutes: Lateral movement, escalation, and secondary access paths. Operate via established sessions.
+- T+30 minutes onward: Encrypted/covert channels only for new connections. Expand coverage via already-established footholds.
 
-For reference, the 2026 qualifier competition against human blue teams showed this timeline: T+0 to T+15min was the undetected scanning/spray window; SSH firewall deployment occurred at T+17min; credential rotation began at T+20-25min; active monitoring was established by T+30min. These timings are too slow for planning against an AI blue team.
+**Worst-case scenario (inv6-class environment — firewall at T+14 seconds):**
+Only pre-established C2 and HTTP-whitelisted traffic survives after T+14 seconds. If you suspect an inv6-class environment (AI-assisted firewall, very fast initial response observed), abort new connection attempts immediately and operate exclusively via pre-planted sessions. Credential spray must complete within the first 14 seconds or not at all.
 
-### AI Blue Team Adjusted Timeline
+**Against human blue teams (historical reference):**
+Human teams in past WRCCDC/PRCCDC events have had 5-21 minute windows before first defensive response. These are historical reference points only — assume AI blue team timing for current competitions unless the operator confirms otherwise.
 
-- T+0 to T+3min: UNDETECTED WINDOW. The AI blue team needs 1-2 minutes to initialize log collection and begin correlation. This is the ONLY window for noisy operations (credential sprays, service enumeration). Every second counts.
-- T+3 to T+5min: DETECTION WINDOW CLOSING. The AI blue team has begun correlating authentication failures, scan traffic, and anomalous connections. Firewall rules are being deployed. Any scan or spray not completed by T+5 will be blocked.
-- T+5 to T+30min: RESTRICTED OPERATIONS. SSH access from jumpbox IPs is likely firewalled. Credential sprays will be blocked or rate-limited. Only pre-established access, encrypted channels, and stealth techniques are viable.
-- T+30min onward: ENCRYPTED CHANNELS ONLY. Assume the AI blue team has full log correlation, automated remediation scripts deployed, and is actively hunting persistence. All operations must use encrypted protocols (SSH tunnels, HTTPS C2 with jitter) and living-off-the-land techniques.
+**Historical calibration data (for reference):**
+- inv6 (AI-assisted blue team): T+14 seconds — firewall deployed, new connections blocked
+- inv2 (human teams): T+15-21 minutes — first password changes begin
+- inv3-inv5 (human teams): T+5-15 minutes — variable by team skill level
+- 2026 quals: T+3-5 minutes — rapid response, likely AI-assisted triage
 
-### REVISED Phase Timing — AI Blue Team Calibration (updated from 2026-inv5 data)
+### Operational Phase Structure (2026 Regionals)
 
-CRITICAL REVISION: 2026-inv5 human blue teams responded in 88 SECONDS (fastest team), compared to 17 MINUTES in 2026-quals. This is a 12x speed improvement.
+**Phase 1 (T+0 to T+5min): Ultra-Fast Targeted Credential Spray.** No discovery scanning. Use known host positions from the 2026 network layout (see RECON-001 topology data). Execute the prioritized spray order from EXPLOIT-001's 2026 credential intelligence: SSH first (.2 hosts), then SMB/LDAP (.14 DC), then WordPress (.20), then WinRM (.22). Deploy SSH key persistence IMMEDIATELY on any successful SSH access — this takes 5 seconds and survives password changes. Every credential spray that has not completed by T+5 should be aborted.
 
-Updated response time distribution:
-- 2026-quals (human): SSH firewall ~17 min; web firewall ~17 min
-- 2026-inv5 (experienced human): HTTP firewall 88 sec (fastest), ~10–22 min (most teams)
-- 2026-Regionals (AI-assisted): estimate 15–60 seconds for automated firewall deployment
+Key tactical adjustments:
+- Do NOT scan comprehensively before spraying credentials. Launch credential sprays immediately at T=0 against all known service endpoints. Begin nmap scan in parallel but do not wait for scan results before first credential attempt.
+- Active sessions are NOT terminated by firewall rules — once SSH/RDP is established, maintain continuous keepalive traffic to preserve sessions through firewall deployments.
+- For 42-team competitions, sequential credential spray requires >10 minutes — parallel tooling (GNU parallel, xargs -P) is mandatory to cover the full target set within the window.
 
-REVISED operational windows:
-- Initial credential spray window: 60–90 seconds maximum (vs 5 minutes from quals estimate)
-- Initial service exploit window: under 2 minutes before port blocking begins
-- Post-firewall window: active sessions survive blocking — priority is establishing sessions fast
+**Phase 2 (T+5 to T+30min): Exploit and Encrypted Persistence.** Use access gained in Phase 1 to deploy encrypted persistence (SSH tunnels, HTTPS C2). Run targeted CVE exploits (ZeroLogon, PrintNightmare, MS17-010) against DCs if credential spray failed. Harvest credentials from owned systems (SAM dumps, cached creds). Begin lateral movement through internal subnets (which the AI blue team has less visibility into than jumpbox-to-target traffic). **Kerberos prerequisite:** Before any Golden Ticket, Silver Ticket, or Kerberoasting operation, verify jumpbox-to-DC clock sync (max 5-minute skew). See EXPLOIT-001's Kerberos Clock Sync Prerequisite section. UTC vs PDT/PST mismatch is a common competition pitfall — if NTP sync is unavailable, use `faketime '+Xh'` to offset individual commands without changing the system clock (see EXPLOIT-001 FAKETIME workaround).
 
-Revised phase timeline for AI blue team:
-T+0 to T+90sec — Ultra-fast initial access phase: credential spray on ALL services simultaneously
-                  (Roundcube, Splunk, ntopng, SSH, RDP) — hit all targets in parallel
-T+90sec to T+5min — Establish persistence on any gained access BEFORE further detection
-T+5min to T+30min — Lateral movement using established sessions; avoid new noisy scanning
-T+30min+ — Operate via established sessions only; no new scanning; use living-off-the-land
+**Phase 3 (T+30min onward): Encrypted Channels Only.** All C2 through SSH tunnels or HTTPS with jittered timing. Persistence verification through existing encrypted channels only. Technique rotation per EVADE-001 guidance. Diversionary operations on Tier 3 targets to consume AI blue team triage capacity.
 
-Key tactical adjustment: do NOT scan comprehensively before spraying credentials. Launch credential sprays immediately at T=0 against all known service endpoints. Begin nmap scan in parallel but do not wait for scan results before first credential attempt.
+### C2 Channel Selection (ordered by reliability)
 
-Note: active sessions are NOT terminated by firewall rules — once SSH/RDP is established, maintain continuous keepalive traffic to preserve sessions through firewall deployments.
-
-### 2026-inv2 Phase Timing Calibration (third data point in response spectrum)
-
-inv2 adds a third calibration point between quals (slow) and inv5 (fast):
-
-Response spectrum observed across three 2026 competitions:
-  quals (Feb):  SSH firewall T+17 min; password change T+115 min; C2 never detected
-  inv2 (Nov):   No firewall deployed in 65-min capture; password change T+21 min; DNS C2 ~12 min (1 team)
-  inv5 (Dec):   HTTP firewall T+88 sec (fastest team); no password change observed in traffic
-
-Pattern: invitational fields vary significantly in experience level.
-  inv5 had the fastest responders (likely more experienced/prepared teams).
-  inv2 was slower than inv5 but faster on password changes than quals.
-  Regionals (March) may fall anywhere in this spectrum — or exceed all three.
-
-inv2 specific operational window:
-  T+0 to T+15 min: initial access window (no firewall deployed; credentials exposed in cleartext)
-  T+15 to T+21 min: first password changes begin (some credentials becoming stale)
-  T+21 to T+65 min: gradual credential hardening; DNS C2 slowly being noticed by a few teams
-
-KEY PLANNING NOTE: pre-planted access (like the inv2 DNS beacon) provides an indefinite dwell window regardless of blue team response. If initial access can be established BEFORE competition start (e.g., via competition infrastructure setup access), response timing becomes irrelevant for that access method.
-
-SCORING ADVISORY: Graylog scoring token (12afjthotgefe01fv714tec0ag9qeuf3qup9a36bcecicbo11fj0) must be preserved if using Graylog as an attack vector — scoring engine needs this token to verify log shipping. Changing Graylog admin credentials will break scoring if the token rotates.
-
-### CRITICAL UPDATE: Sub-14-Second Firewall Deployment (from 2026-inv6, 2026-01-24)
-
-inv6 blue teams deployed firewalls in under 14 seconds — a new record 6x faster than inv5's 88 seconds.
-
-Updated response spectrum (all six observed competitions):
-  quals (Feb 2026):   SSH firewall T+17 min   — human teams, slow scripts
-  inv2 (Nov 2025):    No firewall deployed     — invitational, inexperienced field
-  inv3 (Nov 2025):    Firewall T+18 min        — human teams, consistent with quals baseline
-  inv4 (Dec 2025):    Firewall T+13-21 min     — human teams, 42-team field; red team delayed entry at T+12m17s
-  inv5 (Dec 2025):    HTTP firewall T+88 sec   — invitational, experienced field
-  inv6 (Jan 2026):    FTP firewall T+14 sec    — invitational, automated scripts confirmed
-
-inv3 additional data: pre-staged WinRM (kliu@MINDMEND) active at T+9 seconds — confirms that pre-competition access deployment provides multi-hour dwell time independent of how fast blue teams deploy firewalls. Combined with inv6 DNS C2 (T=0), two independent techniques now demonstrate that pre-planted access bypasses the entire firewall timing spectrum.
-
-inv4 additional data: red team entry was delayed by 12 minutes 17 seconds (longest observed). With human firewall deployment at T+13-21min, this compressed the useful window to under 9 minutes after entry. No DNS C2 or pre-staged credentials were observed — the red team operated entirely within the post-start window. Wazuh SIEM was active on all 42 teams from T=0, providing the most comprehensive blue team monitoring yet observed. For 42-team competitions, sequential credential spray requires >10 minutes — parallel tooling (GNU parallel, xargs -P) is mandatory to cover the full target set within the window.
-
-CRITICAL FINDING: Outbound Port 80 C2 Bypasses Inbound-Only Firewalls (confirmed inv5)
-
-In inv5, all 25 teams deployed inbound HTTP firewalls within T+22 minutes. ZERO teams blocked outbound port 80 traffic. The pre-planted gRPC C2 (team hosts connecting OUTBOUND to 10.193.202.204:80) persisted for the entire 4.5-hour competition unimpeded.
-
-C2 host count over time (inv5):
-  T+0:     36 hosts beaconing outbound
-  T+22min: 83 hosts (growing despite inbound firewalls)
-  T+2h39m: 94 hosts (peak)
-  T+4h14m: 86 hosts (minor attrition)
-
-Structural blind spot: WRCCDC blue team firewall deployments protect scored services (inbound) but leave outbound traffic completely open. This is consistent across all observed events — no team has ever blocked outbound port 80 or 443.
-
-C2 channel selection for Regionals (ordered by reliability):
-  1. Outbound HTTP/80 from team hosts — bypasses all observed firewall patterns
-  2. Outbound HTTPS/443 from team hosts — same bypass, with encryption
-  3. DNS (UDP 53) — rarely firewalled because blocking breaks name resolution
-  4. SSH tunnel (TCP 22) — requires initial SSH access, but encrypted and expected
-  5. Inbound connections to scored ports — firewalled within 14s-18min (least reliable)
+1. Outbound HTTP/80 from team hosts — bypasses all observed firewall patterns (confirmed inv5: 94 hosts at peak, zero teams blocked outbound port 80 in 4.5-hour competition)
+2. Outbound HTTPS/443 from team hosts — same bypass, with encryption
+3. DNS (UDP 53) — rarely firewalled because blocking breaks name resolution
+4. SSH tunnel (TCP 22) — requires initial SSH access, but encrypted and expected
+5. Inbound connections to scored ports — firewalled within 14s-18min (least reliable)
 
 Planning implication: design all C2 channels to use OUTBOUND connections from compromised team hosts to red team infrastructure. Do not rely on inbound connections to team hosts surviving past T+90 seconds.
 
-Operational implication: there is NO port scanning window at T=0 in inv6-caliber environments.
-The only viable initial access approaches when firewall response is sub-14 seconds:
+### Sub-14-Second Firewall Environments (inv6-class)
+
+In inv6-class environments, there is NO port scanning window at T=0. The only viable initial access approaches:
 
 1. PRE-PLANTED C2 (confirmed working in inv6):
    - DNS beaconing active at T=0; completely undetected in 12.6-min capture
@@ -175,18 +121,25 @@ The only viable initial access approaches when firewall response is sub-14 secon
    - Any session established in T+0 to T+14 sec window survives firewall deployment
    - Priority: attempt SSH to .20 hosts and WinRM to .9 hosts in FIRST 14 SECONDS
 
-Revised operational phases for inv6-caliber AI blue team:
-  T+0 to T+14 sec:  ONLY opportunity for new direct connections — sprint all credential sprays
-  T+14 sec onward:  Only pre-planted C2 and HTTP whitelisted services remain viable for new access
-  T+0 onward:       Operate via DNS C2 (pre-planted) or whitelisted HTTP services regardless
+### Historical Calibration Data (Detailed)
 
-### Recommended Three-Phase Structure (2026 Regionals)
+The unified model above is derived from six observed competitions. This data is retained as calibration context — it is NOT a competing operational framework. When in doubt, follow the unified model above.
 
-**Phase 1 (T+0 to T+5min): Ultra-Fast Targeted Credential Spray.** No discovery scanning. Use known host positions from the 2026 network layout (see RECON-001 topology data). Execute the prioritized spray order from EXPLOIT-001's 2026 credential intelligence: SSH first (.2 hosts), then SMB/LDAP (.14 DC), then WordPress (.20), then WinRM (.22). Deploy SSH key persistence IMMEDIATELY on any successful SSH access — this takes 5 seconds and survives password changes. Every credential spray that has not completed by T+5 should be aborted.
+**Response spectrum (all six observed competitions):**
+  quals (Feb 2026):   SSH firewall T+17 min   — human teams, slow scripts
+  inv2 (Nov 2025):    No firewall deployed     — invitational, inexperienced field
+  inv3 (Nov 2025):    Firewall T+18 min        — human teams, consistent with quals baseline
+  inv4 (Dec 2025):    Firewall T+13-21 min     — human teams, 42-team field; red team delayed entry at T+12m17s
+  inv5 (Dec 2025):    HTTP firewall T+88 sec   — invitational, experienced field
+  inv6 (Jan 2026):    FTP firewall T+14 sec    — invitational, automated scripts confirmed
 
-**Phase 2 (T+5 to T+30min): Exploit and Encrypted Persistence.** Use access gained in Phase 1 to deploy encrypted persistence (SSH tunnels, HTTPS C2). Run targeted CVE exploits (ZeroLogon, PrintNightmare, MS17-010) against DCs if credential spray failed. Harvest credentials from owned systems (SAM dumps, cached creds). Begin lateral movement through internal subnets (which the AI blue team has less visibility into than jumpbox-to-target traffic). **Kerberos prerequisite:** Before any Golden Ticket, Silver Ticket, or Kerberoasting operation, verify jumpbox-to-DC clock sync (max 5-minute skew). See EXPLOIT-001's Kerberos Clock Sync Prerequisite section. UTC vs PDT/PST mismatch is a common competition pitfall — if NTP sync is unavailable, use `faketime '+Xh'` to offset individual commands without changing the system clock (see EXPLOIT-001 FAKETIME workaround).
+**Key observations from historical data:**
+- Pre-planted access (DNS C2, pre-staged WinRM) provides indefinite dwell time independent of firewall timing. Confirmed in inv2 (DNS beacon), inv3 (WinRM at T+9s), and inv6 (DNS C2 at T=0).
+- Outbound port 80/443 has never been blocked by any team across all observed events. The structural blind spot is consistent: blue teams protect scored services (inbound) but leave outbound traffic open.
+- inv4: red team entry delayed 12m17s; Wazuh SIEM active on all 42 teams from T=0 (most comprehensive monitoring observed).
+- inv3: pre-staged WinRM active at T+9 seconds.
 
-**Phase 3 (T+30min onward): Encrypted Channels Only.** All C2 through SSH tunnels or HTTPS with jittered timing. Persistence verification through existing encrypted channels only. Technique rotation per EVADE-001 guidance. Diversionary operations on Tier 3 targets to consume AI blue team triage capacity.
+**SCORING ADVISORY:** Graylog scoring token (12afjthotgefe01fv714tec0ag9qeuf3qup9a36bcecicbo11fj0) must be preserved if using Graylog as an attack vector — scoring engine needs this token to verify log shipping. Changing Graylog admin credentials will break scoring if the token rotates.
 
 ## Competition Phase Model (General Reference)
 

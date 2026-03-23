@@ -28,27 +28,30 @@ The AI blue team's strengths center on consistency, speed, and pattern recogniti
 
 The AI blue team's weaknesses center on novelty, ambiguity, and resource contention. It will struggle with techniques it hasn't seen in training data or that don't match known attack patterns. It cannot distinguish legitimate administrative activity from red team activity when the same tools and patterns are used — net user, schtasks, PowerShell remoting, and sc are all legitimate admin tools. It can be overwhelmed by simultaneous incidents on multiple targets, forcing it to triage and potentially miss lower-priority events. It may over-remediate, breaking legitimate services in its rush to eliminate threats (which costs the blue team scoring points). It will have difficulty with physical-layer effects and actions that don't generate digital telemetry.
 
-## 2026 Red Team Signatures to Avoid (BURNED PATTERNS)
+## Burned Signatures by Operational Phase
 
-The following four traffic signatures were identified in the 2026 WRCCDC Qualifier PCAPs. The AI blue team will have been trained on these exact patterns. Any red team activity that matches these signatures will be detected within seconds, not minutes.
+The following traffic signatures have been identified across 2026 WRCCDC event PCAPs (quals, inv2-inv6). The AI blue team will have been trained on these exact patterns. Any red team activity that matches these signatures will be detected within seconds, not minutes.
 
-### Burned Signature 1: masscan TCP Fingerprint
+### Quick Reference
+- Recon: masscan carries a burned TCP fingerprint — use with explicit operator approval only; prefer nmap -T2.
+- Initial Access: Space credential spray attempts 2-3 seconds apart. Max 1-2 passwords per account. Use a single source IP per team range.
+- C2: Avoid fixed-interval DNS beacons. Use variable intervals (30-120s) or SSH tunnel C2. Best option: AD-domain-embedded C2 hostname (0% detection in 5.5h).
+- Persistence: Multi-layer only. SSH keys alone will be swept overnight by AI blue team.
+- General: Vary tools across targets. AI correlates identical tooling signatures across team ranges.
+
+### Recon Phase Signatures
+
+**Burned Signature 1: masscan TCP Fingerprint**
 
 Pattern: TCP SYN packets with window size 1024, TTL 36, MSS-only TCP options, paired SYNs arriving within 40 microseconds of each other. This is the default masscan fingerprint and is trivially distinguishable from nmap or legitimate traffic.
 
 Detection likelihood against AI blue team: CERTAIN (simple packet header match).
 
-Mitigation: Do not use masscan at all during 2026 Regionals. Use nmap -T2 or -T1 with targeted port lists against known host positions. If a fast SYN scan is absolutely required, use nmap -sS (which produces a different TCP fingerprint with variable window sizes and standard option ordering).
+Mitigation: Use with explicit operator approval only. If the operator requests masscan, proceed but warn: "masscan fingerprint is burned — AI blue team may detect this within seconds. Confirm you want to proceed." Prefer nmap -T2 or -T1 with targeted port lists against known host positions. If a fast SYN scan is absolutely required, nmap -sS produces a different TCP fingerprint with variable window sizes and standard option ordering.
 
-### Burned Signature 2: curl C2 Beacon
+### Initial Access / Credential Attack Signatures
 
-Pattern: HTTP GET requests to `/JSyausLR/LinIUpdater` at periodic intervals (~30-60 seconds), originating from compromised Linux hosts to a red team C2 server. The combination of the static URI path, periodic timing, and curl User-Agent string creates a trivially detectable beacon signature.
-
-Detection likelihood against AI blue team: CERTAIN (static URI path + periodic timing = textbook beacon detection).
-
-Mitigation: Never use static URI paths for C2 callbacks. Never use unencrypted HTTP for C2. Never use periodic (fixed-interval) beacon timing. Instead: use HTTPS with valid-looking paths (e.g., `/api/v1/health`, `/static/logo.png`), jitter the callback interval by +/-50% minimum, set a browser-like User-Agent string (e.g., `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36`), and prefer SSH tunneling or reverse SSH for C2 over HTTP-based beacons entirely.
-
-### Burned Signature 3: NTLM Credential Spray Clustering
+**Burned Signature 2: NTLM Credential Spray Clustering**
 
 Pattern: 10+ source IPs performing LDAP (port 389) NTLM authentication attempts against the same target within the same second. This was observed during quals as multiple red team jumpboxes spray the same DC simultaneously without coordination.
 
@@ -56,7 +59,7 @@ Detection likelihood against AI blue team: HIGH (log correlation of simultaneous
 
 Mitigation: Coordinate credential sprays so that only ONE jumpbox sprays a given team's DC at a time. Space spray attempts by at least 2-3 seconds between passwords. Use a single source IP per team range. If multiple operators are working, divide team ranges rather than having multiple operators spray the same target.
 
-### Burned Signature 4: WinRM from Non-Admin IP
+**Burned Signature 3: WinRM from Non-Admin IP**
 
 Pattern: HTTP POST requests to `/wsman` (WinRM endpoint, port 5985) originating from IPs outside the team's subnet or from hosts that are not the team's designated management workstation. In the 2026 layout, WinRM traffic from a red team jumpbox IP is immediately suspicious because jumpbox IPs are outside the 10.100.1XX.0/24 team subnets.
 
@@ -64,13 +67,23 @@ Detection likelihood against AI blue team: HIGH (source IP allowlisting on WinRM
 
 Mitigation: After initial access via WinRM, pivot to a different remote access method (SSH tunnel, RDP through compromised host, SMB-based execution via psexec/smbexec) as soon as persistence is established. Use WinRM only for the initial credential validation and first command execution, then switch to a method that generates less distinctive network signatures. If sustained WinRM access is needed, proxy it through an already-compromised host within the team's subnet so the source IP appears internal.
 
-### Burned Signature 5: DNS C2 Fixed-Interval Beacon (observed in 2026-inv2)
+### C2 Infrastructure Signatures
 
-Pattern: DNS A queries for [hex_id].[b58_suffix].log.jacobseunglee.com at exactly 5-second intervals, using resolver 1.1.1.1 (Cloudflare public DNS — avoids internal DNS server logging). Volume: ~12 queries/minute per host, 78 per ~60-second capture file. In inv2, this ran as a pre-planted beacon on all 32 team DCs from T=0.
+**Burned Signature 4: curl C2 Beacon**
+
+Pattern: HTTP GET requests to `/JSyausLR/LinIUpdater` at periodic intervals (~30-60 seconds), originating from compromised Linux hosts to a red team C2 server. The combination of the static URI path, periodic timing, and curl User-Agent string creates a trivially detectable beacon signature.
+
+Detection likelihood against AI blue team: CERTAIN (static URI path + periodic timing = textbook beacon detection).
+
+Mitigation: Never use static URI paths for C2 callbacks. Never use unencrypted HTTP for C2. Never use periodic (fixed-interval) beacon timing. Instead: use HTTPS with valid-looking paths (e.g., `/api/v1/health`, `/static/logo.png`), jitter the callback interval by +/-50% minimum, set a browser-like User-Agent string (e.g., `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36`), and prefer SSH tunneling or reverse SSH for C2 over HTTP-based beacons entirely.
+
+**Burned Signature 5: DNS C2 Fixed-Interval Beacon**
+
+Pattern: DNS A queries with hex-encoded or base58-encoded subdomain labels at exactly fixed intervals (5-second and 3-4 second variants observed), using public resolvers (e.g., 1.1.1.1) to avoid internal DNS server logging. Volume: ~12 queries/minute per host. Observed as pre-planted beacons on all team DCs from T=0.
 
 Detection risk assessment:
-  - By human blue teams: LOW. Only 1 of 32 teams detected within 65 minutes (~12 min response).
-  - By AI blue team with DNS log correlation: HIGH. Fixed 5-second interval is detectable immediately via entropy analysis of query timing. Hex-encoded subdomain labels trigger DGA (Domain Generation Algorithm) heuristics in any modern DNS security tool.
+  - By human blue teams: LOW. Only 1 of 32 teams detected within 65 minutes in observed events.
+  - By AI blue team with DNS log correlation: HIGH. Fixed interval is detectable immediately via entropy analysis of query timing. Hex/base32-encoded subdomain labels trigger DGA (Domain Generation Algorithm) heuristics in any modern DNS security tool.
 
 Detection likelihood against AI blue team: HIGH (timing regularity + DGA-style subdomains = automated detection within seconds).
 
@@ -83,64 +96,25 @@ Mitigation — if deploying DNS C2 in competition:
 
 Preferred alternative: SSH tunnel C2 (blends with legitimate SSH traffic; not flagged as C2 by DNS monitors).
 
-### Burned Signature 6: kalipatriot.net DNS C2 — Recurring Infrastructure (inv2 + inv6)
+**Burned Signature 6: AD-Domain-Embedded C2 Hostname — Best-Practice Evasion (inv3, 0% detection in 5.5h)**
 
-The domain kalipatriot.net has appeared as red team C2 infrastructure in two separate WRCCDC invitational events:
-  inv2 (Nov 2025): log.jacobseunglee.com (different domain, same DNS encoding pattern)
-  inv6 (Jan 2026): ccdc.kalipatriot.net, packages.linuxsnapd.com, tavern.kalipatriot.net
+In inv3, the red team embedded the DNS C2 hostname as a subdomain of the competition's own AD domain. A corresponding machine account was pre-planted as a legitimate AD computer object, making the C2 hostname indistinguishable from legitimate AD DNS traffic.
 
-kalipatriot.net is CONFIRMED RECURRING red team C2 infrastructure.
-
-DNS C2 signature in inv6:
-  - Subdomain format: [40-char base32 label].[8-char label].[c2-domain]
-  - Beacon interval: ~3-4 seconds per host (faster than inv2's 5 seconds)
-  - Resolver: public DNS (exits competition network to avoid internal DNS logging)
-  - Spreading behavior: 7 hosts beaconing at T=0 -> 33 hosts by T+11 min (self-propagating C2)
-
-All four known C2 domains from recurring infrastructure:
-  ccdc.kalipatriot.net         (inv6 — primary)
-  packages.linuxsnapd.com      (inv6 — mimics Linux Snap package infrastructure)
-  tavern.kalipatriot.net       (inv6 — secondary)
-  log.jacobseunglee.com        (inv2 — rotated; may reappear)
-
-Detection likelihood against AI blue team: HIGH
-  - DGA scoring: high-entropy base32 subdomain labels trigger DGA detection immediately
-  - Behavioral analysis: fixed 3-4 second interval is trivially detectable via timing entropy analysis
-  - TI feed matching: kalipatriot.net is known recurring red team domain — should appear in any CTI feed maintained by competition organizers
-
-Detection tshark filter: dns.qry.name contains "kalipatriot" or dns.qry.name contains "linuxsnapd"
-
-Blue team observed result: UNDETECTED in both inv2 (65-min capture) and inv6 (12.6-min capture) against human teams. AI blue team with DNS log correlation would detect within 60 seconds.
-
-Preferred alternative for competition: SSH tunnel C2 (blends with legitimate SSH traffic; not flagged by DNS monitors regardless of interval or subdomain entropy).
-
-### Burned Signature 7: AD-Domain-Embedded C2 Hostname — Best-Practice Evasion (inv3, 0% detection in 5.5h)
-
-In inv3, the red team used cortex.mindmend.ai as the DNS C2 hostname — a subdomain of the competition's own AD domain (mindmend.ai). The DC machine account CORTEX$ was pre-planted as a legitimate AD computer object, making the C2 hostname indistinguishable from legitimate AD DNS traffic.
-
-Result: 0/32 teams detected in 5.5 hours of competition. This is the best evasion result observed across all six analyzed WRCCDC events.
-
-How it works:
-  - Competition AD domain: mindmend.ai (registered by organizers for the event)
-  - DC hostname: CORTEX (machine account: CORTEX$)
-  - C2 subdomain: cortex.mindmend.ai (resolves via the domain's own DNS infrastructure)
-  - DNS queries for cortex.mindmend.ai appear identical to legitimate AD DNS resolution
-  - Blue team DNS filters that whitelist the competition domain inadvertently whitelist the C2
-  - 11 external DNS resolvers (10.192-10.254 range) answered cortex.mindmend.ai queries
+Result: 0/32 teams detected in 5.5 hours of competition. This is the best evasion result observed across all analyzed WRCCDC events.
 
 Why AD-domain-embedded C2 defeats detection:
-  1. Domain whitelisting: blue teams whitelist *.mindmend.ai because it is the competition domain
-  2. DNS baseline: cortex.mindmend.ai traffic blends with legitimate AD DNS (DC lookups, SRV records)
+  1. Domain whitelisting: blue teams whitelist *.competition-domain.tld because it is the competition domain
+  2. DNS baseline: C2 traffic blends with legitimate AD DNS (DC lookups, SRV records)
   3. No TI feed match: the domain is event-specific, not in any threat intelligence database
-  4. DGA bypass: "cortex" is a real English word, not a random/encoded string — scores 0 on DGA models
+  4. DGA bypass: a real hostname (e.g., a plausible computer name) scores 0 on DGA detection models
   5. Volume camouflage: AD DNS generates high query volume; C2 queries hide in the noise
 
 Detection risk comparison — C2 domain strategies:
-  External domain (kalipatriot.net):     HIGH detection risk against AI blue team
-    - Appears in TI feeds if reused across events
+  External/personal domain:               HIGH detection risk against AI blue team
+    - May appear in TI feeds if reused across events
     - DGA-style encoded subdomains trigger automated detection
     - Not in DNS whitelist — any query is anomalous
-  AD-domain-embedded (cortex.mindmend.ai): LOW detection risk against AI blue team
+  AD-domain-embedded ([host].domain.tld): LOW detection risk against AI blue team
     - In DNS whitelist by design
     - Human-readable subdomain defeats DGA detection
     - Indistinguishable from legitimate AD traffic
@@ -301,7 +275,7 @@ Second, analyze what was detected. Was it the technique itself (e.g., the blue t
 
 Third, recommend an alternative from a different technique category. If a scheduled task was found, don't recommend another scheduled task — use WMI event subscription, registry run key, or service creation instead. If a reverse shell callback was detected by its network pattern, recommend a different callback method (HTTP beacon instead of raw TCP, DNS exfiltration, or a web shell that waits for inbound connections).
 
-Fourth, recommend timing. Don't immediately redeploy persistence after remediation — the blue team is actively watching that system. Wait 10–15 minutes, or better, deploy the replacement during a period of legitimate system activity (after a service restart, during a user logon event).
+Fourth, recommend timing. After T+5 minutes, do not immediately redeploy persistence after remediation — the blue team is actively watching that system. Wait 5–10 minutes, or better, deploy the replacement during a period of legitimate system activity (after a service restart, during a user logon event). Exception: during the opening window (T+0 to T+5 minutes), speed trumps stealth — redeploy immediately because the window is closing. See PERSIST-001's Persistence Deployment Timing section for the full conditional rule.
 
 ## Living-off-the-Land Techniques
 
