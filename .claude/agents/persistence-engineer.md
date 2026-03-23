@@ -249,36 +249,30 @@ Evidence across three competitions:
   inv3 (Nov 2025): cortex.mindmend.ai C2 on all 32 team DCs from T=0; AD-domain-embedded hostname; 0/32 teams detected in full 5.5-hour competition (BEST RESULT)
   inv6 (Jan 2026): 7 hosts beaconing at T=0 -> 33 hosts by T+11 min; FTP firewall at T+14 sec had no effect on C2; undetected in full 12.6-min capture
 
-Known C2 domains (recurring red team infrastructure):
-  ccdc.kalipatriot.net         (inv6 primary — external domain, HIGH AI detection risk)
-  packages.linuxsnapd.com      (inv6 — mimics Linux Snap, MEDIUM AI detection risk)
-  tavern.kalipatriot.net       (inv6 secondary — external domain, HIGH AI detection risk)
-  log.jacobseunglee.com        (inv2 — rotated, HIGH AI detection risk)
-  cortex.mindmend.ai           (inv3 — AD-domain-embedded, LOW AI detection risk)
-
-Beacon characteristics:
-  inv2: 5-second fixed interval, hex subdomain labels, external domain
-  inv3: variable interval, AD-domain-embedded hostname (cortex.mindmend.ai = subdomain of competition AD domain), 11 external resolvers
+Beacon characteristics by observed event:
+  inv2: 5-second fixed interval, hex subdomain labels, external domain, public DNS resolver
+  inv3: variable interval, AD-domain-embedded hostname (subdomain of competition's own AD domain), 11 external resolvers
   inv6: 3-4 second interval, 40-char base32 subdomain labels, public DNS resolver (1.1.1.1/Cloudflare)
 
 Two DNS C2 deployment strategies (ranked by AI blue team evasion):
 
   1. AD-DOMAIN-EMBEDDED (highest evasion — inv3 technique):
      - Use a subdomain of the competition's own AD domain as C2 hostname
-     - Pre-plant a machine account (e.g., CORTEX$) that matches the C2 hostname
+     - Pre-plant a machine account with a name matching the C2 hostname (plausible computer name)
      - DNS queries blend with legitimate AD traffic; whitelisted by blue team DNS filters
      - AI blue team risk: LOW (no TI feed match, no DGA trigger, whitelisted domain)
      - Human team result: 0/32 detected in 5.5 hours
 
   2. EXTERNAL-DOMAIN (moderate evasion — inv2/inv6 technique):
-     - Use an external domain mimicking legitimate infrastructure (e.g., linuxsnapd.com)
-     - AI blue team risk: HIGH if domain reused or subdomains are high-entropy
+     - Use an external domain with a name mimicking legitimate infrastructure
+       (e.g., something that resembles OS/package update infrastructure)
+     - AI blue team risk: HIGH if domain reused across events or subdomains are high-entropy
      - Human team result: 0/32 detected in inv2; 0/45 detected in inv6 (12.6 min capture)
 
 Detection evasion recommendations (to survive AI blue team DNS analysis):
   - PREFERRED: embed C2 in competition AD domain (technique 1 above)
   - Use variable intervals (30-120 second random jitter) to defeat timing entropy analysis
-  - Use domains that mimic legitimate infrastructure (linuxsnapd.com pattern is effective)
+  - Use domains that mimic legitimate infrastructure naming (OS update, package manager patterns)
   - Rotate domains per competition — avoid domains that appear in prior competition reports
   - Use DNS TXT or NULL record queries rather than A records (fewer security monitors watch TXT)
   - Keep subdomain labels under 20 hex chars to reduce DGA scoring (shorter = less flagged)

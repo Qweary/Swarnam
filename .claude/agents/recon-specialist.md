@@ -393,7 +393,7 @@ Each team assigned 10.100.1XX.0/24 (XX = team number, 101-145 observed, 45 teams
 Layout DIFFERS from all prior competitions — verify layout before assuming prior schema.
 
 inv6 host roles:
-  .2   = Linux host (SSH/22, HTTPS/443; may beacon DNS C2 to kalipatriot.net)
+  .2   = Linux host (SSH/22, HTTPS/443; DNS C2 beacon observed from competition start)
   .9   = Windows domain host (FTP/21, RDP/3389, SMB/445, WinRM/5985, port 5466 /keeplive.html, RTSP/554)
   .11  = Web/service host (HTTP/80, RDP/3389 on some teams)
   .20  = Linux SSH+web host (SSH/22, HTTP/80)
