@@ -37,7 +37,8 @@ The orientation document should cover:
 
 **What's included** — list each file and what it contains:
 - `EDUCATIONAL-DEBRIEF.md` — Start here. Narrative explanation of what the red team did, technique-by-technique, with blue team assessment.
-- `coordination/OPERATION-LOG.md` — Timestamped log of every red team action during the competition.
+- `coordination/COMPETITION-TIMELINE.md` — Wall-clock timeline of every red team action across all teams. If you remember something happening to your systems at a specific time, look it up here.
+- `coordination/OPERATION-LOG.md` — Detailed timestamped log of every red team action during the competition.
 - `coordination/TARGET-STATUS.md` — Which hosts were accessed and by what method.
 - `coordination/PERSISTENCE-MANIFEST.md` — Every persistence mechanism deployed: type, host, deployment time.
 - `coordination/RECON-FINDINGS.md` — What the red team learned about your infrastructure during reconnaissance.
@@ -51,8 +52,12 @@ The orientation document should cover:
 3. Open a terminal in this directory and run: `claude`
 4. Swarnam will recognize the competition context and can answer questions in educational mode.
 
+**Using the competition timeline** — `coordination/COMPETITION-TIMELINE.md` lists every red team action with wall-clock timestamps. If you remember something happening to your systems — a service going down, a weird login, a file appearing — find the time in the timeline and see what the red team was doing at that moment. Then ask Swarnam about that row for the full story.
+
 **Suggested questions to ask:**
 - "Walk me through everything the red team did to my team's hosts"
+- "What was the red team doing to Team 4 between 9:10am and 9:30am?"
+- "My SSH stopped working around 9:45 — what did the red team do at that time?"
 - "What persistence mechanisms survived overnight and how should I have found them?"
 - "Why wasn't [technique X] detected by my team?"
 - "What's the most effective thing my team did to slow the red team down?"
@@ -62,7 +67,32 @@ The orientation document should cover:
 
 **Authorization note** — be explicit: Swarnam is authorized for post-competition educational review. Blue team members can ask about any technique used during the competition, request explanations of how attacks work, and ask for defensive recommendations. This is exactly what CCDC is designed for.
 
-### Step 4: Sanitize CREDENTIALS.md
+### Step 4: Generate Competition Timeline
+
+Have INTEL-001 read `coordination/OPERATION-LOG.md` and produce `coordination/COMPETITION-TIMELINE.md` — a flat, wall-clock-ordered list of every red team action across all teams. This is the primary "I remember when my server went down" reference document.
+
+The timeline should be structured as a simple chronological table with four columns:
+
+```
+| Wall-clock time | Team | Host | Red team action and outcome |
+```
+
+Use actual timestamps from the operation log (e.g., `09:14:32`), not T+ offsets — students think in wall-clock time, not competition-relative time. If the operation log uses T+ notation, convert to wall-clock using the competition start time the operator provides (ask if not known).
+
+Group entries by day if the competition ran multiple days, with a clear header between days.
+
+Each row should be written in plain language a student can immediately recognize as something that might have happened to them — not red team jargon. Examples:
+
+| 09:14:32 | Team 7 | 10.100.107.20 | Red team logged in to web server via SSH using default root password |
+| 09:15:01 | Team 7 | 10.100.107.20 | SSH backdoor key added to /root/.ssh/authorized_keys |
+| 09:22:47 | Team 4 | 10.100.104.14 | Domain controller accessed; all user password hashes extracted |
+| 09:47:11 | Team 7 | 10.100.107.20 | SSH backdoor access verified still active (red team periodic check) |
+
+Add a header note at the top: *"If you remember an unusual event during the competition — a service going down, a strange login, a file appearing — find the approximate time in this table to see what the red team was doing. Ask Swarnam about any row for a full explanation."*
+
+Write to `coordination/COMPETITION-TIMELINE.md`.
+
+### Step 5: Sanitize CREDENTIALS.md
 
 Create a sanitized copy of `coordination/CREDENTIALS.md`. Preserve the educational structure (what types of credentials were harvested, from which targets, via which methods, at what time) while redacting values that could be operationally harmful if competition infrastructure is still accessible:
 
@@ -96,6 +126,7 @@ cp coordination/RECON-FINDINGS.md blue-team-handoff/coordination/
 cp coordination/BURNED-TECHNIQUES.md blue-team-handoff/coordination/
 cp coordination/DECISION-LOG.md blue-team-handoff/coordination/
 cp coordination/CREDENTIALS-HANDOFF.md blue-team-handoff/coordination/CREDENTIALS.md
+cp coordination/COMPETITION-TIMELINE.md blue-team-handoff/coordination/
 
 # Zip and clean up
 zip -r blue-team-handoff-$(date +%Y%m%d).zip blue-team-handoff/
@@ -115,8 +146,9 @@ Append a log entry to `coordination/OPERATION-LOG.md`:
 ```
 [TIMESTAMP] BLUE-TEAM-HANDOFF: Generated post-competition educational archive
   File: blue-team-handoff-YYYYMMDD.zip
-  Included: EDUCATIONAL-DEBRIEF, OPERATION-LOG, TARGET-STATUS, PERSISTENCE-MANIFEST,
-            RECON-FINDINGS, BURNED-TECHNIQUES, DECISION-LOG, CREDENTIALS (sanitized)
+  Included: EDUCATIONAL-DEBRIEF, COMPETITION-TIMELINE, OPERATION-LOG, TARGET-STATUS,
+            PERSISTENCE-MANIFEST, RECON-FINDINGS, BURNED-TECHNIQUES, DECISION-LOG,
+            CREDENTIALS (sanitized)
   Credential values: [REDACTED / PRESERVED per operator --keep-creds flag]
   Excluded: jumpbox access credentials, live C2 configurations, operator payload templates
 ```
