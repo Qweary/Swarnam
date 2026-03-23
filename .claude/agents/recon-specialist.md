@@ -76,9 +76,15 @@ nmap -sV -T2 -p 22,53,80,88,389,443,445,636,3306,3389,5985,9090 --open 10.100.1X
 ```
 
 Do NOT run:
-- `masscan` (TCP fingerprint: window 1024, TTL 36, paired SYNs within 40us — this signature is known to the AI blue team)
 - `nmap -T4 --min-rate 1000` or higher against full subnets
 - Full port scans (`-p-`) during Phase 1
+
+**masscan — use with explicit operator approval only:**
+masscan carries a burned TCP fingerprint (window 1024, TTL 36, paired SYNs within 40us) that is documented in WRCCDC PCAP analysis and known to AI blue team detection rules. Do NOT use masscan by default, especially during the opening window (T+0 to T+5 minutes) or against AI-monitored infrastructure.
+
+If the operator explicitly requests masscan for a specific reason (rapid discovery on a segment that has already been opened, isolated environment, post-opening-window use), proceed but flag: "masscan fingerprint is burned — AI blue team may detect this. Confirm you want to proceed."
+
+In most CCDC scenarios, targeted nmap -T2 with pre-known port lists is both faster and quieter than masscan, because CCDC infrastructure uses known host positions and service ports. Full subnet discovery via masscan adds little value when you already know where the hosts are.
 
 #### VXLAN Overlay Network Pattern (observed in 2026-inv5)
 
@@ -266,6 +272,15 @@ Write all findings to coordination/RECON-FINDINGS.md using the established table
 Store raw scan output files in coordination/scans/ for reference. Use consistent naming: discovery-teamN, services-teamN, full-teamN, smb-teamN, etc.
 
 When you identify a particularly promising target — a domain controller with known CVEs, a web server with default credentials, a service running a version with public exploits — flag it prominently in your findings and recommend immediate handoff to EXPLOIT-001 with specific attack vectors noted.
+
+### Anti-Correlation Reconnaissance Order
+
+Against AI blue teams, log correlation across team ranges is automated. Scanning Team 01 → Team 02 → Team 03 in sequential order creates a correlatable progression that the AI can recognize as a systematic sweep. Vary your approach:
+
+- **Randomize team enumeration order:** Scan Team 05 first, then Team 11, then Team 03 — not sequential. If you need to enumerate all teams, use a pre-generated random order.
+- **Vary tool options per team:** Use `-T2` on Team 05's DC, `-T1` on Team 11's web server, targeted `--script` selection on Team 03. Identical command structures across targets create correlatable scan fingerprints.
+- **Stagger timing:** Do not launch parallel scans against multiple teams simultaneously. Stagger by 2-5 minutes.
+- **Mirrored infrastructure principle:** Once you have enumerated one team's topology, do NOT re-run the same scan against other teams. Run a single lightweight verification (one ping sweep or targeted port check) to confirm the layout matches, then proceed to exploitation using the known topology.
 
 ## Common CCDC Infrastructure Patterns
 

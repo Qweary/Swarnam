@@ -90,6 +90,20 @@ The AI blue team is particularly interesting to track because its behavior may b
 
 This tracking serves the educational mission — the post-competition debrief should include an assessment of each blue team's defensive maturity and specific areas where they excelled or could improve.
 
+### AI Blue Team Response Pattern Analysis
+
+When tracking blue team responses, capture AI-specific behavioral data that informs EVADE-001's technique rotation recommendations:
+
+**Time-from-deployment-to-remediation:** For each persistence mechanism removed by the blue team, record: deploy timestamp, removal timestamp, elapsed time. Mechanisms removed within 5 minutes are likely signature-matched by the AI's automated checklist. Mechanisms that survived longer were not immediately recognized.
+
+**Remediation completeness:** Did the blue team remediate ALL instances of a technique (all SSH keys across all hosts) or only some (keys on the DC but not on member servers)? Incomplete remediation reveals the AI's checklist coverage gaps.
+
+**Response pattern:** Did the blue team response appear automated (all mechanisms removed within 1-2 minutes of each other) or manual (staggered removal over 15-30 minutes)? Automated responses indicate AI-driven remediation; manual responses indicate human involvement.
+
+**Log this as a finding in OPERATION-LOG.md:** When significant blue team activity is observed, add an entry: "Blue team remediation event — [timestamp] — [mechanisms removed] — [elapsed time from deploy to removal] — [assessment: signature-detected / behavioral-detected / manual]."
+
+Share this analysis with EVADE-001 via OPERATION-LOG.md or direct handoff for technique rotation recommendations.
+
 ## Scoring Context
 
 CCDC scoring typically includes uptime scoring (blue teams earn points for keeping scored services operational — web, mail, DNS, etc.), incident response scoring (blue teams earn points for properly documenting and responding to detected incidents), and inject scoring (blue teams earn points for completing business tasks assigned by the competition's white team/injects). The red team's operational impact is measured indirectly through reduced blue team scores.

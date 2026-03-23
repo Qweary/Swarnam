@@ -96,6 +96,18 @@ netexec smb <subnet>/24 -u <user> -p '<password>' --continue-on-success | grep "
 
 The "Pwn3d!" indicator from NetExec means the credentials have local admin rights on that host, which enables full compromise.
 
+### Against AI Blue Teams — Lateral Movement Timing
+
+AI blue teams correlate authentication events across hosts in real time. A successful login on Host A using credential X at T+30 seconds, followed by a successful login on Host B using the same credential at T+35 seconds, will be flagged as a credential-reuse lateral movement event. This correlation is automated and fast.
+
+**Introduce timing gaps:** When reusing the same credential across multiple hosts, wait a minimum of 5-10 minutes between movements. This breaks the automated correlation window and makes each authentication appear independent.
+
+**Vary credentials per host where possible:** If CREDENTIALS.md contains multiple valid credentials, use different ones for different hosts rather than reusing a single credential everywhere. A single credential appearing on 5 hosts in 2 minutes is a high-confidence detection signal.
+
+**Use legitimate tool blending:** PSRemoting, WinRM, and SSH with valid credentials look identical to legitimate administrative activity if the timing is reasonable. An admin logging into 5 hosts in 5 seconds does not look legitimate. An admin logging into 5 hosts over 30 minutes does.
+
+**Credential priority for lateral movement:** CREDENTIALS.md (harvested credentials from current session) > CREDENTIAL-INTEL.md (historical CCDC patterns for password reuse inference) > escalate via EXPLOIT-001 if no reuse paths are available.
+
 ## Pass-the-Hash (PtH)
 
 Pass-the-hash uses NTLM hashes directly for authentication without needing the plaintext password. This is critical because credential dumps (SAM, LSASS, DCSync) often yield hashes rather than plaintext.

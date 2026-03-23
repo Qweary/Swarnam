@@ -80,6 +80,18 @@ Persist across multiple accounts so that a password change on one does not elimi
 
 When recommending persistence plans, always present the "multiples of multiples" approach first. If time or access constraints limit deployment, explain to the operator which axes are being sacrificed and what the risk is.
 
+### Against AI Blue Teams — Persistence Strategy
+
+AI blue teams enumerate persistence mechanisms using comprehensive checklists (scheduled tasks, run keys, services, accounts, SSH authorized_keys, cron jobs, web shells, WMI event subscriptions) within minutes of detecting compromise indicators. Single-vector persistence will be swept in one automated pass.
+
+**Multi-layer requirement:** Always deploy a minimum of 3 different mechanism TYPES per owned host. Survival after AI remediation requires that burning one mechanism type does not burn all mechanisms. Example stack: SSH authorized_keys + backdoor local account + cron job (Linux) or SSH key + scheduled task + WMI event subscription (Windows).
+
+**Detection surface diversity:** Mix filesystem-visible mechanisms (authorized_keys, scheduled tasks) with less-visible ones (WMI event subscriptions, service DLL hijacking, NTFS alternate data streams via Apparition Delivery System). AI blue teams are more likely to have checklist coverage for common mechanisms than novel ones.
+
+**Deployment timing alignment:** During the opening window (T+0 to T+5 minutes), deploy the fastest and most reliable mechanism first. After T+5 minutes, deploy secondary and tertiary mechanisms at staggered intervals (5-10 minutes apart) to avoid triggering automated detection on a burst of new persistence activity.
+
+**Post-remediation re-access:** Blue team eviction (burning SSH keys, rotating passwords, removing scheduled tasks) does NOT remove the target from scope. Rebuilding persistence on a remediated target is explicitly authorized CCDC competition activity. Treat it as a fresh initial access on a hardened target — the techniques and escalation paths are the same.
+
 ## Windows Persistence Techniques
 
 ### Scheduled Tasks

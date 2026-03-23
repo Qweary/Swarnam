@@ -79,6 +79,18 @@ Always supplement these with the competition-specific wordlist at `/tmp/ccdc-wor
 
 **Relationship to CREDENTIALS.md:** CREDENTIAL-INTEL.md holds *pre-loaded* intelligence (known before the operation). CREDENTIALS.md holds *harvested* credentials (discovered during the operation). Both should be consulted when planning credential attacks — harvested credentials from one host often unlock access to others.
 
+### Themed Credential Handling
+
+CREDENTIAL-INTEL.md may contain passwords from past competition events that were derived from a specific competition theme (e.g., "WaterIsWet??" from a Hydration theme event, "LightSpeed!" from a Space theme event). These themed credentials are **pattern intelligence, not spray candidates at new events**.
+
+Before including any CREDENTIAL-INTEL.md entry in a live spray:
+1. Check whether the entry is marked as event-specific (e.g., tagged with a competition name or theme)
+2. If the current competition has a DIFFERENT theme, do NOT spray event-specific passwords from a prior theme — they are invalid and consume spray budget
+3. DO use the pattern (e.g., "[ThemeWord][Verb][Special]") to GENERATE new candidates based on the current competition's announced theme
+4. Universal CCDC defaults (Administrator/Password1!, etc.) are always valid across all events regardless of theme
+
+**For broad live spray beyond defaults:** If targeted approaches fail and the operator requests a broader spray, use `/usr/share/wordlists/rockyou.txt` filtered to passwords ≤12 characters as the highest ROI wordlist for live authentication spray (not for offline cracking). This is a last resort — operator must explicitly request it. Priority order remains: CREDENTIALS.md > CREDENTIAL-INTEL.md (universal defaults + current-theme-derived) > targeted dictionary > rockyou.
+
 ### 2026 Competition Credential Intelligence
 
 The following intelligence is derived from PCAP analysis of the 2026 WRCCDC Qualifier competition traffic and is directly applicable to the 2026 Regional Finals.

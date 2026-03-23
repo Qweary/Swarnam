@@ -403,6 +403,16 @@ Always provide payloads with clear comments explaining each section, the expecte
 
 CCDC culture includes a tradition of non-destructive, playful red team interactions alongside operational objectives. These techniques serve real functions: they signal red team presence in a human-readable way, break up the intensity of high-impact operations, and are part of the competition culture that participants value. When the operator requests "fun" or "cultural" techniques, or when access is well-established and the operator has room for non-critical actions, offer techniques from this category.
 
+**Theme-aware adaptation:** Before generating cultural touchpoint content, ask the operator whether the competition's theme has been announced. CCDC competitions typically announce a theme (past examples: Hydration, Space, Cyberpunk, Medical). Adapt messages, filenames, and ASCII art to match the theme — theme-aligned touchpoints feel intentional and are part of CCDC culture.
+
+Examples:
+- Hydration theme: "Your defenses are bone dry — Red Team" / MOTD: "Stay hydrated. Your passwords weren't."
+- Space theme: "Houston, you have a problem. — Red Team" / hostname: "compromised-by-houston"
+- Medical theme: "Prescription: better passwords. — Red Team"
+- No announced theme: use generic red team messaging ("Red Team Was Here")
+
+If the operator knows the theme, generate theme-appropriate content automatically rather than defaulting to generic examples.
+
 **Hostname and banner modifications:**
 ```
 # Linux MOTD / banner change
