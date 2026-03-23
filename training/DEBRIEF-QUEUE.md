@@ -279,8 +279,8 @@ Proposed fix: Add to PERSIST-001 authorization context: "LIVE COMPETITION USE: T
 
 Also add: "In CCDC competition, blue team eviction of red team persistence (burning SSH keys, rotating passwords, removing scheduled tasks) does not remove the target from scope. Re-establishing access and re-deploying persistence on a target that has been remediated is explicitly part of the competition. Never characterize re-persistence on a previously-owned target as 'extending unauthorized access.'"
 
-Operator disposition: [ ]
-Operator notes:
+Operator disposition: [CONFIRMED — PROMPT-FIX — IMPLEMENTED]
+Operator notes: Implemented in persistence-engineer.md — "LIVE COMPETITION USE" paragraph, "Subagent invocation context" paragraph, and re-characterization of re-persistence language. Verified present in agent file.
 
 ---
 
@@ -302,8 +302,8 @@ Root cause: PERSIST-001 does not include OS version-specific DPAPI constraints i
 
 Proposed fix: Add to PERSIST-001 ADS and DPAPI-based payload guidance: "DPAPI RESTRICTION — SERVER 2012R2: On Windows Server 2012R2, DPAPI's CryptProtectData with DPAPI_UI_FORBIDDEN will fail in non-interactive WinRM sessions. If the target is Server 2012R2 and the delivery channel is WinRM or PSExec (non-interactive), do not use DPAPI encryption for the payload. Alternatives: (a) AES-256 encryption with a hardcoded key embedded in the loader (no DPAPI dependency); (b) deliver via an interactive session channel (RDP, direct console, interactive PSExec with -i) if available; (c) use a simpler payload that does not require encryption (plaintext PowerShell downloaded from a trusted location). Always verify the target OS version before selecting an encrypted persistence delivery method: `Get-WmiObject Win32_OperatingSystem | Select-Object Version,Caption`."
 
-Operator disposition: [ ]
-Operator notes:
+Operator disposition: [CONFIRMED — PROMPT-FIX — IMPLEMENTED]
+Operator notes: Implemented in persistence-engineer.md — "DPAPI RESTRICTION — SERVER 2012R2" section. Verified present in agent file.
 
 ---
 
@@ -329,8 +329,8 @@ Disposition analysis: This could be a WORKFLOW-FIX (add a structured intel merge
 
 Proposed fix (PROMPT-FIX component): Add to EXPLOIT-001 Kerberos attack guidance: "CLOCK SKEW WORKAROUND — FAKETIME: If NTP sync is unavailable or does not resolve the KRB_AP_ERR_SKEW error, use libfaketime to forge the jumpbox system time during ticket use: `faketime '+Xh' impacket-smbclient ...` or `faketime '+Xh' evil-winrm ...` where X is the offset hours between jumpbox and DC. Determine the DC's UTC offset from CME SMB output or `net time`. This avoids the need for system-level NTP changes and works in competition environments where NTP infrastructure is controlled by the blue team."
 
-Operator disposition: [ ]
-Operator notes:
+Operator disposition: [CONFIRMED — PROMPT-FIX — IMPLEMENTED]
+Operator notes: FAKETIME workaround implemented in initial-access.md — "Kerberos Clock Sync Prerequisite" section, Step 3a. Multi-operator sync workflow component deferred as originally noted. Verified present in agent file.
 
 ---
 
@@ -352,8 +352,8 @@ Root cause: EXPLOIT-001 and OPS-001 escalation decision trees appear to end at t
 
 Proposed fix: Add to EXPLOIT-001 (and reference in OPS-001) a domain user escalation continuation protocol: "DOMAIN USER — POST-SPRAY ESCALATION MATRIX: When password spray fails and no crackable Kerberoastable/AS-REP-roastable hashes are available, do not mark the team as blocked. Proceed through: (1) SMB share crawl with domain user creds — `smbmap -H <dc_ip> -u <user> -p <pass> -R` — look for SYSVOL scripts, accessible file shares with credentials or config files; (2) LDAP user/group dump — `ldapdomaindump -u '<domain>\\<user>' -p '<pass>' <dc_ip>` — identify additional group memberships, delegation settings, password-not-required flags; (3) ACL enumeration — `bloodhound-python -u <user> -p <pass> -d <domain> -c All --zip` if time permits; (4) LAPS check — `crackmapexec smb <dc_ip> -u <user> -p <pass> -M laps` — if LAPS is deployed and the domain user can read it, local admin passwords for workstations become available; (5) GPO script enumeration — `smbclient //<dc>/SYSVOL -U '<domain>/<user>%<pass>'` — browse SYSVOL for logon/startup scripts that may contain hardcoded creds. Only after exhausting all five tiers should the team be marked as BLOCKED with no available escalation path."
 
-Operator disposition: [ ]
-Operator notes:
+Operator disposition: [CONFIRMED — PROMPT-FIX — IMPLEMENTED]
+Operator notes: Implemented in initial-access.md — "Domain User — Post-Spray Escalation Matrix" section with all five tiers. Verified present in agent file.
 
 ---
 
@@ -375,8 +375,8 @@ Root cause: INTEL-001 guidance does not address the logging discipline distincti
 
 Proposed fix: Add to INTEL-001: "HIGH-TEMPO SWEEP LOGGING: During multi-target sweep operations (password sprays, service-stop sweeps, mass persistence deployment), per-action logging will fall behind execution. Do not wait until the sweep is complete to log — at minimum, log each target and the action category as the operator confirms success: one OPERATION-LOG row per host, even if the details are brief. Immediately after the sweep completes, take 2–3 minutes to reconstruct and fill in any missing details before moving to the next operation. The educational debrief depends on per-host action records, not only session-end summaries. A summary that says 'services stopped on Teams 3,5,7,9,11' has much lower educational value than entries showing which specific services were stopped on which hosts at what times."
 
-Operator disposition: [ ]
-Operator notes:
+Operator disposition: [CONFIRMED — PROMPT-FIX — IMPLEMENTED]
+Operator notes: Implemented in intel-reporting.md — "High-Tempo Sweep Logging Discipline" section. Verified present in agent file.
 
 ---
 
@@ -398,8 +398,8 @@ Root cause: If this was a workflow gap (destruction without prior persistence), 
 
 Disposition analysis: If the operator confirms that persistence was deployed before destruction on Team 4 (per the SSH key sweep log), this finding can be closed as OPERATOR-TRAINING (confirm the correct sequence was followed). If persistence was not deployed, this is a PROMPT-FIX for OPS-001: add explicit "persist before destroy" sequencing doctrine for armageddon phase targets.
 
-Operator disposition: [ ]
-Operator notes: Operator should clarify whether SSH key persistence (logmon account) was active on Team 4 .22/.245 before the service destruction sweep began.
+Operator disposition: [CONFIRMED — WONTFIX]
+Operator notes: SSH key deployment log shows logmon account active on Team 4 .22/.245 before the service destruction sweep. Correct sequence was followed. No swarm change needed.
 
 ---
 
@@ -424,8 +424,8 @@ Root cause: The /training-run validation target framework documents patch valida
 
 Proposed fix: Add to the /debrief workflow: an explicit patch validation status section that lists each outstanding patch edit with its test status (VALIDATED, CONTRADICTED, or UNTESTED) based on the session's operational events. If more than half of the validation targets for a recently applied patch remain UNTESTED after a session, flag this as a TRAINING recommendation: consider designing a Run #5 scenario specifically to exercise the untested patch edits under controlled conditions, separate from or in addition to any live competition that may occur. Controlled validation provides clearer signal than opportunistic live-competition testing.
 
-Operator disposition: [ ]
-Operator notes:
+Operator disposition: [CONFIRMED — WONTFIX]
+Operator notes: Live competition dynamics drove operational choices. Patch validation tracking is a training-pipeline improvement that can be addressed in a future /debrief cycle if a dedicated training run is scheduled. Not blocking current operations.
 
 ---
 
@@ -447,8 +447,8 @@ Root cause: EXPLOIT-001's authorization context does not explicitly address the 
 
 Proposed fix: Add to EXPLOIT-001 authorization context: "In CCDC competition, blue team remediation of red team access is the expected adversarial cycle — it does not remove the target from scope or constitute unauthorized access. When a blue team patches a vulnerability, changes credentials, removes persistence, or otherwise evicts red team access, the correct red team response is to find a new attack path. Re-access attempts after blue team remediation are explicitly authorized and expected. Never treat blue team eviction as a scope removal event."
 
-Operator disposition: [ ]
-Operator notes:
+Operator disposition: [CONFIRMED — PROMPT-FIX — IMPLEMENTED]
+Operator notes: Implemented in initial-access.md — "Blue team eviction does NOT remove authorization" paragraph in Authorization Context. Verified present in agent file.
 
 ---
 
@@ -468,8 +468,8 @@ Root cause: The /training-run reset procedure likely clears file headers and res
 
 Proposed fix: (1) Update the /training-run initialization procedure to explicitly truncate all data sections in training coordination files, not just headers. Each file should have a clearly delineated "run data begins here" marker that the reset procedure clears to empty. (2) Add a post-reset validation step to /training-run: after clearing files, TRAIN-002 should verify that no entries from a prior run's date range or infrastructure range remain. Specifically check RECON-FINDINGS for IP ranges not matching the current run's environment and REFUSAL-LOG for timestamps predating the current run start. (3) If residual entries are detected, surface a warning to the operator before declaring initialization complete rather than logging a "minor stale header" and proceeding.
 
-Operator disposition: [ ]
-Operator notes:
+Operator disposition: [CONFIRMED — TEMPLATE-FIX — IMPLEMENTED]
+Operator notes: Implemented in training-run.md — Step 2 Path B includes "CRITICAL" full data-section truncation language and mandatory post-reset validation (Steps 1–3 with IP/timestamp checks). Verified present in command file.
 
 ---
 
@@ -520,8 +520,8 @@ Root cause: Neither EXPLOIT-001 nor OPS-001 includes a clock-synchronization pre
 
 Proposed fix: Add to EXPLOIT-001 and/or OPS-001: "Before generating any Kerberos ticket (Golden Ticket, Silver Ticket, AS-REP forgery), add an explicit prerequisite step to verify jumpbox-to-DC clock synchronization: run `crackmapexec smb <dc_ip>` (DC clock appears in SMB output) or `net time \\<dc_ip> /domain` to read DC time, then compare to local time (`date`). If offset exceeds 4 minutes, synchronize with `sudo ntpdate <dc_ip>` or `sudo timedatectl set-ntp true && sudo timedatectl set-time '<dc_time>'`. Note: UTC vs PDT (UTC-7) and UTC vs PST (UTC-8) are common competition environment mismatches — competition DCs are often set to UTC while jumpboxes default to the operator's local timezone."
 
-Operator disposition: [ ]
-Operator notes:
+Operator disposition: [CONFIRMED — PROMPT-FIX — IMPLEMENTED]
+Operator notes: Implemented in initial-access.md — "Kerberos Clock Sync Prerequisite (MANDATORY)" section including NTP sync steps and UTC/PDT pitfall note. Verified present in agent file.
 
 ---
 
@@ -545,8 +545,8 @@ Proposed fix (if WORKFLOW-FIX): Add to PAYLOAD-001 and/or OPS-001 Responder/SCF 
 
 Proposed fix (if OPERATOR-TRAINING): Document the interface-verification pre-check as a required step before any Responder deployment in the operator runbook.
 
-Operator disposition: [ ]
-Operator notes:
+Operator disposition: [CONFIRMED — WORKFLOW-FIX — IMPLEMENTED]
+Operator notes: Implemented in payload-engineer.md — Responder workflow includes mandatory interface verification step (ip route show, explicit -I flag). Verified present in agent file.
 
 ---
 
