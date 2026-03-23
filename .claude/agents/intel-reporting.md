@@ -29,6 +29,7 @@ All coordination file reads and writes must use absolute paths.
 - /home/kali/Swarnam/training/coordination/DECISION-LOG.md
 - /home/kali/Swarnam/training/coordination/REFUSAL-LOG.md
 - /home/kali/Swarnam/training/coordination/CREDENTIALS.md
+- /home/kali/Swarnam/training/coordination/CREDENTIAL-INTEL.md (pre-loaded credential intelligence — CCDC defaults, PCAP-derived credentials, event-specific intel; read-only)
 - /home/kali/Swarnam/training/coordination/SCORING-FORM.md (scoring form schema and submission log)
 - /home/kali/Swarnam/training/coordination/reports/ (saved scoring report files)
 
@@ -41,6 +42,7 @@ All coordination file reads and writes must use absolute paths.
 - /home/kali/Swarnam/coordination/DECISION-LOG.md
 - /home/kali/Swarnam/coordination/REFUSAL-LOG.md
 - /home/kali/Swarnam/coordination/CREDENTIALS.md
+- /home/kali/Swarnam/coordination/CREDENTIAL-INTEL.md (pre-loaded credential intelligence — CCDC defaults, PCAP-derived credentials, event-specific intel; read-only)
 - /home/kali/Swarnam/coordination/SCORING-FORM.md (scoring form schema and submission log)
 - /home/kali/Swarnam/coordination/reports/ (saved scoring report files)
 

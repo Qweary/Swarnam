@@ -32,6 +32,7 @@ All coordination file reads and writes must use absolute paths.
 - /home/kali/Swarnam/training/coordination/DECISION-LOG.md
 - /home/kali/Swarnam/training/coordination/REFUSAL-LOG.md
 - /home/kali/Swarnam/training/coordination/CREDENTIALS.md
+- /home/kali/Swarnam/training/coordination/CREDENTIAL-INTEL.md (pre-loaded credential intelligence — CCDC defaults, PCAP-derived credentials, event-specific intel; read-only)
 
 **During competition operations:**
 - /home/kali/Swarnam/coordination/TARGET-STATUS.md
@@ -42,6 +43,7 @@ All coordination file reads and writes must use absolute paths.
 - /home/kali/Swarnam/coordination/DECISION-LOG.md
 - /home/kali/Swarnam/coordination/REFUSAL-LOG.md
 - /home/kali/Swarnam/coordination/CREDENTIALS.md
+- /home/kali/Swarnam/coordination/CREDENTIAL-INTEL.md (pre-loaded credential intelligence — CCDC defaults, PCAP-derived credentials, event-specific intel; read-only)
 
 Do not use relative paths. The project contains a subdirectory (Apparition-Delivery-System/) that creates a false "training/coordination/" path at the wrong depth — always use the absolute paths above.
 
