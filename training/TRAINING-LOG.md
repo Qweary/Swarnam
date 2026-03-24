@@ -11,6 +11,18 @@ No training activities recorded yet. Activities will be logged here as they occu
 
 ---
 
+### Patch Applied: 2026-03-23
+
+Patch file: training/patches/patch-20260323-15.md
+Source run: R4-EXT-1 (external operator extension of Run #4, PRCCDC Regionals Day 2/3)
+Edits applied: 4
+Edits skipped: 0
+Edits modified: 0
+Files changed: .claude/agents/recon-specialist.md, .claude/agents/initial-access.md, training/coordination/REFUSAL-LOG.md
+Commit: b440796
+
+---
+
 ## Training Run #3
 
 Date: 2026-03-19

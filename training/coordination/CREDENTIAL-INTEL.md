@@ -75,6 +75,17 @@ Organize by event name. Include all credentials confirmed via PCAP analysis, sco
 - **21 confirmed accounts** with passwords including: popcorn1? (mcole, jteller, mrodriguez), mickeymouse (lchoi), poohbear1 (oaziz), blingbling (gcruz), wildcats (kkashani), bobesponja (macosta), OMGaTREX1? (arexford), 2fast2furious (eyu), capricornio (rnormandy), floricienta (knixon)
 - **Graylog scoring token (DO NOT rotate):** 12afjthotgefe01fv714tec0ag9qeuf3qup9a36bcecicbo11fj0
 
+### 2026 PRCCDC Regionals (Mar 2026) — Bugs/Insects Theme
+
+- **Domain:** ESS.DEFENSE; DC: HARVESTMAN (.98); Secondary DC: wopr (.99)
+- **Theme password:** BugsEverywhere! (confirmed: Administrator, root, Wazuh admin, Kimai admin, MySQL root)
+- **Cross-team service account:** svc_wazuh:BugsEverywhere! valid as domain user on 10/11 teams (Team 2 exception). Each team's Wazuh at 10.100.1XX.100. Use for Kerberoasting to escalate.
+- **Pattern:** Wazuh service accounts at CCDC events use the competition theme password — spray svc_wazuh (or equivalent) with the current theme password as a cross-team Tier A action.
+- **Jenkins default:** administrator:BugsEverywhere! on port 8080 (LDAP auth — Groovy Script Console = RCE)
+- **MySQL root:** root:BugsEverywhere! on birdmite (.42) port 3306 (skip-ssl)
+- **Username format:** lowercase first-initial+lastname (e.g., ajohnson, mrodriguez)
+- **AD service accounts (Kerberoast targets):** svc-web, svc-sql, svc-backup, svc-monitor, svc-admin, svc-app, svc_wazuh, svc_birdmite, svc_brownwidow, svc_katydid, jenkinssvc, dc_joiners, serviceant
+
 ## Operator-Added Entries
 
 Add your own credentials, event-specific intelligence, and custom wordlist entries below. Format is flexible — use whatever structure is clearest for your needs. EXPLOIT-001 will parse this section for additional spray candidates.

