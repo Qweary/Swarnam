@@ -10,7 +10,7 @@ Maintained by PERSIST-001. This is the authoritative record of all persistence m
 
 ## Type Legend
 
-Type values: TASK (scheduled task), REGISTRY (run key or other registry persistence), WMI (WMI event subscription), SERVICE (Windows service or systemd unit), CRON (cron job), SSHKEY (SSH authorized key), WEBSHELL (web shell file), ACCOUNT (backdoor user account), ADS (Apparition Delivery System deployment), OTHER.
+Type values: TASK (scheduled task), REGISTRY (run key or other registry persistence), WMI (WMI event subscription), SERVICE (Windows service or systemd unit), CRON (cron job), SSHKEY (SSH authorized key), WEBSHELL (web shell file), ACCOUNT (backdoor OS user account), DB-ACCOUNT (backdoor database user — MySQL, MariaDB, PostgreSQL), ADS (Apparition Delivery System deployment), OTHER.
 
 ## Status Legend
 
