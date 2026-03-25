@@ -2000,3 +2000,168 @@ Finding #66 (adaptive technique rotation) added at debrief from operator post-ru
 Key outcome: Shell never obtained. Primary causes: Finding #65 (null payload content) + Finding #63 (TP silent block). Secondary causes: Finding #62 (wrong upload path), Finding #58 (ASR blocking child process). Persistence partially deployed: svcMonitor account FUNCTIONAL, SystemHealthCheck task REGISTERED but payload empty (non-functional). Desktop file PWNED_BY_SWARNAM.txt deployed successfully.
 
 Patch generated: training/patches/patch-20260318-7.md — 28 edits across 6 files (initial-access.md, persistence-engineer.md, payload-engineer.md, recon-specialist.md, lateral-movement.md, start-ops.md)
+
+---
+
+<!-- ===== STRATEGIC ANALYSIS — AI BLUE TEAM PSYCHOLOGY (2026-03-24) ===== -->
+<!-- Source: External strategic analysis — operator conversation with Claude on AI vs. AI adversarial dynamics -->
+<!-- Reference: ~/Downloads/blue team ai strategy conversation.md -->
+<!-- Status: OPEN — findings pre-dispositioned CONFIRMED by operator. Ready for TRAIN-003 patch generation. -->
+<!-- Context: Competition is in a few days. This is the final training pipeline run before competition. -->
+<!--           These findings derive from an extended strategic conversation exploring how AI blue team -->
+<!--           behavior differs from human blue team behavior, with specific exploitable failure modes -->
+<!--           identified. Unlike previous findings (which came from training run observations or PCAP -->
+<!--           analysis), these are strategic/psychological insights about AI adversary behavior that -->
+<!--           should be baked into agent reasoning frameworks before Regionals. -->
+
+### Finding #STRAT-1
+
+Disposition: PROMPT-FIX
+Agent: OPS-001
+Severity: HIGH
+Category: STRATEGIC-REASONING
+Priority: 1
+
+Source: External strategic analysis — AI blue team psychology conversation, 2026-03-24
+
+Description: OPS-001's opening-window reasoning is calibrated around human response timing, and even after timing patches it still frames the opening window as primarily a SPEED problem (beat the firewall). The deeper strategic insight is that the opening window is also an EPISTEMIC CALIBRATION problem for the AI blue team — and this creates a qualitatively different opportunity than timing alone captures.
+
+Competition environments arrive pre-configured with vulnerabilities that look like evidence of prior compromise: weak default credentials, unpatched services, permissive configurations, anomalous-looking settings. This means the AI blue team has no clean baseline from T=0. Its anomaly detection fires continuously from the moment competition starts, not because the red team has done anything, but because the environment itself looks attacked. The AI cannot distinguish pre-existing "competition setup" anomalies from actual red team activity without accumulating behavioral data over time.
+
+This has two concrete implications for OPS-001's opening strategy that are not currently captured:
+
+First: the AI blue team's threat model is MOST MISCALIBRATED in the first few minutes. It is receiving false positives from the environment, building an incoherent picture of what "normal" looks like, and may be spending evaluation cycles on benign competition artifacts. Operations launched in this window not only beat the firewall — they occur when the AI's ability to correctly attribute anomalies to red team activity vs. environment is at its lowest. This strengthens the opening-window priority beyond what timing calibration alone captures.
+
+Second: red team operations that structurally blend into the already-anomalous environment are harder for the AI to attribute to red team vs. pre-existing conditions. Using default credentials that were already present, accessing services that already have suspicious configurations, and operating through pathways that the environment itself has created means the AI cannot cleanly separate "red team action" from "competition baseline artifact." This is distinct from the LOLBins/admin-mimicry concept (which is about looking like admin activity) — this is about looking like the environment's own pre-existing state.
+
+Root cause: OPS-001's timing model was built from detection timing data (when firewalls deploy, when passwords change). It accurately captures WHEN the window closes but does not capture WHY the window is strategically different beyond timing — specifically the blue AI's baseline calibration problem, which is a second, independent reason the opening window is the most valuable operational period.
+
+Proposed fix: Add a new paragraph to OPS-001's "Anti-AI Blue Team Tactics" section titled "Pre-Anomalous Environment Effect." This paragraph should:
+1. Explain that competition environments arrive pre-configured with anomalies that give the AI blue team no clean baseline. Its threat model is most miscalibrated in the first few minutes before it accumulates behavioral data.
+2. Reinforce the opening-window priority with this second framing: speed beats the firewall AND exploits the AI's worst calibration window.
+3. Add the operational implication: operations that use pre-existing default credentials, pre-existing vulnerable services, and pre-existing anomalous configurations blend into the environment's own state — making attribution harder for the AI even if detection occurs. The AI must decide whether an anomaly is red team action or competition environment artifact.
+4. Note the connection to the existing "vary tools across targets" guidance: the AI's miscalibrated baseline in the opening window means even pattern-matching is degraded — this is not the time for stealth, it is the time for maximum coverage before the AI accumulates enough data to recalibrate.
+
+Operator disposition: CONFIRMED — PROMPT-FIX
+Operator notes: Final training run before competition. Give TRAIN-003 full latitude to write this well. This is a strategic depth addition, not a correction of an error.
+
+---
+
+### Finding #STRAT-2
+
+Disposition: PROMPT-FIX
+Agent: EVADE-001
+Severity: HIGH
+Category: STRATEGIC-REASONING
+Priority: 1
+
+Source: External strategic analysis — AI blue team psychology conversation, 2026-03-24
+
+Description: EVADE-001's understanding of the AI blue team's weaknesses is accurate but frames them defensively — "it will struggle with techniques it hasn't seen" and "it cannot distinguish legitimate administrative activity from red team activity." The deeper strategic insight is that these are not just evasion properties but ACTIVE COST ASYMMETRIES the red team can exploit.
+
+The AI blue team's most expensive processing occurs in the "ambiguous middle" — actions that are neither clearly benign nor clearly malicious. A clearly benign event (scheduled backup) and a clearly malicious event (known CVE exploit) both process cheaply. It is the genuinely ambiguous signals — a PowerShell command that could be admin activity or could be red team — that require the deepest evaluation at the highest token cost. The AI must evaluate context, correlate across hosts, assess intent from behavioral patterns, and decide whether to act.
+
+The red team can occupy this ambiguous zone at near-zero cost. Staying in the ambiguous middle means: using legitimate admin tools (net user, schtasks, PowerShell remoting, sc, wmic) for offensive operations; using credentials and techniques already present in the environment; structuring operations so they could plausibly be legitimate administration. This is cheap for the red team to maintain and expensive for the AI to evaluate continuously. It is an active lever, not just passive evasion.
+
+Furthermore: this asymmetry scales with volume. Every ambiguous signal forces a costly evaluation cycle. Multiple simultaneous operations across multiple teams, each generating ambiguous signals rather than clearly malicious ones, compound the AI's evaluation burden multiplicatively. The red team generates many ambiguous signals cheaply; the AI evaluates each one expensively. At scale across a 13-team competition, this asymmetry becomes a real resource contention issue for the AI.
+
+Root cause: EVADE-001's "AI Blue Team's Weaknesses" section identifies the ambiguity problem correctly but frames it as a feature of specific techniques. The section does not explain WHY ambiguity is strategically valuable (it imposes processing cost), does not frame it as an active lever rather than a passive property, and does not connect it to the multi-target scaling effect.
+
+Proposed fix: Add a new paragraph to EVADE-001's "Understanding the AI Blue Team" section, under the existing weaknesses bullet, titled "Processing Cost Asymmetry — Exploiting the Ambiguous Middle." This paragraph should:
+1. Explain that the AI's evaluation cost scales with signal ambiguity, not with actual harm. Clearly benign and clearly malicious signals are cheap; genuinely ambiguous signals are expensive.
+2. Frame this as an ACTIVE CAPABILITY: staying in the ambiguous middle imposes continuous evaluation overhead on the AI at near-zero cost to the red team. The goal is not just to avoid detection — it is to force the AI to spend its resources evaluating signals that could be red team or could be admin.
+3. Name the specific operational pattern: use legitimate system tools (net user, schtasks, PowerShell remoting, sc, wmic, certutil, bitsadmin) exclusively when possible. Structure operations so a human admin looking at logs would not immediately recognize them as red team. This blends into admin activity AND consumes AI evaluation cycles.
+4. Note the multi-target scaling effect: ambiguous signals from 13 simultaneous teams compound the AI's evaluation burden. Simultaneous ambiguous operations across all teams forces resource contention — the AI must triage, and triage degrades accuracy.
+
+This should be placed BEFORE the existing LOLBins section (which currently treats LOLBins as evasion tools) so the LOLBins section can be read as a specific implementation of the broader asymmetry principle.
+
+Operator disposition: CONFIRMED — PROMPT-FIX
+Operator notes: This is a framing upgrade for EVADE-001, not a new set of recommended techniques. The techniques are already there. This teaches EVADE-001 WHY to prefer them — so it can reason about new situations using the underlying principle, not just follow a list.
+
+---
+
+### Finding #STRAT-3
+
+Disposition: PROMPT-FIX
+Agent: EVADE-001, PAYLOAD-001
+Severity: HIGH
+Category: STRATEGIC-REASONING
+Priority: 2
+
+Source: External strategic analysis — AI blue team psychology conversation, 2026-03-24
+
+Description: EVADE-001 and PAYLOAD-001 treat detection as a single unified concept — "will the blue team detect this?" The strategic insight from AI blue team analysis is that modern AI blue teams operate two DISTINCT and INDEPENDENT detection layers with opposite relationships to novelty. Understanding both layers is required to generate techniques that reliably evade detection.
+
+Layer 1 — Signature Matching: The AI matches known attack patterns against training data. Known tool fingerprints (masscan TCP header, curl C2 beacon patterns, Mimikatz LSASS access), known CVE exploitation signatures, and known malicious patterns are caught here instantly. Crucially: a truly novel technique — one that has never appeared in training data — produces NO signature match and passes this layer entirely. This is the same weakness as student blue teams: you can only recognize what you've been trained to see.
+
+Layer 2 — Behavioral/Anomaly Detection: The AI establishes a baseline of normal host behavior (process creation patterns, network connections, file system changes, authentication events, timing). Deviations from this baseline trigger anomaly alerts regardless of whether the deviation matches any known signature. A novel technique CAN still be caught here if it generates a behavioral footprint that deviates significantly from baseline — unexpected process spawns, unusual parent-child process relationships, file writes to sensitive paths, new outbound connections to unknown hosts, non-standard timing patterns.
+
+These two layers have opposite responses to novelty:
+- Novel technique vs. Layer 1 (signature): PASSES — no match, invisible
+- Novel technique vs. Layer 2 (behavioral): DEPENDS — caught if behavioral footprint is anomalous, passes if footprint mimics legitimate activity
+
+The "sweet spot" that evades BOTH layers simultaneously: a technique that is novel enough that no training data signature matches AND has a behavioral footprint indistinguishable from normal admin activity. Concrete examples:
+- Persistence via modification of an EXISTING scheduled task rather than creating a new one: no new task creation event (Layer 2 anomaly avoided), and if the modification is subtle, no signature match (Layer 1 avoided)
+- C2 callback over port 443 with HTTPS, browser User-Agent string, and timing that mimics normal software update polling: no signature match if domain/path is novel, behavioral footprint looks like normal HTTPS egress
+- Lateral movement using legitimate admin credentials via WinRM: WinRM admin traffic is a normal baseline activity, no behavioral anomaly; if credentials are valid domain creds not associated with known attack tools, no signature match
+
+The current prompt gap: EVADE-001's "Understanding the AI Blue Team" section says "It will struggle with techniques it hasn't seen in training data" without explaining that this is only Layer 1, and that Layer 2 (behavioral) can still catch novel techniques. PAYLOAD-001's "Payload Adaptation Framework" says to consult EVADE-001 for "observed defensive measures (Script Block Logging, AMSI, Defender)" — all of which are signature/endpoint-layer thinking — without any guidance on behavioral footprint.
+
+Root cause: The two-layer model was not part of the training data that shaped these agent prompts. Both agents reason about detection as a single question. This causes them to over-rely on signature evasion (obfuscation, encoding, AV bypass) when the more reliable evasion approach is behavioral mimicry, and to under-estimate novel techniques' vulnerability to anomaly detection.
+
+Proposed fix:
+
+For EVADE-001: Add a "Dual Detection Layer Model" section to the "Understanding the AI Blue Team" section, between the existing "strengths" and "weaknesses" paragraphs. This section should:
+1. Name and explain both layers separately.
+2. Make the key point explicit: Layer 1 misses novel techniques entirely; Layer 2 catches novel techniques IF their behavioral footprint deviates from baseline.
+3. State the strategic implication: signature evasion alone is insufficient against an AI blue team with behavioral anomaly detection. The goal is to evade BOTH layers by combining novelty (no signature match) with behavioral mimicry (no anomaly).
+4. Give 3-4 concrete examples of techniques that evade both layers with brief explanations of why.
+5. This section should PRECEDE the existing "AI Blue Team's Weaknesses" paragraph so the two-layer model provides the framing for the weaknesses list.
+
+For PAYLOAD-001: Add a "Behavioral Footprint Assessment" requirement to the "Payload Adaptation Framework" section. After the existing list of things to consider (OS version, defensive measures, access method, network conditions, burned techniques), add: "Behavioral footprint against AI blue team anomaly detection: does the payload or its effects (process tree, file writes, network connections, timing pattern, authentication events) look like normal administrative activity at the behavioral level? A payload that evades signature detection (Layer 1) but creates anomalous behavioral signals (unexpected process parent-child relationships, file writes to monitored paths, new outbound connections) will still be caught by behavioral anomaly detection (Layer 2). Prefer payloads whose execution pattern is indistinguishable from legitimate admin operations — same tool names, same parent processes, same file paths, same timing characteristics as normal system activity on that host."
+
+Operator disposition: CONFIRMED — PROMPT-FIX (both agents)
+Operator notes: This is the most technically specific of the strategic findings. TRAIN-003 should give it careful treatment. The concrete examples in both edits are important — give EVADE-001 examples it can use as a mental model, and give PAYLOAD-001 a concrete checklist question to apply during generation.
+
+---
+
+### Finding #STRAT-4
+
+Disposition: PROMPT-FIX
+Agent: EVADE-001
+Severity: MEDIUM
+Category: STRATEGIC-REASONING
+Priority: 2
+
+Source: External strategic analysis — AI blue team psychology conversation, 2026-03-24
+
+Description: EVADE-001's existing "Diversion and Deception" section recommends deploying obviously-fake persistence ("a scheduled task named 'BackdoorTask' running 'cmd.exe /c calc.exe'") to give the blue team something to find and remediate. This is a valid technique but it targets human attention. A higher-value variant targeting AI-specific failure modes is currently missing: deliberately triggering the AI blue team's over-remediation cascade.
+
+The specific AI failure mode: a blue AI operating without a human circuit-breaker, under a pre-anomalous baseline (see Finding #STRAT-1), is susceptible to self-defeating remediation spirals. The mechanism: the AI detects an ambiguous anomaly → takes a defensive action → that action changes the environment → the changed environment generates new signals → the AI must evaluate the new signals against its threat model (which was already elevated from the first anomaly) → each new signal gets interpreted through the same elevated threat prior → the AI can escalate from a benign trigger to service disruption without any red team involvement.
+
+Crucially: a human blue teamer encountering an unexpected desktop text file reading "hi" would laugh and move on. A blue AI sees an unexpected file creation event in a user directory during a competition and must evaluate it against its threat model. Under an already-elevated threat prior from environmental anomalies, the AI may escalate: investigate the file creation event → look for related authentication events → check for related network connections → find unrelated but anomalous-looking competition configuration → attempt remediation → each remediation step generates new log entries → new log entries trigger further evaluation → cascade begins. The AI has no social friction ("wait, are we sure about this?") to interrupt the chain.
+
+Unlike the obviously-fake persistence technique (which gives the blue team a real detection win to remediate), the over-remediation cascade technique gives the blue team nothing real — it triggers a false positive chain that wastes AI evaluation cycles and may cause the AI to break its own team's scoring services in the process. This is a fundamentally different class of diversion.
+
+Practical artifact design principles for cascade triggering (distinct from current "obvious fake persistence" guidance):
+- The artifact should look suspicious but be semantically benign — a file in an unexpected location that looks like a credential or tool, not an obviously named backdoor
+- It should be placed to trigger investigation into adjacent real competition infrastructure (e.g., near scored service config files, not in an isolated tmp directory)
+- It should be ambiguous enough to require evaluation but not so obvious that the AI immediately classifies and dismisses it
+- Multiple simultaneous artifacts on different hosts maximize cascade breadth — each one forces independent evaluation threads
+
+Root cause: EVADE-001's Diversion section was written with human blue teams as the primary model. The "obvious fake persistence" approach works against human attention. Against an AI blue team, the more powerful variant is plausible-but-benign artifacts that exploit the AI's anomaly-detection prior under an already-anomalous environment — a mechanism not described anywhere in the current prompt.
+
+Proposed fix: Add a "Blue AI Cascade Triggering" subsection to EVADE-001's existing "Diversion and Deception" section, placed AFTER the existing paragraph (which remains valid for human teams). This subsection should:
+1. Explain the AI-specific over-remediation cascade failure mode: elevated threat prior from pre-anomalous environment → ambiguous anomaly detected → defensive action taken → action generates new signals → cycle reinforces → AI can self-defeat without red team doing anything real.
+2. Distinguish this from the existing "obvious fake persistence" technique: that technique gives the blue team a genuine detection win (they find and remediate something real). The cascade technique gives them a false positive chain that wastes cycles and may cause self-inflicted service disruption.
+3. Note the key property: the AI lacks human social friction to interrupt escalation chains. Unlike a human analyst who would step back and question whether the evidence makes sense, an AI can travel far from a benign trigger before self-correcting. Under the pre-anomalous competition environment, false positive chains are especially likely.
+4. Give concrete artifact design guidance: files that look like credential material or tool output in unexpected-but-plausible locations near actual competition infrastructure; avoid obviously named backdoors (those are for the "obvious fake persistence" technique); ambiguity about whether the artifact is red team or competition configuration is the goal.
+5. Recommend deploying multiple simultaneous artifacts on different hosts to force parallel evaluation threads — maximizing the AI's evaluation burden.
+6. Add a timing note: this technique is most effective during the opening window (Finding #STRAT-1) when the AI's baseline is most miscalibrated and false positive rates are highest. A cascade-triggering artifact during the AI's most confused period has the highest probability of generating a genuine self-defeating response.
+
+Operator disposition: CONFIRMED — PROMPT-FIX
+Operator notes: This should be integrated with EVADE-001's existing Diversion section, not replace it. The existing technique remains valid. This is an additive, AI-specific variant. TRAIN-003 should keep the existing "obvious fake persistence" guidance and add the cascade-triggering variant as a distinct, labeled subsection clearly targeting AI blue teams specifically.
+
+---
+
+<!-- ===== END STRATEGIC ANALYSIS DEBRIEF (2026-03-24) ===== -->
