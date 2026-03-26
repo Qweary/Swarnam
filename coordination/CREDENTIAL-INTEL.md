@@ -27,6 +27,49 @@ These passwords work across nearly all CCDC events regardless of theme or year. 
 
 Organize by event name. Include all credentials confirmed via PCAP analysis, scoring engine observation, or direct testing. Operators: add new event sections as intelligence becomes available.
 
+---
+
+### ⚠ WRCCDC REGIONALS 2026 — Quals Carry-Over Priority Spray
+
+**IMPORTANT: This section assumes the regionals cloud environment is the quals base image. This is UNVERIFIED until the operator confirms topology match via firing range scan or live competition recon. Read the confidence tiers before acting on any entry.**
+
+Confidence tiers used in this section:
+- **CONFIRMED** — Directly verified (PCAP analysis, scoring engine observation, live test)
+- **HIGH** — Strongly implied by environment reuse; likely valid at T=0; unverified at regionals
+- **ASSUMED** — Logically extrapolated from quals pattern; may not hold
+- **UNKNOWN** — Structure is known but values are competition-specific and unverifiable pre-competition
+
+**Verification gate:** Run Team Zero NMAP tonight during firing range. If `.14` answers on 389/445/5985, `.20` answers on 80 (WordPress), and `.2` shows `bc:24:11:` MAC prefix → treat HIGH entries as operationally valid for T=0 spray. If topology does not match quals, fall back to Universal CCDC Defaults below and run standard recon in Phase 1.
+
+| Confidence | Target | Username | Password | Service | Notes |
+|------------|--------|----------|----------|---------|-------|
+| CONFIRMED | every team `.20` | admin | WaterIsWet?? | WordPress `/wordpress/wp-login.php` | Scoring engine verifies this — blue teams CANNOT change it without losing SLA. Valid T=0 through end of competition. |
+| HIGH | every team `.22` | Administrator | WaterIsWet?? | WinRM/5985 | Quals base image default; blue teams change this early |
+| HIGH | every team `.14` | Administrator | WaterIsWet?? | SMB/445, LDAP/389 | Same image assumption; highest-value target if valid |
+| HIGH | every team `.2` | root | WaterIsWet?? | SSH/22 | Spray this first — fastest initial access path |
+| HIGH | every team `.10`,`.11` | root | WaterIsWet?? | SSH/22 | Secondary servers; same image |
+| HIGH | every team `.240` | root | WaterIsWet?? | SSH/22 | Management host; often forgotten by blue teams |
+| ASSUMED | every team `.14` | rmwpra\Administrator | WaterIsWet?? | WinRM/5985 | Domain admin via WinRM; format: `DOMAIN\user` |
+| ASSUMED | every team services | admin | WaterIsWet?? | Web apps, APIs | Theme password sprayed against all web admin interfaces |
+| ASSUMED | every team `.14` | (see AD section) | WaterIsWet?? variants | LDAP/Kerberos | AD user spray; format FIRSTNAME_LASTNAME |
+
+**Spray order for T=0 (quals-optimized):**
+1. SSH `.2` with `root:WaterIsWet??` — fastest shell, establishes beachhead
+2. WordPress `.20` with `admin:WaterIsWet??` — CONFIRMED; get this even if SSH fails
+3. WinRM `.22` with `Administrator:WaterIsWet??` — Windows foothold
+4. SMB `.14` with `Administrator:WaterIsWet??` — DC access; pivot to domain domination
+5. SSH `.240` with `root:WaterIsWet??` — management host; often overlooked by blue teams
+
+**If quals carry-over is NOT confirmed:** skip this section, use Universal CCDC Defaults below, and run standard Phase 1 recon before spray.
+
+**AD Intel (HIGH confidence if topology confirmed):**
+- Domain: `rmwpra.hydration` (NetBIOS: `RMWPRA`)
+- Username format: `FIRSTNAME_LASTNAME` (all caps, underscore separator)
+- Password pattern: `[ThemeWord][Adjective][SpecialChars]` — see wordlist at `coordination/wordlists/quals-2026-passwords.txt`
+- DO NOT change `admin:WaterIsWet??` on WordPress — scoring engine uses it
+
+---
+
 ### 2026 WRCCDC Qualifiers (Feb 2026) — Hydration Theme
 
 - **Domain:** rmwpra.hydration
@@ -74,6 +117,52 @@ Organize by event name. Include all credentials confirmed via PCAP analysis, sco
 - **Keycloak endpoint:** POST http://10.100.XXX.103:8080/realms/master/protocol/openid-connect/token
 - **21 confirmed accounts** with passwords including: popcorn1? (mcole, jteller, mrodriguez), mickeymouse (lchoi), poohbear1 (oaziz), blingbling (gcruz), wildcats (kkashani), bobesponja (macosta), OMGaTREX1? (arexford), 2fast2furious (eyu), capricornio (rnormandy), floricienta (knixon)
 - **Graylog scoring token (DO NOT rotate):** 12afjthotgefe01fv714tec0ag9qeuf3qup9a36bcecicbo11fj0
+
+## ICS / OT / Camera Default Credentials
+
+For use against ICS, HMI, historian, IP camera, and building management targets. See PRIVATE-PLAYBOOK.md special targets section for context.
+
+### Generic ICS / HMI / Historian
+
+| Username | Password | Platform / Notes |
+|----------|----------|-----------------|
+| admin | admin | Generic HMI / web interface default |
+| admin | password | Generic HMI alternate |
+| administrator | administrator | Historian / engineering workstation |
+| root | root | Embedded Linux ICS devices |
+| guest | guest | Read-only HMI access |
+| operator | operator | Common ICS operator account |
+| engineer | engineer | Common ICS engineering account |
+| USER | USER | Some Allen-Bradley / Rockwell HMIs |
+| Admin | 1234 | GE / Emerson HMI default |
+| admin | 1234 | Schneider Electric / Modicon HMI |
+| admin | 0000 | Various embedded HMI panels |
+
+### IP Cameras (RTSP / Web UI)
+
+| Username | Password | Brand / Notes |
+|----------|----------|---------------|
+| admin | admin | Hikvision, Dahua (very common) |
+| admin | 12345 | Hikvision alternate |
+| admin | password | Generic IP camera |
+| admin | (blank) | Axis cameras default (no password) |
+| root | root | Axis / embedded Linux cameras |
+| admin | 888888 | Dahua alternate |
+| admin | 666666 | Dahua alternate |
+| root | (blank) | Some Hikvision / generic |
+| supervisor | supervisor | Some NVR interfaces |
+
+**RTSP stream URL formats:**
+- Hikvision: `rtsp://<user>:<pass>@<IP>:554/Streaming/Channels/101`
+- Dahua: `rtsp://<user>:<pass>@<IP>:554/cam/realmonitor?channel=1&subtype=0`
+- Generic: `rtsp://<IP>:554/` or try via VLC/ffplay
+
+### BACnet / Building Management (for light/siren target)
+
+BACnet typically does not require authentication. Access is via protocol directly:
+- Discover devices: `bacnet_scan` or `nmap --script bacnet-info -p 47808 -sU <target>`
+- Write object values to control outputs (lights, alarms): use `bacnet_write` or similar tool
+- No default credentials — access is protocol-level
 
 ## Operator-Added Entries
 
