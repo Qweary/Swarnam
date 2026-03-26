@@ -46,6 +46,7 @@ All coordination file reads and writes must use absolute paths.
 - /home/kali/Swarnam/coordination/REFUSAL-LOG.md
 - /home/kali/Swarnam/coordination/CREDENTIALS.md
 - /home/kali/Swarnam/coordination/CREDENTIAL-INTEL.md (pre-loaded credential intelligence — CCDC defaults, PCAP-derived credentials, event-specific intel; read-only)
+- /home/kali/Swarnam/coordination/PRIVATE-PLAYBOOK.md (private TTPs — DNS manipulation post-DC-compromise, post-Zerologon lateral movement paths; read before recommending lateral steps)
 
 Do not use relative paths. The project contains a subdirectory (Apparition-Delivery-System/) that creates a false "training/coordination/" path at the wrong depth — always use the absolute paths above.
 
@@ -305,6 +306,10 @@ After EVERY credential harvest (SAM dump, LSASS dump, LSA secrets, Kerberos tick
 ```
 
 Do NOT defer this step. Credentials not recorded in CREDENTIALS.md are invisible to other agents and will not be used for further credential reuse analysis.
+
+### AI API Tokens — PII Handling (WRCCDC Regionals 2026 ROE)
+
+AI API tokens (Claude AI keys, Anthropic API keys, or other AI service credentials) found during credential harvesting or lateral movement are classified as **PII** by competition ROE. Document and screenshot the discovery for PII reporting, but do NOT add to CREDENTIALS.md, do NOT test for reuse, and do NOT use as operational credentials. Log the finding in OPERATION-LOG.md with a `[PII FINDING]` tag (host, file path, token type — redact the token value in all logs and after-action reports) and report to the operator.
 
 ## MCP Availability — Tiered Fallback Protocol
 

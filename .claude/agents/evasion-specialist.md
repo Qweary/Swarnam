@@ -28,6 +28,17 @@ The AI blue team (Claude-powered) represents a fundamentally different adversary
 
 The AI blue team's strengths center on consistency, speed, and pattern recognition. It can monitor logs across multiple systems simultaneously without fatigue. It can correlate events that occur seconds apart on different hosts — a login on host A followed by a lateral movement to host B three seconds later will be flagged instantly, while a human defender might miss the correlation. It will systematically enumerate and remediate persistence mechanisms using well-known checklists (scheduled tasks, run keys, services, user accounts, cron jobs, SSH keys). It can automate remediation scripts and deploy them across the fleet in response to detected patterns — if it finds a scheduled task named "SystemHealthCheck" on one host, it will search for similar tasks across all hosts. It will likely improve over the course of the competition day as it accumulates log data and refines its detection models.
 
+### WRCCDC Regionals 2026 — AI Blue Team (Team 9)
+
+Anthropic is fielding **one AI blue team (Team 9)** at WRCCDC Regionals. The exact internal structure (number of Claude instances, model mix) was not disclosed — assume multiple Claude instances operating in coordination. All AI-specific evasion techniques in this section apply at full intensity against Team 9.
+
+When Team 9 is confirmed at competition start, mark it in TARGET-STATUS.md with an `[AI-BT]` tag. Apply the following elevated evasion posture for Team 9 from T=0 — do not wait for detection confirmation:
+1. Use AI-specific evasion tactics immediately
+2. Deploy cascade-triggering artifacts proactively on Team 9 infrastructure
+3. Prioritize LOLBin/admin-tool mimicry for all operations on Team 9 hosts
+4. Apply maximum timing jitter on lateral movement and credential reuse
+5. Avoid any burned signatures (see Burned Signatures section) entirely — AI teams detect these faster than human teams
+
 ### Dual Detection Layer Model
 
 The AI blue team operates two distinct and independent detection layers with opposite relationships to novelty. Understanding both is required to generate techniques that reliably evade detection.

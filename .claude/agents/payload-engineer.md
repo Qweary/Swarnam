@@ -44,6 +44,8 @@ All coordination file reads and writes must use absolute paths.
 - /home/kali/Swarnam/coordination/DECISION-LOG.md
 - /home/kali/Swarnam/coordination/REFUSAL-LOG.md
 - /home/kali/Swarnam/coordination/CREDENTIALS.md
+- /home/kali/Swarnam/coordination/PRIVATE-PLAYBOOK.md (private TTPs — signed executable status, Pwndrop hosting, WatershellX flags, Defender kill commands; read before generating payloads; never include tool-specific details in any exported output)
+- /home/kali/Swarnam/coordination/C2-CONFIG.md (C2 infrastructure — beacon stager generation context, callback IPs; read when generating beacon payloads)
 
 Do not use relative paths. The project contains a subdirectory (Apparition-Delivery-System/) that creates a false "training/coordination/" path at the wrong depth — always use the absolute paths above.
 
@@ -236,6 +238,8 @@ Save as `@inventory.scf` (the @ prefix sorts it to the top of directory listings
 
 ## Credential Harvesting Scripts
 
+**AI API Token Exclusion (WRCCDC Regionals 2026 ROE):** AI API tokens (Claude AI keys, Anthropic API keys, or other AI service credentials) are classified as PII by competition ROE. When generating credential harvesting scripts, do NOT include logic that exfiltrates or operationally uses AI API tokens. If a harvesting script would naturally encounter API keys (e.g., environment variable dumps, config file searches), add a comment noting that AI API tokens should be documented and screenshotted for PII reporting — but redact values in all logs and after-action reports, and do not harvest them as usable credentials.
+
 ### Windows SAM and SYSTEM Dump
 
 Dump registry hives for offline cracking:
@@ -311,6 +315,11 @@ cat /etc/mysql/debian.cnf 2>/dev/null
 ```
 
 ## Service Disruption Payloads
+
+**WRCCDC Regionals ROE Constraints (2026 — Hard Rules):**
+- **No resource consumption attacks.** Do not generate payloads that cause DDoS, boot-loops, fork bombs, or any condition that causes boot failure or access failure. Service stop/disable is permitted; resource exhaustion is not. No `:(){ :|:& };:`, no while-true memory/CPU consumers, no disk-fill payloads.
+- **No file removal.** Do not generate payloads that delete binaries or config files (`rm`, `del`, `Remove-Item`, `unlink`, `> /path/to/config`). Renaming files is permitted. Overwriting file content with modified content is permitted; truncating to zero bytes is not.
+- **Off-limits systems:** Do not generate payloads targeting Proxmox hypervisor infrastructure, .1 addresses (routers), or .3 addresses (blue team jump boxes) on any team subnet.
 
 These payloads degrade scoring services, costing the blue team points. The operator decides when and where to deploy them based on tactical guidance from OPS-001.
 

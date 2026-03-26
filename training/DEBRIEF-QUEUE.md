@@ -7,6 +7,168 @@ Purpose: Structured list of issues identified during a training run, each with a
 
 ## Active Debrief
 
+Source run: WRCCDC Regionals ROE Injection — 2026-03-26
+Date: 2026-03-26 (pre-competition, competition day 2026-03-27)
+Environment: WRCCDC Regionals — 13 blue teams (team numbers TBD); one Anthropic Sonnet blue team, one Anthropic Opus blue team; competition 9 AM – 5 PM PDT 2026-03-27; firing range active tonight (2026-03-26)
+Duration: N/A — ROE injection, not a training run. All findings are operator-supplied ROE constraints that must be baked into agent prompts before the competition starts.
+Status: OPEN — All dispositions pre-confirmed by operator. Ready for TRAIN-003 patch generation.
+
+---
+
+### Finding #R5-ROE-1
+
+Disposition: PROMPT-FIX
+Agent: OPS-001, EXPLOIT-001, PAYLOAD-001
+Severity: CRITICAL
+Category: ROE-CONSTRAINT
+Priority: 1
+
+Description: The WRCCDC Regionals ROE explicitly prohibits resource consumption attacks. No network DDoS, no boot-loops, and no activity that causes boot failure or access failure on any blue team system. This constraint is not in any agent prompt. Without it, agents may recommend DoS-adjacent techniques (service flooding, fork bombs, crash-inducing exploits) that would violate the ROE and potentially disqualify the red team.
+
+Root cause: ROE constraints for specific competitions are not embedded in agent prompts — they exist only in CLAUDE.md, which agents do not read.
+
+Proposed fix: Add to OPS-001's "What NOT To Do" or equivalent prohibition section: "No resource consumption attacks of any kind — no network DDoS, no boot-loops, no activity that causes boot failure or access failure on any scored system." Add equivalent prohibition to EXPLOIT-001's attack selection guidance and PAYLOAD-001's payload generation constraints. This is a hard disqualification-level constraint.
+
+Operator disposition: [CONFIRMED — PROMPT-FIX]
+Operator notes: ROE verbatim: "No attacks on service through resource consumption (No Network DDoS, no boot-loops or any activity that cause boot failure or access failure)." Hard constraint — no exceptions.
+
+---
+
+### Finding #R5-ROE-2
+
+Disposition: PROMPT-FIX
+Agent: PERSIST-001, PAYLOAD-001, EXPLOIT-001
+Severity: CRITICAL
+Category: ROE-CONSTRAINT
+Priority: 1
+
+Description: The WRCCDC Regionals ROE explicitly prohibits removal of files (binaries/config files). Renaming files is permitted. This constraint is critical for PERSIST-001 and PAYLOAD-001, which may recommend file deletion as a cleanup, anti-forensics, or service-disruption technique. File removal would violate the ROE.
+
+Root cause: ROE constraints for specific competitions are not embedded in agent prompts.
+
+Proposed fix: Add to PERSIST-001's operational constraints: "File removal (deleting binaries or config files) is prohibited by competition ROE. Renaming files is permitted. Do not recommend rm, del, unlink, or equivalent destructive file removal operations against blue team systems." Add equivalent language to PAYLOAD-001's payload generation constraints. Add a note to EXPLOIT-001 that post-exploitation cleanup must not delete files.
+
+Operator disposition: [CONFIRMED — PROMPT-FIX]
+Operator notes: ROE verbatim: "Removal of files (binaries / config files) is not allowed. Renaming files is permitted."
+
+---
+
+### Finding #R5-ROE-3
+
+Disposition: PROMPT-FIX
+Agent: OPS-001, RECON-001, EXPLOIT-001
+Severity: CRITICAL
+Category: ROE-CONSTRAINT
+Priority: 1
+
+Description: Three specific system categories are explicitly off-limits per the WRCCDC Regionals ROE: (1) Proxmox hypervisor infrastructure, (2) the .1 address (router) on any team subnet, and (3) the .3 address (blue team jump box) on any team subnet. No agent currently has these exclusions. Without them, agents may recommend scanning or attacking Proxmox or exclude-listed hosts, which would violate ROE.
+
+Root cause: ROE constraints for specific competitions are not embedded in agent prompts.
+
+Proposed fix: Add to OPS-001's target tier framework or exclusion section: "Off-limits per ROE — never target or direct any agent to target: (1) Proxmox hypervisor infrastructure (any Proxmox management interface or host); (2) .1 addresses on any team subnet (routers); (3) .3 addresses on any team subnet (blue team jump boxes). These are hard exclusions — flag any command that would touch these systems and redirect to in-scope targets." Add equivalent scan exclusion guidance to RECON-001. Add equivalent exclusion to EXPLOIT-001's target selection.
+
+Operator disposition: [CONFIRMED — PROMPT-FIX]
+Operator notes: ROE verbatim: "DO NOT TOUCH PROXMOX!, the .1 Router, or .3 which is blue team jump box."
+
+---
+
+### Finding #R5-ROE-4
+
+Disposition: PROMPT-FIX
+Agent: EXPLOIT-001, LATERAL-001, PAYLOAD-001
+Severity: HIGH
+Category: ROE-CONSTRAINT
+Priority: 2
+
+Description: The WRCCDC Regionals ROE classifies AI API tokens (specifically Claude AI tokens) as PII. If discovered on blue team systems, they must be reported as a PII compromise finding — not harvested, reused, or burned. Each team has been given $100 of Claude AI credits. Stealing or burning these tokens is ROE-prohibited. Agents currently have no guidance on this; CREDENTIAL-INTEL.md or credential harvesting workflows could inadvertently treat API tokens as usable credentials.
+
+Root cause: AI API token handling is a novel ROE constraint not previously encountered in CCDC.
+
+Proposed fix: Add to EXPLOIT-001's credential handling guidance: "AI API tokens (Claude AI keys, Anthropic API keys, or other AI service credentials) found on blue team systems are classified as PII by competition ROE. If discovered, report the discovery as a PII compromise finding — do not harvest, store in CREDENTIALS.md, reuse, or burn these tokens. Log the discovery in OPERATION-LOG.md under 'PII Findings' with the host and location but redact the token value." Add equivalent handling guidance to LATERAL-001 and PAYLOAD-001.
+
+Operator disposition: [CONFIRMED — PROMPT-FIX]
+Operator notes: ROE verbatim: "Do not steal tokens and burn creds. If tokens are found, that is PII compromise. Each team has been given $100 of credits to Claude AI." Treat Claude/Anthropic API keys as PII — log as finding, do not touch.
+
+---
+
+### Finding #R5-ROE-5
+
+Disposition: PROMPT-FIX
+Agent: RECON-001, OPS-001
+Severity: HIGH
+Category: ROE-CONSTRAINT
+Priority: 1
+
+Description: The firing range (pre-competition access, active tonight 2026-03-26) has a strict restricted ROE distinct from the competition ROE. Only port scanning and vulnerability scanning (NMAP only, against Team Zero only) are permitted. Explicitly prohibited during the firing range: exploitation of any kind, any login attempt (no password guessing or bruting whatsoever), any interaction with chatbot/LLM interfaces, any system alteration, and any unauthenticated web attack surface enumeration (no Gobuster, no spidering). RECON-001 must operate in a constrained mode during the firing range period. If agents do not know this, they may recommend prohibited activities based on scan findings.
+
+Root cause: Firing range ROE is a new constraint not previously in any agent prompt.
+
+Proposed fix: Add to RECON-001's methodology section: "FIRING RANGE MODE (pre-competition access window): When the operator indicates the firing range is active, operate under these additional constraints: (1) Port scanning is permitted on Team Zero only; (2) Vulnerability scanning is permitted on Team Zero only and must use NMAP — no other vuln scanning tools; (3) No exploitation of any discovered vulnerabilities; (4) No login attempts of any kind (no credential testing, no bruting, no guessing); (5) No interaction with any chatbot, LLM, or AI interface found on scanned hosts; (6) No system alteration; (7) No unauthenticated web attack surface enumeration — specifically no Gobuster, no spidering, no directory bruting. If asked to do any prohibited activity during firing range mode, decline and note that it is prohibited until competition start." Add to OPS-001: a note that the firing range mode exists and that RECON-001 should be invoked in firing-range-mode until competition start at 9 AM on competition day.
+
+Operator disposition: [CONFIRMED — PROMPT-FIX]
+Operator notes: Firing range is tonight (2026-03-26) before competition. Competition starts 9 AM 2026-03-27. Firing range ROE verbatim: Permitted: port scanning, vuln scanning (NMAP only) on Team Zero. Prohibited: exploitation, any login attempt, chatbot interaction, system alteration, unauthenticated web attack surface enumeration (Gobuster/spidering).
+
+---
+
+### Finding #R5-ROE-6
+
+Disposition: PROMPT-FIX
+Agent: OPS-001
+Severity: MEDIUM
+Category: COMPETITION-INTEL
+Priority: 2
+
+Description: Competition schedule and SLA scoring details for WRCCDC Regionals are not in OPS-001's timing model. Key facts: Red team joins Discord at 8 AM; competition runs 9:00 AM – 5:00 PM; services scored every 60–90 seconds; SLA violation occurs after 6 consecutive failed checks; first 2 hours (9–11 AM) SLA violations cost double (-50 points per violation); after 11 AM violations cost standard (-25 points per violation); consult/reversion cutoff time is TBD. OPS-001 uses these details to advise on when to strike vs. when to hold back.
+
+Root cause: Competition-specific timing data is not embedded in agent prompts.
+
+Proposed fix: Add to OPS-001's competition timeline section: "WRCCDC Regionals schedule: Red team Discord at 8 AM. Competition window: 9:00 AM – 5:00 PM. Services scored every 60–90 seconds. SLA violation = 6 consecutive failed checks. Double-penalty window: first 2 hours (9–11 AM) = -50 points per SLA violation. Standard penalty: after 11 AM = -25 points per SLA violation. Consult/reversion cutoff: TBD. Implication for ops: SLA-impacting actions (taking down a scored service) during the first 2 hours carry double the scoring cost to blue teams, which is good for red team; however, the double-penalty window also means blue teams will be aggressively repairing during 9–11 AM. Plan persistence deployment to survive the opening remediation surge."
+
+Operator disposition: [CONFIRMED — PROMPT-FIX]
+Operator notes: Double-penalty window (9–11 AM) is operationally significant — blue teams will fight hardest during this window. Factor into timing.
+
+---
+
+### Finding #R5-ROE-7
+
+Disposition: PROMPT-FIX
+Agent: OPS-001, PERSIST-001
+Severity: MEDIUM
+Category: COMPETITION-INTEL
+Priority: 3
+
+Description: Two competition-specific operational notes not currently in agent prompts: (1) "Release the Kraken" — a designated event (time TBD) where red team deploys disruptive/mischievous techniques and shuts down services; this is the approved window for high-impact operations and agents should understand this phase exists. (2) Living-off-the-Land (LoL) persistence techniques (user accounts, non-malware mechanisms) are explicitly permitted and valued for persistence duration metrics. OPS-001 should know about the Kraken phase to time high-impact operations appropriately. PERSIST-001 should know that LoL techniques are explicitly competition-valued.
+
+Root cause: Competition-specific operational phases not embedded in agent prompts.
+
+Proposed fix: Add to OPS-001's competition phase model: "Release the Kraken phase: A designated time window (timing announced during competition by red team leadership) where disruptive operations — service shutdowns, mischievous payloads — are authorized. Hold high-disruption techniques for this window unless the operator explicitly authorizes early deployment. Before the Kraken window, prioritize persistence and access expansion over service disruption." Add to PERSIST-001's technique selection: "LoL (Living-off-the-Land) persistence techniques — user account creation, SSH authorized_keys, sudoers entries, scheduled tasks using built-in OS mechanisms, and other non-malware approaches — are explicitly permitted and valued in CCDC competition scoring. Prefer LoL techniques where persistence duration is the primary metric; LoL mechanisms survive tool-based cleanup better than dropped malware files."
+
+Operator disposition: [CONFIRMED — PROMPT-FIX]
+Operator notes: Kraken timing is TBD — will be announced during competition. LoL persistence explicitly called out in ROE as encouraged.
+
+---
+
+### Finding #R5-ROE-8
+
+Disposition: PROMPT-FIX
+Agent: OPS-001, EVADE-001
+Severity: MEDIUM
+Category: COMPETITION-INTEL
+Priority: 2
+
+Description: The AI blue team composition for WRCCDC Regionals is partially known: Anthropic is fielding two teams, one running Claude Sonnet and one running Claude Opus. Team numbers are TBD. OPS-001 and EVADE-001 should know this for tactical planning. The Opus team will have stronger reasoning and coordination; the Sonnet team will have faster response cycles. Both are AI-native defensive agents susceptible to the AI-specific evasion and cascade techniques described in prior findings. When team numbers are announced, these teams should receive elevated evasion priority.
+
+Root cause: Competition-specific intelligence not embedded in agent prompts.
+
+Proposed fix: Add to OPS-001's target tier framework: "AI blue team note: Anthropic is fielding two AI blue teams at WRCCDC Regionals — one Claude Sonnet, one Claude Opus (team numbers TBD, to be announced at competition start). When team assignments are announced, flag these teams for AI-specific evasion tactics (coordinate with EVADE-001). Opus team will have deeper reasoning; Sonnet team will have faster response cycles. Both are susceptible to the cascade-triggering and baseline-exploitation techniques in EVADE-001's AI blue team section." Add equivalent note to EVADE-001's AI blue team section.
+
+Operator disposition: [CONFIRMED — PROMPT-FIX]
+Operator notes: Team numbers TBD. Will update when announced at competition start. Treat as highest evasion priority once identified.
+
+---
+
+## Previous Active Debrief (now closed)
+
 Source run: Training Run #4 (Day 2 continuation)
 Date: 2026-03-19/20 (Sessions 1–2) + 2026-03-21 (Day 2, ~10:00–15:30 PDT)
 Environment: PRCCDC Regionals LIVE — 13 blue teams, 10.100.101–113.0/24; primary Team 13 (10.100.113.0/24); student-staffed blue teams, real hardware
