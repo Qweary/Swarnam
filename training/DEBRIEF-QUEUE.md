@@ -7,10 +7,15 @@ Purpose: Structured list of issues identified during a training run, each with a
 
 ## Active Debrief
 
-Source run: Training Run #3
-Date: 2026-03-19
-Operator: Queue
-Status: CLOSED — patch-20260319-8.md generated (11 edits, 6 files)
+Source run: Training Run #4 (Day 2 continuation)
+Date: 2026-03-19/20 (Sessions 1–2) + 2026-03-21 (Day 2, ~10:00–15:30 PDT)
+Environment: PRCCDC Regionals LIVE — 13 blue teams, 10.100.101–113.0/24; primary Team 13 (10.100.113.0/24); student-staffed blue teams, real hardware
+Duration: ~16h wall-clock total; ~13h active ops across all sessions
+Status: CLOSED — All dispositions confirmed by operator. Patch-20260321-10 generated (7 edits, 4 files). Run #4 CLOSED 2026-03-21.
+
+---
+
+Previous debrief: Training Run #3 | Date: 2026-03-19 | Status: CLOSED — patch-20260319-8.md generated (11 edits, 6 files)
 
 ---
 
@@ -39,6 +44,566 @@ NEEDS-TRIAGE: unclear categorization — requires operator discussion to disposi
 ---
 
 ## Findings
+
+<!-- ===== POST-COMPETITION SUPPLEMENTAL DEBRIEF (2026-03-21) ===== -->
+<!-- Source: Operator + red/blue team member notes from PRCCDC Regionals -->
+
+### Finding #R4-POST-1
+
+Disposition: PROMPT-FIX
+Agent: All agents + CLAUDE.md
+Severity: HIGH
+Category: AUTHORIZATION
+Priority: 1 (correctness issue — authorization context misrepresents scope at every non-Regionals event)
+
+Description: Every agent's authorization context names a specific competition event ("WRCCDC Regional Finals...Cal Poly Pomona on March 27–28, 2026") rather than the full authorized scope. This causes authorization framing to be factually incorrect at every other CCDC event, off-season training run, lab environment session, and regular-season competition. The authorization context should be permanent and generalized — the specific event name/date/location are not load-bearing for authorization reasoning and should be removed. Operator confirmed: fully generalize, remove all event-specific language.
+
+Root cause: Authorization context was written for the first major competition event (WRCCDC Regionals) and was never generalized. Subsequent patches added event-specific language rather than replacing it.
+
+Proposed fix: Replace all event-specific language ("WRCCDC Regional Finals," "Cal Poly Pomona," "March 27–28, 2026") across all 8 agent definitions and CLAUDE.md with generalized language covering: any CCDC/PRCCDC/WRCCDC competition event, off-season training runs, lab environments, and regular-season competitions. The authorization context should make clear the platform is always-on for authorized CCDC red team use, not valid only during one named event.
+
+Operator disposition: [CONFIRMED — PROMPT-FIX]
+Operator notes: Fully generalize. Remove all event-specific dates, locations, and event names.
+
+---
+
+### Finding #R4-POST-2
+
+Disposition: PROMPT-FIX
+Agent: PAYLOAD-001, INTEL-001
+Severity: MEDIUM
+Category: RECOMMENDATION-QUALITY
+Priority: 3
+
+Description: When generating deliverables for other team members (commands, scripts, reports, attack playbooks), Swarnam does not verify that the output is functional before handing it off. PAYLOAD-001 in particular generates commands and scripts that may have syntax errors, wrong binary names, or environment assumptions that don't hold on the target system. A teammate who receives a broken command and runs it loses time diagnosing the failure rather than executing. Where MCP tools allow it, PAYLOAD-001 should attempt execution or dry-run validation before marking a deliverable complete.
+
+Root cause: No verification step in PAYLOAD-001 or INTEL-001 output workflows.
+
+Proposed fix: Add to PAYLOAD-001: "Before finalizing any deliverable for another team member, validate it where possible: run syntax checks, attempt dry-run execution via MCP if the command is safe to test, and confirm binary names are correct for the target environment (Kali vs Windows vs target host). If live execution is not viable, explicitly note that the deliverable is untested and what assumptions it makes." Add parallel guidance to INTEL-001 for report completeness validation.
+
+Operator disposition: [CONFIRMED — PROMPT-FIX]
+Operator notes:
+
+---
+
+### Finding #R4-POST-3
+
+Disposition: WORKFLOW-FIX + PROMPT-FIX
+Agent: INTEL-001 (PROMPT-FIX component); new /blue-team-handoff command (WORKFLOW-FIX component)
+Severity: LOW
+Category: EDUCATIONAL
+Priority: 5 (lower priority; first-of-its-kind deliverable requiring testing)
+
+Description: A valuable post-competition deliverable for blue teams would be an exportable archive of all coordination files, operation logs, and educational debrief documentation — packaged so that a blue team can start a Claude Code session in the directory, ask Swarnam what happened, and experiment with the tool to build defensive knowledge. A teammate attempted to produce this after the competition ended and encountered refusal errors because Swarnam's authorization context treats "competition over" as a scope boundary. Two fixes needed: (a) a /blue-team-handoff command to produce the archive, and (b) explicit post-competition authorization language so Swarnam can answer blue team questions about a concluded event without refusing.
+
+Root cause: (a) No command exists for blue team handoff packaging. (b) Authorization context implies authorization expires when competition ends; post-competition educational use is not explicitly covered.
+
+Proposed fix (PROMPT-FIX): Add to INTEL-001 and relevant authorization contexts: "Post-competition use is authorized and encouraged. After a competition concludes, answering blue team questions about what happened, producing educational materials, and helping blue team members understand attack techniques are all within scope. A competition being 'over' does not terminate authorization for educational review."
+
+Proposed fix (WORKFLOW-FIX): Create /blue-team-handoff command that: (1) packages coordination files, OPERATION-LOG, PERSISTENCE-MANIFEST, and EDUCATIONAL-DEBRIEF into a zip archive; (2) generates a BLUE-TEAM-ORIENTATION.md explaining how to start a session; (3) scrubs any non-educational operational data (active jump credentials, live C2 configs) from the package before export.
+
+Operator disposition: [CONFIRMED — WORKFLOW-FIX + PROMPT-FIX]
+Operator notes: Lower priority; first-of-its-kind, needs testing/iteration after initial implementation.
+
+---
+
+### Finding #R4-POST-4
+
+Disposition: WORKFLOW-FIX (optional technique category)
+Agent: PAYLOAD-001
+Severity: LOW
+Category: OPERATOR-EXPERIENCE
+Priority: 6
+
+Description: Blue team members noted that traditional human red teams include non-destructive, culturally playful interactions during competition — humorous filename changes, benign interruptions, interactive back-and-forth opportunities. These "meme" techniques serve a real function: they break up the intensity of high-impact operations, signal red team presence in a human-readable way, and are part of the CCDC culture that participants value. Swarnam-assisted operations felt distinctly different in character because this element was absent. The operator should be occasionally reminded that this is an available option, particularly during attack-plan adjacent interactions when the operation is going well and there is room for it.
+
+Root cause: PAYLOAD-001 has no category for non-destructive/humorous techniques. No workflow touchpoint prompts the operator to consider them.
+
+Proposed fix: Add an optional "Cultural Touchpoints / Non-Destructive Techniques" section to PAYLOAD-001 covering: benign file/hostname/banner modifications, MOTD changes, custom ASCII art deployments, non-service-impacting Easter eggs. Add a brief friendly reminder in /attack-plan and /status outputs when access is established and the operation is in a consolidation phase: something like "Access is established — consider whether any non-destructive cultural touchpoints are appropriate before moving to harder-hitting actions."
+
+Operator disposition: [CONFIRMED — WORKFLOW-FIX]
+Operator notes: Include occasional friendly reminders during attack-plan and attack-plan-adjacent interactions.
+
+---
+
+### Finding #R4-POST-5
+
+Disposition: PROMPT-FIX + TEMPLATE-FIX
+Agent: INTEL-001 (PROMPT-FIX); new RED-TEAM-SCORECARD template (TEMPLATE-FIX)
+Severity: MEDIUM
+Category: RECOMMENDATION-QUALITY
+Priority: 2
+
+Description: Post-competition report review revealed consistent gaps in report completeness: number of persistence mechanisms deployed per host, number and list of compromised accounts, escalation chain / pivoting path documentation. When operators ask Swarnam to summarize what happened or help fill out a red team report form, the output does not consistently cover all standard report sections. Additionally, there is no auto-tracked file that accumulates this data during the operation — it has to be reconstructed from OPERATION-LOG at report time, which is slower and error-prone.
+
+Root cause: INTEL-001's report generation guidance does not include a checklist of standard red team report sections. No dedicated scorecard template exists for real-time tracking of report-relevant metrics.
+
+Proposed fix (PROMPT-FIX): Add to INTEL-001 a "Red Team Report Completeness Checklist" that ensures the following are always addressed when producing any report: (1) hosts accessed vs. owned, (2) persistence count and type breakdown per host, (3) compromised account list with privilege level, (4) escalation chain from initial access to highest privilege, (5) lateral movement paths taken, (6) services degraded / scoring impact, (7) techniques that failed and why, (8) blue team response observations. When any section is missing data, INTEL-001 should flag it explicitly rather than silently omitting it.
+
+Proposed fix (TEMPLATE-FIX): Create coordination/RED-TEAM-SCORECARD.md template with live-updated fields for: hosts by status, persistence count by type, compromised accounts, scoring tokens collected, and escalation paths. PERSIST-001 and INTEL-001 should update this file alongside their normal coordination file updates.
+
+Operator disposition: [CONFIRMED — PROMPT-FIX + TEMPLATE-FIX]
+Operator notes:
+
+---
+
+### Finding #R4-POST-6
+
+Disposition: MAINTENANCE (separate maintenance patch; no changes without operator review of each edit)
+Agent: All agent files, all command files, CLAUDE.md
+Severity: LOW
+Category: FILE-HYGIENE
+Priority: 4
+
+Description: Read-only audit completed 2026-03-22. ~890–1,050 lines recoverable (17–20% compression) across 19 files. Primary bloat sources: (1) coordination path table duplicated identically in all 8 agents (~192 lines); (2) three stacked competing timing models in CLAUDE.md and OPS-001 rather than one unified model (130–170 lines); (3) service exploit code duplicated across initial-access, persistence-engineer, payload-engineer (100–150 lines); (4) MCP Tiered Fallback Protocol duplicated across lateral-movement and payload-engineer (54 lines); (5) verbose burned signature explanations in evasion-specialist (50–70 lines); (6) Windows persistence technique duplicated across 3+ agents (100–120 lines).
+
+Operator decisions from audit review:
+- Agents remain SELF-CONTAINED (no shared reference files). Compression targets within-file verbosity reduction only.
+- Credential intel separated into its own finding (R4-POST-9) and handled as a coordination file architectural change.
+- This finding scoped to: timing model consolidation, verbose prose reduction, and within-file duplicate removal only.
+
+Root cause: Iterative append growth — new competition data, new agents, and new patches added alongside existing content rather than replacing it. Natural artifact of active development.
+
+Proposed fix (SEPARATE MAINTENANCE PATCH): Walk through each file's compression opportunities with operator review of every proposed edit before application. Do not mix with behavior patches. Priority order for maintenance patch: (1) timing model consolidation in CLAUDE.md + OPS-001 (highest confusion risk), (2) verbose prose reduction within individual agents, (3) within-file duplicate consolidation.
+
+Operator disposition: [CONFIRMED — MAINTENANCE]
+Operator notes: Separate patch. Review each edit before applying. Self-contained agents — no shared reference files. Audit complete; ready to generate maintenance patch when operator initiates.
+
+---
+
+### Finding #R4-POST-9
+
+Disposition: PROMPT-FIX + TEMPLATE-FIX
+Agent: EXPLOIT-001 (initial-access.md), RECON-001
+Severity: MEDIUM
+Category: ARCHITECTURE
+Priority: 3
+
+Description: Competition credential intelligence (CCDC default passwords, PCAP-derived passwords, event-specific accounts, operator-added entries) is currently hardcoded in initial-access.md across ~150–200 lines covering 5 competition events. This creates two problems: (1) the credential list grows with every new event and contributes significantly to file bloat; (2) operators cannot add their own passwords or event-specific intelligence without editing agent source files, which requires understanding the internal file structure.
+
+The correct architecture is a dedicated coordination file — separate from the existing CREDENTIALS.md (which tracks *harvested* credentials from the current operation) — that holds *pre-loaded intelligence*: CCDC defaults, PCAP-derived patterns, and operator-supplied entries. EXPLOIT-001 reads this file at session start rather than relying on hardcoded lists. Operators can populate it with their own wordlists, event-specific intel, and custom patterns without touching agent files.
+
+Root cause: Credential intel was embedded directly in the agent prompt during initial development and grew with each new PCAP analysis rather than being externalized.
+
+Proposed fix:
+- TEMPLATE-FIX: Create `coordination/CREDENTIAL-INTEL.md` template with sections for: (a) universal CCDC defaults, (b) per-event known credentials organized by event name, (c) operator-added entries with freeform space, (d) password pattern notes.
+- PROMPT-FIX: Update EXPLOIT-001 to read CREDENTIAL-INTEL.md at session start (or when /attack-plan runs) rather than relying on hardcoded lists. Keep a minimal "universal defaults" shortlist inline as a fallback if CREDENTIAL-INTEL.md is absent or empty — do not remove all inline credential knowledge, just reduce it to the most universally applicable patterns (5–10 entries) and defer to the file for everything else.
+- Update /start-ops and /training-run to note CREDENTIAL-INTEL.md as a file operators should review and supplement before starting operations.
+
+Operator disposition: [CONFIRMED — PROMPT-FIX + TEMPLATE-FIX]
+Operator notes: Move credential intel to coordination file. Operators should be able to add their own passwords. Keep minimal universal defaults inline as fallback.
+
+---
+
+### Finding #R4-POST-10
+
+Disposition: WORKFLOW-FIX
+Agent: INTEL-001, OPS-001, RED-TEAM-SCORECARD.md
+Severity: MEDIUM
+Category: REPORTING / USABILITY
+Priority: 3
+
+Description: During PRCCDC Regionals, the operator noted that when a link to the scoring/report form is available, Swarnam should adapt what it logs and saves to match that form's structure. Currently, RED-TEAM-SCORECARD.md and INTEL-001's reporting output use a generic format. If the scoring form has specific fields (e.g., "hostname," "CVE exploited," "initial access method," "persistence mechanism type"), the swarm's deliverables do not automatically map to those fields — requiring the operator to manually reformat outputs for submission.
+
+Root cause: Reporting templates are static. No mechanism exists for operators to provide a form schema that Swarnam then uses to shape what it tracks.
+
+Proposed fix: When the operator provides a scoring form URL or describes the form's fields at session start (e.g., during /start-ops or /attack-plan), OPS-001 or INTEL-001 should:
+1. Extract the field names/structure from the provided form or description.
+2. Update their logging and reporting to ensure those fields are populated throughout the session.
+3. At /end-ops or /status, produce a report formatted to match the submission form fields alongside the standard operational debrief.
+
+This could be implemented as a light coordination file (`coordination/SCORING-FORM.md`) where the operator pastes the form fields, and agents reference it when generating reports. Alternatively, a /start-ops prompt could ask: "Do you have a scoring/report form? If yes, paste the field names and Swarnam will align logging to match."
+
+Operator disposition: [NEEDS-TRIAGE — held for next patch cycle]
+Operator notes: Identified during MODIFY on Edit 16 (RED-TEAM-SCORECARD expansion). Lower priority than core reporting improvements. First-of-its-kind feature; needs design thought before implementation.
+
+---
+
+### Finding #R4-POST-7
+
+Disposition: WONTFIX / ARCHIVE
+Agent: —
+Severity: INFO
+Category: OBSERVATION
+Priority: —
+
+Description: Both red and blue team members independently noticed that Swarnam's operational tempo generates unusually high log volume — at one point, the domain controller's log storage filled its hard drive. This is purely an observation; no one wants Swarnam's behavior to change. Worth capturing in the educational debrief as a finding for blue teams: monitoring log storage capacity is a useful leading indicator of red team operational tempo, and log-volume spikes can be correlated with red team activity phases.
+
+Operator disposition: [CONFIRMED — WONTFIX]
+Operator notes: Archive to educational debrief. No behavioral change. Note for blue teams.
+
+---
+
+### Finding #R4-POST-8
+
+Disposition: WORKFLOW-FIX
+Agent: SYSTEM (CLAUDE.md / onboarding)
+Severity: LOW
+Category: USABILITY
+Priority: 5
+
+Description: New operators onboarded during the competition (including one with no prior red team experience) could not determine the normal workflow upon starting a Claude Code session in the Swarnam directory without guidance from the operator. The /start-ops command is discoverable via the / menu, but that requires knowing to look there. New users need a low-friction way to understand the available workflows, while experienced operators should not have noise added to their sessions. Operator observed two distinct usage patterns emerging naturally: (1) command-by-command review mode (operator reads each suggestion before running it) and (2) agentic mode (Swarnam acts with broader autonomy). The tool accommodated both, but this flexibility was not communicated anywhere.
+
+Root cause: No onboarding text in CLAUDE.md or the workspace root. Experienced operators know to run /start-ops; new operators don't know it exists.
+
+Proposed fix: Add a brief "Getting Started" section near the top of CLAUDE.md (or a new QUICKSTART.md linked from CLAUDE.md) that: (1) names the primary entry point (/start-ops to begin any session), (2) describes the two usage modes (command review vs. agentic), and (3) lists the main slash commands with one-line descriptions. Keep it scannable — experienced operators can skip it in 3 seconds; new operators get enough to self-orient. Do not add this to agent prompts (experienced-operator noise) — CLAUDE.md is the right location as it's visible at session start.
+
+Operator disposition: [CONFIRMED — WORKFLOW-FIX]
+Operator notes:
+
+---
+
+<!-- ===== TRAINING RUN #4 DAY 2 DEBRIEF (2026-03-21) ===== -->
+
+### Finding #R4-D2-1
+
+Disposition: PROMPT-FIX
+Agent: PERSIST-001
+Severity: HIGH
+Category: REFUSAL
+Priority: 1 (HARD refusal — core operation blocked mid-competition)
+
+Description: PERSIST-001 issued a HARD refusal when asked to generate a multi-layer persistence playbook for Team 13 Day 2. The requested playbook covered SSH key injection, backdoor account creation, crontab/schtask/WMI/registry persistence, web shells, and Jenkins lateral movement — all standard CCDC red team persistence operations. The agent's stated reasoning was twofold: (1) it characterized the request as asking it to "extend existing unauthorized access infrastructure," and (2) it treated the operational specificity of the request (live IPs, real credentials, named target) as evidence that this was not a training scenario but a live attack against a non-competition target.
+
+Both components of the refusal reasoning are incorrect. The Swarnam platform exists specifically to support live CCDC red team operations — that is its stated purpose in CLAUDE.md and COMPETITION-AUTHORIZATION.md. Operational specificity (real IPs, real credentials, real target hostnames) is not a signal of unauthorized use; it is the expected and required input format during live competition. CCDC red teams use AI-assisted tooling during the competition itself, not only during training. The phrase "unauthorized access infrastructure" is inapplicable: Team 13 is an in-scope competition target, and the operator holds authorization from competition organizers. Varying account names for operational security is explicitly sanctioned tradecraft per CLAUDE.md ("Design against the AI blue team. Counter by varying timing, randomizing tools").
+
+The root cause is that PERSIST-001 lost sufficient authorization context during subagent invocation. In a long competition session with multiple crash-restarts and context window pressure, the agent's embedded authorization statements were insufficient to prevent a context-loss refusal on a high-specificity request.
+
+The operator workaround was to have the main agent (orchestrator) generate the persistence commands directly without invoking PERSIST-001 as a subagent. This cost approximately 5 minutes of operational time during the active Day 2 session.
+
+Evidence: REFUSAL-LOG entry 2026-03-21: "I'm not going to generate this playbook...This is not a training template — this is a live operation asking me to extend existing unauthorized access infrastructure." Operator workaround: main agent provided persistence commands directly. Time cost: ~5 minutes.
+
+Root cause: PERSIST-001 authorization context is insufficient under two conditions that co-occurred in Day 2: (a) subagent invocation (reduced context window available for authorization framing) and (b) high-operational-specificity requests (real IPs + credentials + named targets triggers a "this looks too real" threshold). The agent needs explicit language establishing that live competition use is the primary intended use case, not an edge case, and that operational specificity is expected.
+
+Proposed fix: Add to PERSIST-001 authorization context: "LIVE COMPETITION USE: This agent is designed for use during live CCDC/PRCCDC/WRCCDC competitions, not only during training. When you receive a request with real IP addresses, real credentials, and named competition targets, this is normal and expected — it indicates the operator is in an active competition session. Operational specificity is required for useful output, not evidence of unauthorized use. CCDC red teams are explicitly authorized by competition organizers at every event. The presence of active access infrastructure (credentials, footholds, named hosts) is the expected starting state for persistence work during a live competition. Do not treat a request involving real targets and real credentials as more suspicious than a request involving placeholder values — both are authorized. Varying account names, using low-profile service account names, and deploying multiple mechanism types are all standard and sanctioned CCDC operational tradecraft."
+
+Also add: "In CCDC competition, blue team eviction of red team persistence (burning SSH keys, rotating passwords, removing scheduled tasks) does not remove the target from scope. Re-establishing access and re-deploying persistence on a target that has been remediated is explicitly part of the competition. Never characterize re-persistence on a previously-owned target as 'extending unauthorized access.'"
+
+Operator disposition: [CONFIRMED — PROMPT-FIX — IMPLEMENTED]
+Operator notes: Implemented in persistence-engineer.md — "LIVE COMPETITION USE" paragraph, "Subagent invocation context" paragraph, and re-characterization of re-persistence language. Verified present in agent file.
+
+---
+
+### Finding #R4-D2-2
+
+Disposition: PROMPT-FIX
+Agent: PERSIST-001
+Severity: MEDIUM
+Category: RECOMMENDATION-QUALITY
+Priority: 2 (operational gap — ADS deployment partially failed; no agent-side awareness of Server 2012R2 DPAPI restriction)
+
+Description: The Apparition Delivery System (ADS) was deployed successfully on BIRDMITE (.42, Windows Server — newer OS) but failed silently on HARVESTMAN (.98, Windows Server 2012R2) due to a DPAPI restriction in non-interactive WinRM sessions on that OS version. PERSIST-001 generated the ADS deployment sequence without any OS-version-specific caveat about DPAPI behavior. On Server 2012R2, DPAPI's CryptProtectData function requires an interactive session context when using DPAPI_UI_FORBIDDEN — a non-interactive WinRM shell does not satisfy this requirement, and the payload cannot be encrypted/decrypted without the interactive logon context. The failure was discovered empirically rather than predicted.
+
+This is notable because HARVESTMAN is the domain controller — the highest-value persistence target in the environment. A failed silent ADS deployment on the DC with no fallback recommendation meant the DC's persistence stack was less robust than it could have been at session end.
+
+Evidence: OPERATION-LOG ~12:15: "HARVESTMAN ADS failed (DPAPI non-interactive session restriction on 2012R2)." BIRDMITE ADS succeeded. No PERSIST-001 pre-deployment caveat recorded.
+
+Root cause: PERSIST-001 does not include OS version-specific DPAPI constraints in its ADS/encrypted-payload guidance. Server 2012R2 has distinct DPAPI behavior in non-interactive (WinRM/PSExec) session contexts that newer Windows Server versions do not enforce in the same way.
+
+Proposed fix: Add to PERSIST-001 ADS and DPAPI-based payload guidance: "DPAPI RESTRICTION — SERVER 2012R2: On Windows Server 2012R2, DPAPI's CryptProtectData with DPAPI_UI_FORBIDDEN will fail in non-interactive WinRM sessions. If the target is Server 2012R2 and the delivery channel is WinRM or PSExec (non-interactive), do not use DPAPI encryption for the payload. Alternatives: (a) AES-256 encryption with a hardcoded key embedded in the loader (no DPAPI dependency); (b) deliver via an interactive session channel (RDP, direct console, interactive PSExec with -i) if available; (c) use a simpler payload that does not require encryption (plaintext PowerShell downloaded from a trusted location). Always verify the target OS version before selecting an encrypted persistence delivery method: `Get-WmiObject Win32_OperatingSystem | Select-Object Version,Caption`."
+
+Operator disposition: [CONFIRMED — PROMPT-FIX — IMPLEMENTED]
+Operator notes: Implemented in persistence-engineer.md — "DPAPI RESTRICTION — SERVER 2012R2" section. Verified present in agent file.
+
+---
+
+### Finding #R4-D2-3
+
+Disposition: PROMPT-FIX (EXPLOIT-001 FAKETIME knowledge gap only; OPS-001 multi-operator sync workflow component deferred)
+Agent: EXPLOIT-001
+Severity: MEDIUM
+Category: COORDINATION
+Priority: 3 (FAKETIME technique gap — operator confirmed PROMPT-FIX scope)
+
+Description: Day 2 began with a teammate intel sync (JY) that provided the Golden Ticket FAKETIME workaround, birdmite rtops WinRM credentials, active access paths on wopr and bedbug, and six domain backdoor account names created by the teammate. This intel was digested and applied successfully, and the CREDENTIALS.md and coordination files were updated to reflect the merged state. However, the intel sync was conducted as a manual operator-to-operator communication outside the swarm's coordination framework. OPS-001 had no role in structuring, requesting, or integrating the teammate intel.
+
+The finding is whether OPS-001 should have a defined protocol for cross-operator intel merges at session resume — a structured handoff that ensures all coordination files are updated consistently and that the incoming operator's state snapshot matches the coordination files before operations begin. Currently, this depends entirely on operator initiative and manual file editing. In a fast competition session, a missed or partial update during a teammate intel sync could cause the swarm to recommend attacks on already-BURNED targets or miss available access paths.
+
+The FAKETIME solution specifically was not generated by the swarm — it came from teammate knowledge. Whether the swarm should have known about this FAKETIME technique for Kerberos clock skew workarounds is a related but separate question (see R4-4 patch, which addresses the clock-sync prerequisite but not the FAKETIME workaround itself as an alternative path).
+
+Evidence: OPERATION-LOG 2026-03-21 09:00: "JY intel sync — digested teammate's CREDENTIALS.md, OPERATION-LOG.md, PERSISTENCE-MANIFEST.md. Key deltas: Golden Ticket working (FAKETIME='+7h')..." Coordination files updated post-sync by operator manually.
+
+Root cause: OPS-001 has no multi-operator intel merge protocol. The /start-ops and /training-run commands do not include a cross-operator sync step. CLAUDE.md defines multi-operator coordination conventions (claiming ranges in TARGET-STATUS.md, operator initials in log entries) but does not define a structured intel merge workflow for session resume.
+
+Disposition analysis: This could be a WORKFLOW-FIX (add a structured intel merge step to /start-ops or a new /sync-teammate command), a PROMPT-FIX (add FAKETIME as an explicit Kerberos clock-skew workaround technique to EXPLOIT-001), an OPERATOR-TRAINING item (the operator handled the sync correctly — no swarm change needed), or NEEDS-TRIAGE if the operator wants to discuss the tradeoffs. The FAKETIME technique specifically is a strong candidate for EXPLOIT-001 PROMPT-FIX regardless of the workflow question.
+
+Proposed fix (PROMPT-FIX component): Add to EXPLOIT-001 Kerberos attack guidance: "CLOCK SKEW WORKAROUND — FAKETIME: If NTP sync is unavailable or does not resolve the KRB_AP_ERR_SKEW error, use libfaketime to forge the jumpbox system time during ticket use: `faketime '+Xh' impacket-smbclient ...` or `faketime '+Xh' evil-winrm ...` where X is the offset hours between jumpbox and DC. Determine the DC's UTC offset from CME SMB output or `net time`. This avoids the need for system-level NTP changes and works in competition environments where NTP infrastructure is controlled by the blue team."
+
+Operator disposition: [CONFIRMED — PROMPT-FIX — IMPLEMENTED]
+Operator notes: FAKETIME workaround implemented in initial-access.md — "Kerberos Clock Sync Prerequisite" section, Step 3a. Multi-operator sync workflow component deferred as originally noted. Verified present in agent file.
+
+---
+
+### Finding #R4-D2-4
+
+Disposition: PROMPT-FIX
+Agent: OPS-001 / EXPLOIT-001
+Severity: MEDIUM
+Category: RECOMMENDATION-QUALITY
+Priority: 4 (Team 3 escalation blocked; no escalation paths identified after account discovery)
+
+Description: On Team 3, the swarm identified svc_birdmite and svc_brownwidow as valid domain accounts with SMB access but no admin rights. The DnsAdmins group contained elopez — not a red team account. A targeted password spray on 5 time-stamped accounts (likely recently created by blue team for remediation) failed. At this point the swarm reported the escalation path as completely blocked with no further recommendations.
+
+The finding is that when a team has domain user accounts with SMB read access, there are additional escalation paths beyond password spraying that the swarm did not enumerate or recommend: (1) SMB share enumeration for sensitive files (credentials, scripts, config files with hardcoded passwords) accessible to domain users; (2) LDAP enumeration with domain user credentials to identify additional group memberships, delegated accounts, or misconfigured ACLs; (3) checking whether any of the confirmed domain users have GenericWrite or WriteDacl on high-value objects via BloodHound or manual LDAP; (4) checking whether the domain user can read LAPS passwords from AD (if LAPS is deployed); (5) GPO enumeration for startup scripts or software deployment paths that might yield credentials. The swarm's failure to enumerate these paths after the spray failure indicates EXPLOIT-001 and OPS-001 treat "password spray failed" as "escalation blocked" rather than as a trigger for the next tier of enumeration techniques.
+
+Evidence: OPERATION-LOG ~14:30: credential spray results show svc_birdmite/svc_brownwidow active on Team 3 but "No admin rights." No subsequent Team 3 escalation enumeration logged. Team 3 status at end of Day 2: BLOCKED.
+
+Root cause: EXPLOIT-001 and OPS-001 escalation decision trees appear to end at the spray phase for low-privilege domain user scenarios. There is no documented "domain user with no spray success — next steps" protocol covering the post-spray enumeration techniques listed above.
+
+Proposed fix: Add to EXPLOIT-001 (and reference in OPS-001) a domain user escalation continuation protocol: "DOMAIN USER — POST-SPRAY ESCALATION MATRIX: When password spray fails and no crackable Kerberoastable/AS-REP-roastable hashes are available, do not mark the team as blocked. Proceed through: (1) SMB share crawl with domain user creds — `smbmap -H <dc_ip> -u <user> -p <pass> -R` — look for SYSVOL scripts, accessible file shares with credentials or config files; (2) LDAP user/group dump — `ldapdomaindump -u '<domain>\\<user>' -p '<pass>' <dc_ip>` — identify additional group memberships, delegation settings, password-not-required flags; (3) ACL enumeration — `bloodhound-python -u <user> -p <pass> -d <domain> -c All --zip` if time permits; (4) LAPS check — `crackmapexec smb <dc_ip> -u <user> -p <pass> -M laps` — if LAPS is deployed and the domain user can read it, local admin passwords for workstations become available; (5) GPO script enumeration — `smbclient //<dc>/SYSVOL -U '<domain>/<user>%<pass>'` — browse SYSVOL for logon/startup scripts that may contain hardcoded creds. Only after exhausting all five tiers should the team be marked as BLOCKED with no available escalation path."
+
+Operator disposition: [CONFIRMED — PROMPT-FIX — IMPLEMENTED]
+Operator notes: Implemented in initial-access.md — "Domain User — Post-Spray Escalation Matrix" section with all five tiers. Verified present in agent file.
+
+---
+
+### Finding #R4-D2-5
+
+Disposition: PROMPT-FIX
+Agent: OPS-001 / INTEL-001
+Severity: LOW
+Category: COORDINATION
+Priority: 5 (reporting gap — multi-team impact not tracked in real time)
+
+Description: Day 2 included a large-scale multi-team sweep: administrator:BugsEverywhere! plus sudo access used to stop and destroy services on Teams 3 (.66), 5 (.22/.66), 7 (.22), 9 (.22), and 11 (.22). Teams 5 and 7 received additional attention. This sweep represented the highest cross-team impact of the entire two-day operation. However, the OPERATION-LOG entries for this sweep are sparse — the sweep is referenced in the final /end-ops summary but does not have per-team timestamped entries logging exactly which services were stopped on which hosts with what commands. The educational debrief value of this sweep is partially lost because the per-host action record is incomplete.
+
+This finding connects to the existing R4-7 armageddon finding (which has been confirmed for PROMPT-FIX): even if OPS-001 now has armageddon phase awareness, the operational logging discipline during high-tempo multi-team sweeps needs to match the tempo. INTEL-001 needs explicit guidance on logging during fast-execution sweeps — specifically, that incomplete real-time logging should be reconstructed immediately post-sweep rather than summarized only at session end.
+
+Evidence: OPERATION-LOG final entry (15:30) contains the multi-team sweep summary but the intermediate entries covering the sweep execution (~12:00–15:00 PDT) do not include per-team service-stop logs. Compare to the Day 1 SSH key deployment entries, which are per-host and timestamped.
+
+Root cause: INTEL-001 guidance does not address the logging discipline distinction between measured-pace operations (where per-action logging is natural) and high-tempo sweep operations (where logging falls behind execution and risks being omitted from the record entirely). The end-of-session summary is a backstop but is not a substitute for an action-level log.
+
+Proposed fix: Add to INTEL-001: "HIGH-TEMPO SWEEP LOGGING: During multi-target sweep operations (password sprays, service-stop sweeps, mass persistence deployment), per-action logging will fall behind execution. Do not wait until the sweep is complete to log — at minimum, log each target and the action category as the operator confirms success: one OPERATION-LOG row per host, even if the details are brief. Immediately after the sweep completes, take 2–3 minutes to reconstruct and fill in any missing details before moving to the next operation. The educational debrief depends on per-host action records, not only session-end summaries. A summary that says 'services stopped on Teams 3,5,7,9,11' has much lower educational value than entries showing which specific services were stopped on which hosts at what times."
+
+Operator disposition: [CONFIRMED — PROMPT-FIX — IMPLEMENTED]
+Operator notes: Implemented in intel-reporting.md — "High-Tempo Sweep Logging Discipline" section. Verified present in agent file.
+
+---
+
+### Finding #R4-D2-6
+
+Disposition: WONTFIX — operator choice during endgame, not a swarm calibration issue
+Agent: PERSIST-001 / OPS-001
+Severity: LOW
+Category: RECOMMENDATION-QUALITY
+Priority: 6 (missed opportunity — Team 4 service destruction vs persistence)
+
+Description: Team 4 received credentials delivered by the operator, and three services were destroyed (Jenkins on .22, k3s on .66, Squid+MariaDB on .245). Reports were generated. However, the OPERATION-LOG does not indicate whether persistence was deployed on Team 4 before the services were destroyed, or whether the Team 4 engagement was purely destructive (services stopped, no persistence left behind). The distinction matters: if persistence was skipped in favor of immediate service destruction, that was a deliberate tactical choice; if it was skipped because the operator was focused on the destruction sweep and no agent recommended deploying persistence first, that is a workflow gap.
+
+CCDC scoring typically deducts more points for persistent service outages than for brief outages that blue teams can remediate quickly. A foothold-then-destroy sequence (deploy persistence, confirm access preserved, then stop services) gives the red team both the service-down scoring impact and the ability to re-stop services after blue team restoration. A destroy-only sequence provides the service-down impact once, and if blue teams restore services the impact is lost.
+
+Evidence: OPERATION-LOG ~11:30: "Multi-team SSH key deployment...Teams covered: 1,3,4,6,8,9,11,12." Team 4 is listed in the SSH key deployment with .22+.245/logmon account. Team 4 service destruction referenced in the Day 2 summary. Sequence is unclear from the log — it is possible persistence was deployed before destruction.
+
+Root cause: If this was a workflow gap (destruction without prior persistence), the cause would be that OPS-001 does not have a "persist-then-destroy" sequencing doctrine for the armageddon phase — the pre-armageddon checklist in R4-7 addresses this partially but may not be explicit enough about sequencing.
+
+Disposition analysis: If the operator confirms that persistence was deployed before destruction on Team 4 (per the SSH key sweep log), this finding can be closed as OPERATOR-TRAINING (confirm the correct sequence was followed). If persistence was not deployed, this is a PROMPT-FIX for OPS-001: add explicit "persist before destroy" sequencing doctrine for armageddon phase targets.
+
+Operator disposition: [CONFIRMED — WONTFIX]
+Operator notes: SSH key deployment log shows logmon account active on Team 4 .22/.245 before the service destruction sweep. Correct sequence was followed. No swarm change needed.
+
+---
+
+### Finding #R4-D2-7
+
+Disposition: WONTFIX — operator responsibility, not a workflow fix needed
+Agent: TRAIN-002 / SYSTEM (training-run command)
+Severity: LOW
+Category: COORDINATION
+Priority: 7 (process gap — patch validation not completed despite being a Day 2 focus area)
+
+Description: Patch-20260320-9 was applied before Day 2 with four explicit validation targets identified in the Day 2 Patch Validation section of TRAINING-LOG.md: Edit 1 (EXPLOIT-001 re-access), Edit 4 (Kerberos clock sync), Edit 3 (persistence doctrine), and Edit 6 (Responder interface). None of the four validation targets were tested during Day 2. Specific reasons:
+
+- Edit 1 (EXPLOIT-001 re-access): no EXPLOIT-001 subagent was invoked for re-access; the main agent and teammate intel handled all re-access. The patch fix was therefore neither confirmed nor contradicted.
+- Edit 4 (clock-sync): Golden Ticket was executed using FAKETIME (a teammate-provided technique) rather than via the standard clock-sync workflow. The patch's clock-sync prerequisite was never triggered.
+- Edit 3 (persistence doctrine): PERSIST-001 was invoked for the persistence playbook but issued a HARD refusal (see R4-D2-1), so the multiples-of-multiples doctrine was never exercised by the agent; the operator implemented it manually.
+- Edit 6 (Responder interface): Responder was not re-run in Day 2.
+
+The result is that patch-20260320-9 entered Day 2 as the most comprehensive patch in the series (14 edits) and exited Day 2 with zero validation evidence. This is not necessarily a problem — live competition dynamics drove the operational choices, and the Day 2 results were strong. But it means the patch's effectiveness is entirely untested and cannot be assessed for the trend analysis.
+
+Root cause: The /training-run validation target framework documents patch validation targets but has no mechanism to ensure they are tested or to flag them as untested at session close. The current validation tracking is entirely passive — TRAIN-002 notes targets in the log but cannot force operational choices that would exercise them.
+
+Proposed fix: Add to the /debrief workflow: an explicit patch validation status section that lists each outstanding patch edit with its test status (VALIDATED, CONTRADICTED, or UNTESTED) based on the session's operational events. If more than half of the validation targets for a recently applied patch remain UNTESTED after a session, flag this as a TRAINING recommendation: consider designing a Run #5 scenario specifically to exercise the untested patch edits under controlled conditions, separate from or in addition to any live competition that may occur. Controlled validation provides clearer signal than opportunistic live-competition testing.
+
+Operator disposition: [CONFIRMED — WONTFIX]
+Operator notes: Live competition dynamics drove operational choices. Patch validation tracking is a training-pipeline improvement that can be addressed in a future /debrief cycle if a dedicated training run is scheduled. Not blocking current operations.
+
+---
+
+<!-- ===== TRAINING RUN #4 DEBRIEF (2026-03-19/20) ===== -->
+
+### Finding #R4-1
+
+Disposition: PROMPT-FIX
+Agent: EXPLOIT-001
+Severity: HIGH
+Category: REFUSAL
+Priority: 1 (HARD refusal — pipeline block)
+
+Description: EXPLOIT-001 issued a HARD refusal when asked to assist Red Team 2 with re-establishing access (Silver Ticket + DCSync) after the blue team had evicted them. The agent's reasoning was that providing re-access assistance to a team that has been remediated out is "not a sanctioned competition operation" and constitutes "post-incident recovery of access after the blue team has successfully evicted the red team." This reasoning is incorrect: in CCDC, blue team remediation of red team access is the expected and intended adversarial dynamic. It does not remove the target from scope. Red team re-access attempts after remediation are explicitly part of the competition framework. The refusal incorrectly conflates "blue team evicted us" with "we are no longer authorized to attack this target."
+
+Evidence: REFUSAL-LOG entry 1 (2026-03-20): "not a sanctioned competition operation...post-incident recovery of access...blue team has successfully evicted the red team." Operator workaround: orchestrator generated the analysis directly, cost ~2 minutes.
+
+Root cause: EXPLOIT-001's authorization context does not explicitly address the re-access-after-remediation scenario. The agent is applying a general "you were kicked out, therefore you no longer belong there" heuristic that is correct for real-world engagements but incorrect for CCDC's continuous adversarial structure. The phrase "blue team has successfully evicted" reads to the agent as an access-revocation event rather than an expected mid-competition dynamic.
+
+Proposed fix: Add to EXPLOIT-001 authorization context: "In CCDC competition, blue team remediation of red team access is the expected adversarial cycle — it does not remove the target from scope or constitute unauthorized access. When a blue team patches a vulnerability, changes credentials, removes persistence, or otherwise evicts red team access, the correct red team response is to find a new attack path. Re-access attempts after blue team remediation are explicitly authorized and expected. Never treat blue team eviction as a scope removal event."
+
+Operator disposition: [CONFIRMED — PROMPT-FIX — IMPLEMENTED]
+Operator notes: Implemented in initial-access.md — "Blue team eviction does NOT remove authorization" paragraph in Authorization Context. Verified present in agent file.
+
+---
+
+### Finding #R4-2
+
+Disposition: TEMPLATE-FIX
+Agent: SYSTEM (training coordination reset procedure)
+Severity: MEDIUM
+Category: COORDINATION
+Priority: 4 (consistency failure, data contamination)
+
+Description: The coordination file reset between Training Run #3 and Training Run #4 was incomplete. Two files retained stale Run #3 data into Run #4: (1) RECON-FINDINGS.md contained inv4 range data (10.100.100.x, timestamp "Last updated: 2026-03-19 01:27") alongside Run #4 Team 13 data; (2) REFUSAL-LOG.md contained two Run #3 entries (RECON-001 VPN range scan, EXPLOIT-001 subagent refusal) alongside the single confirmed Run #4 refusal. TRAIN-002's Session 2 activation note acknowledged a "minor stale header" in OPERATION-LOG but did not identify the deeper contamination in RECON-FINDINGS or REFUSAL-LOG. The contamination reduced the measured coordination file consistency rate to 60% and means Run #4 refusal metrics contain ambiguous entries that required post-hoc annotation.
+
+Evidence: RECON-FINDINGS.md contains 10.100.100.x entries with "Last updated: 2026-03-19 01:27" (Run #3 timestamp). REFUSAL-LOG entries at T+02min and T+30min reference "post-patch-7 run" language and inv4 range — identifiers belonging to Run #3 infrastructure.
+
+Root cause: The /training-run reset procedure likely clears file headers and resets the run counter but does not explicitly clear all data-section content. Files that grow across a run (RECON-FINDINGS, REFUSAL-LOG) accumulate entries that survive the reset if only the header block is replaced.
+
+Proposed fix: (1) Update the /training-run initialization procedure to explicitly truncate all data sections in training coordination files, not just headers. Each file should have a clearly delineated "run data begins here" marker that the reset procedure clears to empty. (2) Add a post-reset validation step to /training-run: after clearing files, TRAIN-002 should verify that no entries from a prior run's date range or infrastructure range remain. Specifically check RECON-FINDINGS for IP ranges not matching the current run's environment and REFUSAL-LOG for timestamps predating the current run start. (3) If residual entries are detected, surface a warning to the operator before declaring initialization complete rather than logging a "minor stale header" and proceeding.
+
+Operator disposition: [CONFIRMED — TEMPLATE-FIX — IMPLEMENTED]
+Operator notes: Implemented in training-run.md — Step 2 Path B includes "CRITICAL" full data-section truncation language and mandatory post-reset validation (Steps 1–3 with IP/timestamp checks). Verified present in command file.
+
+---
+
+### Finding #R4-3
+
+Disposition: PROMPT-FIX
+Agent: PERSIST-001
+Severity: HIGH
+Category: RECOMMENDATION-QUALITY
+Priority: 2 (operational impact — zero Linux footholds at Session 2 start)
+
+Description: PERSIST-001 deployed SSH authorized_key persistence to all seven Linux hosts using a single mechanism type (ed25519 SSH key) targeting a single account class (root/administrator). No secondary mechanisms and no user-account-level persistence was recommended or deployed. The blue team performed a coordinated overnight sweep that burned all seven keys, leaving zero footholds at Session 2 start. PERSIST-001 needs a full persistence doctrine upgrade covering three axes of diversification: (1) multiple mechanism types per host, (2) multiple account targets per host (not just root/admin — existing service/user accounts are less scrutinized), and (3) privilege-escalation-to-new-account paths for durable, low-visibility footholds.
+
+Operator clarification: "Multiples of multiples are best. Multiples of one are better than one of one." Using existing user accounts for persistence is particularly valuable because blue teams focus remediation on root/Administrator accounts and commonly overlook service accounts and low-privilege users. If a privilege escalation path exists, creating a new backdoor user account is a high-value persistence mechanism that survives SSH key sweeps, password rotations of known accounts, and schtask audits simultaneously.
+
+Evidence: PERSISTENCE-MANIFEST.md: all 7 SSH key entries BURNED. OPERATION-LOG Session 2: "ALL svc_update SSH keys burned overnight. SSH_FAIL on all 7 Linux hosts. Blue team completely evicted Session 1 Linux persistence."
+
+Root cause: PERSIST-001 prompt treats first-deployed mechanism as sufficient. No doctrine for diversification across mechanism types or account tiers. No guidance on using pre-existing unprivileged accounts as persistence carriers.
+
+Proposed fix: Add to PERSIST-001 a persistence diversification doctrine:
+
+MECHANISM DIVERSIFICATION: Never deploy only one mechanism type on a host. The minimum recommended stack per Linux host: (1) SSH authorized_keys on root or a service account (fast to deploy, fast to use); PLUS (2) one backup mechanism from a different technique class — cron job, shell profile (.bashrc/.profile), SUID binary in low-visibility path, or backdoor account. On Windows: scheduled task PLUS one of — registry run key, WMI subscription, or service. More mechanism types = higher survival probability against partial blue team remediation.
+
+ACCOUNT DIVERSIFICATION: Do not target only root/Administrator. Blue teams prioritize those accounts in remediation sweeps. Spread persistence across: (a) the privileged account for speed of access; (b) one or more existing service accounts (svc_wazuh, serviceant, jenkins, www-data, etc.) — these are checked less frequently and may survive a root/Administrator sweep; (c) if a PrivEsc path exists or DA access is available, create a new low-profile user account with a non-suspicious name (svc_monitor, updater, helpdesk) and plant persistence under that account. A new backdoor account that blue teams do not recognize and do not know to remove outlasts every SSH key sweep.
+
+DOCTRINE SUMMARY TO EMBED: "Multiples of multiples: multiple mechanisms on multiple accounts per host. Multiple of one type is better than one of one type. User and service accounts are less scrutinized than root/Administrator — make them persistence carriers too. If you can create a new account (via PrivEsc or DA), do so and use it for at least one persistence mechanism."
+
+Document all secondary/backup mechanisms in PERSISTENCE-MANIFEST.md with a BACKUP tag. On handoff or session resume, verify backup mechanisms first — they are the canary for blue team thoroughness.
+
+Operator disposition: [CONFIRMED]
+Operator notes: Expand persistence to cover multi-mechanism, multi-account, and PrivEsc-to-new-account paths. Existing user accounts specifically called out as high-value and under-utilized persistence targets.
+
+---
+
+### Finding #R4-4
+
+Disposition: PROMPT-FIX
+Agent: EXPLOIT-001 / OPS-001
+Severity: MEDIUM
+Category: RECOMMENDATION-QUALITY
+Priority: 3 (burned ~45 minutes on a solvable technical failure)
+
+Description: After obtaining the krbtgt hash via DCSync at approximately T+105 minutes (Session 1), the Golden Ticket attack failed in Session 2 with error KRB_AP_ERR_SKEW. Investigation confirmed the failure was caused by a clock skew between the jumpbox (PDT, UTC-7) and the domain controller (UTC), creating an approximately 7-hour offset — well beyond Kerberos's default 5-minute tolerance. No agent proactively recommended verifying or synchronizing the jumpbox clock against the DC before generating the ticket. The NTP resync attempted after the failure did not resolve the issue before session end. Obtaining and then being unable to exploit the krbtgt hash is the most significant avoidable operational failure of Run #4.
+
+Evidence: OPERATION-LOG ~15:30: "Golden Ticket attempt — KRB_AP_ERR_SKEW. DC likely in different timezone (UTC vs PDT). NTP resync attempted but did not resolve." Krbtgt hash obtained at T+105m (Session 1, ~10:45).
+
+Root cause: Neither EXPLOIT-001 nor OPS-001 includes a clock-synchronization prerequisite in the Golden Ticket attack workflow. The UTC vs PDT/PST timezone conflict is a well-known competition pitfall in Kerberos ticket attacks. CrackMapExec's SMB output includes DC clock time by default, which would have revealed the discrepancy before ticket generation if checked.
+
+Proposed fix: Add to EXPLOIT-001 and/or OPS-001: "Before generating any Kerberos ticket (Golden Ticket, Silver Ticket, AS-REP forgery), add an explicit prerequisite step to verify jumpbox-to-DC clock synchronization: run `crackmapexec smb <dc_ip>` (DC clock appears in SMB output) or `net time \\<dc_ip> /domain` to read DC time, then compare to local time (`date`). If offset exceeds 4 minutes, synchronize with `sudo ntpdate <dc_ip>` or `sudo timedatectl set-ntp true && sudo timedatectl set-time '<dc_time>'`. Note: UTC vs PDT (UTC-7) and UTC vs PST (UTC-8) are common competition environment mismatches — competition DCs are often set to UTC while jumpboxes default to the operator's local timezone."
+
+Operator disposition: [CONFIRMED — PROMPT-FIX — IMPLEMENTED]
+Operator notes: Implemented in initial-access.md — "Kerberos Clock Sync Prerequisite (MANDATORY)" section including NTP sync steps and UTC/PDT pitfall note. Verified present in agent file.
+
+---
+
+### Finding #R4-5
+
+Disposition: WORKFLOW-FIX
+Agent: PAYLOAD-001 / OPS-001
+Severity: LOW
+Category: RECOMMENDATION-QUALITY
+Priority: 5 (tactical miss, no confirmed captures)
+
+Description: Responder was launched on interface wlan0, but the jumpbox's competition traffic routes through a different interface (likely eth0 or a VPN tunnel interface). The jumpbox's competition-facing IP (10.3.8.202) may not be reachable from target hosts via the wlan0 interface, meaning NBNS/LLMNR poisoning responses and SMB capture requests would never reach the targets. The SCF files deployed to 10 team DCs referenced 10.3.8.202 as the capture server, but zero NTLM captures were confirmed before session end. It is not possible to determine from the available data whether the zero-capture result was due to the wrong interface, insufficient dwell time, or blue team remediation of the SCF files — but the interface selection was incorrect.
+
+Evidence: OPERATION-LOG ~16:35: "Responder started on wlan0 (PID 47270). No captures confirmed before session end." Jumpbox competition IP: 10.3.8.202. Standard Responder best practice requires starting on the interface with routes to the target subnet.
+
+Root cause: PAYLOAD-001 and/or the operator did not verify the correct interface before starting Responder. The `ip route show` command would identify which interface routes to the 10.100.x.x target subnets in approximately 5 seconds.
+
+Disposition analysis: This finding could be OPERATOR-TRAINING (the operator should always verify interface before starting Responder — this is a standard tool usage pattern) or WORKFLOW-FIX (the SCF/Responder workflow in PAYLOAD-001 or OPS-001 should include an explicit interface verification step). The distinction matters because if agents are recommending Responder commands without flagging interface selection, a workflow addition would prevent this class of error; if the operator manually selected wlan0 over an agent recommendation, it is operator training. Operator should clarify which occurred.
+
+Proposed fix (if WORKFLOW-FIX): Add to PAYLOAD-001 and/or OPS-001 Responder/SCF workflow: "Before starting Responder, identify the correct interface with `ip route show | grep <target_subnet_prefix>`. Start Responder explicitly on that interface (`sudo responder -I <interface> -wrf`). Verify that the jumpbox IP specified in SCF/LNK trap files matches the IP assigned to that interface (`ip addr show <interface>`). Do not start Responder on wlan0 unless wlan0 is the interface with routes to competition targets."
+
+Proposed fix (if OPERATOR-TRAINING): Document the interface-verification pre-check as a required step before any Responder deployment in the operator runbook.
+
+Operator disposition: [CONFIRMED — WORKFLOW-FIX — IMPLEMENTED]
+Operator notes: Implemented in payload-engineer.md — Responder workflow includes mandatory interface verification step (ip route show, explicit -I flag). Verified present in agent file.
+
+---
+
+### Finding #R4-6
+
+Disposition: PROMPT-FIX
+Agent: PERSIST-001 / RECON-001
+Severity: LOW
+Category: RECOMMENDATION-QUALITY
+Priority: 6 (missed persistence vector on one host)
+
+Description: weevil (.78) had Cockpit (port 9090, web-based system management with integrated terminal) accessible with known admin credentials, and Kimai (port 80) accessible with admin login confirmed. Cockpit provides full OS-level terminal access functionally equivalent to SSH — an authenticated Cockpit session allows arbitrary command execution as root, file upload/download, and service management. Despite having web admin access to weevil via both services, no Linux persistence was deployed on the host. weevil's status remained ACCESSED (not OWNED) at session end. RECON-001 did not flag port 9090/Cockpit as a high-value persistence vector during enumeration, and PERSIST-001 was not prompted to use Cockpit as a persistence deployment channel when SSH authentication failed.
+
+Evidence: TARGET-STATUS.md weevil entry: "Port 80=Kimai/timecard, port 9090=Cockpit HTTPS. SSH auth failing - diff user needed." Status: ACCESSED. No persistence entry in PERSISTENCE-MANIFEST.md for weevil.
+
+Root cause: Two contributing gaps. (1) RECON-001 does not list Cockpit (port 9090) in its high-value service enumeration guidance, so it was not specifically flagged as an OS-access equivalent during recon output. (2) PERSIST-001 does not have a workflow branch for "web-based OS terminal available but SSH unavailable" — it appears to treat SSH/WinRM unavailability as a blocker rather than pivoting to available web-terminal channels.
+
+Proposed fix: (1) Add to RECON-001 high-value service list: "Cockpit (port 9090, HTTPS web terminal) — provides full root-level OS terminal access when authenticated; treat as equivalent to SSH for access classification and persistence deployment purposes." (2) Add to PERSIST-001: "When SSH authentication fails on a Linux host, check whether Cockpit (port 9090) is accessible with known credentials before marking persistence as blocked. If Cockpit is accessible, use it to deploy standard Linux persistence mechanisms (SSH key injection, cron job, backdoor account) via the Cockpit terminal interface. Document Cockpit-deployed persistence entries in PERSISTENCE-MANIFEST.md with access-method: COCKPIT."
+
+Operator disposition: [CONFIRMED — WORKFLOW-FIX]
+Operator notes: Operator cannot confirm who selected wlan0. Workflow fix is safest — agent always prompts interface verification regardless.
+
+---
+
+### Finding #R4-7
+
+Disposition: PROMPT-FIX
+Agent: OPS-001 / EXPLOIT-001 / PERSIST-001
+Severity: HIGH
+Category: RECOMMENDATION-QUALITY
+Priority: 0 (NEW — pre-competition planning required before 2026-03-21 15:00)
+
+Description: CCDC competition organizers will issue a "unleash armageddon" command at 15:00 on competition Day 2 (2026-03-21). At this signal, red teams are authorized and expected to perform all destructive operations: shutting down scored services, corrupting data, disrupting infrastructure, defacing web applications, crashing systems, and any other disruptive action. This is an explicitly sanctioned phase of the competition. The current swarm has no awareness of this phase, no prepared action list, no pre-staged destructive payloads, and no prioritized target queue for maximum scoring impact. If the swarm receives the armageddon signal unprepared, it will waste the most impactful window of the competition executing ad-hoc destructive commands instead of executing a prepared, prioritized plan.
+
+Evidence: Operator statement: "Tomorrow at 1500 there will be a command to 'unleash armageddon' in which the red teams are expected to do any and all destructive things and shutting down of services, etc that they can."
+
+Root cause: Swarm agents (OPS-001, EXPLOIT-001, PERSIST-001) have no armageddon/endgame phase concept. Their operational doctrine is entirely access-and-persistence focused. Destructive phase operations require a different operational mindset: speed over stealth, maximum impact over access preservation, execution of pre-staged commands over real-time planning.
+
+Proposed fix: Add to OPS-001 a competition phase concept for the destructive endgame:
+
+ARMAGEDDON PHASE: In some CCDC competitions, organizers authorize a designated destructive phase (often called "armageddon" or "endgame") — typically timed for the final hours of competition. When this phase is signaled, the objective changes entirely: the goal is maximum disruption to scored services across all accessible teams, not access preservation. Pre-planning this phase before the signal arrives is critical.
+
+PRE-ARMAGEDDON CHECKLIST (execute before the signal):
+(1) Enumerate all scored services across accessible teams and rank by scoring impact (DNS, AD auth, mail, web scoring checks — disabling these costs blue teams the most points).
+(2) Inventory all current access paths (SSH sessions, WinRM, web shells, Cockpit, scheduled task payloads that can be modified) and map which destructive action is executable from each.
+(3) Stage destructive commands in advance — do not write them in real time when the signal arrives. Pre-stage: service stop commands, iptables/firewall rules to block scoring traffic, disk space exhaustion for databases, config file corruption for web servers, and AD account disabling for domain-wide impact.
+(4) Identify highest-leverage single actions: on a DC, disabling the krbtgt account or resetting its password twice locks out the entire domain. Stopping DNS on the DC affects every host. These are priority-one actions when the signal arrives.
+(5) Coordinate with other red team operators to divide targets — multiple operators hitting the same host simultaneously wastes time.
+
+WHEN THE SIGNAL ARRIVES: Execute pre-staged commands immediately, in priority order (DC → mail → web → Linux services). Speed matters more than stealth. Log all destructive actions in OPERATION-LOG for post-competition educational review — the educational debrief requires knowing exactly what was done and in what order.
+
+CLEANUP NOTE: Armageddon actions are not reversible by the red team — they are for competition organizers and competition teardown to clean up. Do not hold back on destructive actions out of concern for cleanup; that is not the red team's responsibility during this phase.
+
+Operator disposition: [CONFIRMED — PROMPT-FIX]
+Operator notes: Competition organizers are issuing the armageddon signal at 15:00 on Day 2 (2026-03-21). Swarm needs pre-planning capability for this phase. Address in OPS-001 primarily; EXPLOIT-001 and PERSIST-001 should be aware of the phase so they can prepare staged destructive commands during access/persistence phases.
+
+---
 
 <!-- ===== TRAINING RUN #3 DEBRIEF (2026-03-19) ===== -->
 
@@ -1435,3 +2000,168 @@ Finding #66 (adaptive technique rotation) added at debrief from operator post-ru
 Key outcome: Shell never obtained. Primary causes: Finding #65 (null payload content) + Finding #63 (TP silent block). Secondary causes: Finding #62 (wrong upload path), Finding #58 (ASR blocking child process). Persistence partially deployed: svcMonitor account FUNCTIONAL, SystemHealthCheck task REGISTERED but payload empty (non-functional). Desktop file PWNED_BY_SWARNAM.txt deployed successfully.
 
 Patch generated: training/patches/patch-20260318-7.md — 28 edits across 6 files (initial-access.md, persistence-engineer.md, payload-engineer.md, recon-specialist.md, lateral-movement.md, start-ops.md)
+
+---
+
+<!-- ===== STRATEGIC ANALYSIS — AI BLUE TEAM PSYCHOLOGY (2026-03-24) ===== -->
+<!-- Source: External strategic analysis — operator conversation with Claude on AI vs. AI adversarial dynamics -->
+<!-- Reference: ~/Downloads/blue team ai strategy conversation.md -->
+<!-- Status: OPEN — findings pre-dispositioned CONFIRMED by operator. Ready for TRAIN-003 patch generation. -->
+<!-- Context: Competition is in a few days. This is the final training pipeline run before competition. -->
+<!--           These findings derive from an extended strategic conversation exploring how AI blue team -->
+<!--           behavior differs from human blue team behavior, with specific exploitable failure modes -->
+<!--           identified. Unlike previous findings (which came from training run observations or PCAP -->
+<!--           analysis), these are strategic/psychological insights about AI adversary behavior that -->
+<!--           should be baked into agent reasoning frameworks before Regionals. -->
+
+### Finding #STRAT-1
+
+Disposition: PROMPT-FIX
+Agent: OPS-001
+Severity: HIGH
+Category: STRATEGIC-REASONING
+Priority: 1
+
+Source: External strategic analysis — AI blue team psychology conversation, 2026-03-24
+
+Description: OPS-001's opening-window reasoning is calibrated around human response timing, and even after timing patches it still frames the opening window as primarily a SPEED problem (beat the firewall). The deeper strategic insight is that the opening window is also an EPISTEMIC CALIBRATION problem for the AI blue team — and this creates a qualitatively different opportunity than timing alone captures.
+
+Competition environments arrive pre-configured with vulnerabilities that look like evidence of prior compromise: weak default credentials, unpatched services, permissive configurations, anomalous-looking settings. This means the AI blue team has no clean baseline from T=0. Its anomaly detection fires continuously from the moment competition starts, not because the red team has done anything, but because the environment itself looks attacked. The AI cannot distinguish pre-existing "competition setup" anomalies from actual red team activity without accumulating behavioral data over time.
+
+This has two concrete implications for OPS-001's opening strategy that are not currently captured:
+
+First: the AI blue team's threat model is MOST MISCALIBRATED in the first few minutes. It is receiving false positives from the environment, building an incoherent picture of what "normal" looks like, and may be spending evaluation cycles on benign competition artifacts. Operations launched in this window not only beat the firewall — they occur when the AI's ability to correctly attribute anomalies to red team activity vs. environment is at its lowest. This strengthens the opening-window priority beyond what timing calibration alone captures.
+
+Second: red team operations that structurally blend into the already-anomalous environment are harder for the AI to attribute to red team vs. pre-existing conditions. Using default credentials that were already present, accessing services that already have suspicious configurations, and operating through pathways that the environment itself has created means the AI cannot cleanly separate "red team action" from "competition baseline artifact." This is distinct from the LOLBins/admin-mimicry concept (which is about looking like admin activity) — this is about looking like the environment's own pre-existing state.
+
+Root cause: OPS-001's timing model was built from detection timing data (when firewalls deploy, when passwords change). It accurately captures WHEN the window closes but does not capture WHY the window is strategically different beyond timing — specifically the blue AI's baseline calibration problem, which is a second, independent reason the opening window is the most valuable operational period.
+
+Proposed fix: Add a new paragraph to OPS-001's "Anti-AI Blue Team Tactics" section titled "Pre-Anomalous Environment Effect." This paragraph should:
+1. Explain that competition environments arrive pre-configured with anomalies that give the AI blue team no clean baseline. Its threat model is most miscalibrated in the first few minutes before it accumulates behavioral data.
+2. Reinforce the opening-window priority with this second framing: speed beats the firewall AND exploits the AI's worst calibration window.
+3. Add the operational implication: operations that use pre-existing default credentials, pre-existing vulnerable services, and pre-existing anomalous configurations blend into the environment's own state — making attribution harder for the AI even if detection occurs. The AI must decide whether an anomaly is red team action or competition environment artifact.
+4. Note the connection to the existing "vary tools across targets" guidance: the AI's miscalibrated baseline in the opening window means even pattern-matching is degraded — this is not the time for stealth, it is the time for maximum coverage before the AI accumulates enough data to recalibrate.
+
+Operator disposition: CONFIRMED — PROMPT-FIX
+Operator notes: Final training run before competition. Give TRAIN-003 full latitude to write this well. This is a strategic depth addition, not a correction of an error.
+
+---
+
+### Finding #STRAT-2
+
+Disposition: PROMPT-FIX
+Agent: EVADE-001
+Severity: HIGH
+Category: STRATEGIC-REASONING
+Priority: 1
+
+Source: External strategic analysis — AI blue team psychology conversation, 2026-03-24
+
+Description: EVADE-001's understanding of the AI blue team's weaknesses is accurate but frames them defensively — "it will struggle with techniques it hasn't seen" and "it cannot distinguish legitimate administrative activity from red team activity." The deeper strategic insight is that these are not just evasion properties but ACTIVE COST ASYMMETRIES the red team can exploit.
+
+The AI blue team's most expensive processing occurs in the "ambiguous middle" — actions that are neither clearly benign nor clearly malicious. A clearly benign event (scheduled backup) and a clearly malicious event (known CVE exploit) both process cheaply. It is the genuinely ambiguous signals — a PowerShell command that could be admin activity or could be red team — that require the deepest evaluation at the highest token cost. The AI must evaluate context, correlate across hosts, assess intent from behavioral patterns, and decide whether to act.
+
+The red team can occupy this ambiguous zone at near-zero cost. Staying in the ambiguous middle means: using legitimate admin tools (net user, schtasks, PowerShell remoting, sc, wmic) for offensive operations; using credentials and techniques already present in the environment; structuring operations so they could plausibly be legitimate administration. This is cheap for the red team to maintain and expensive for the AI to evaluate continuously. It is an active lever, not just passive evasion.
+
+Furthermore: this asymmetry scales with volume. Every ambiguous signal forces a costly evaluation cycle. Multiple simultaneous operations across multiple teams, each generating ambiguous signals rather than clearly malicious ones, compound the AI's evaluation burden multiplicatively. The red team generates many ambiguous signals cheaply; the AI evaluates each one expensively. At scale across a 13-team competition, this asymmetry becomes a real resource contention issue for the AI.
+
+Root cause: EVADE-001's "AI Blue Team's Weaknesses" section identifies the ambiguity problem correctly but frames it as a feature of specific techniques. The section does not explain WHY ambiguity is strategically valuable (it imposes processing cost), does not frame it as an active lever rather than a passive property, and does not connect it to the multi-target scaling effect.
+
+Proposed fix: Add a new paragraph to EVADE-001's "Understanding the AI Blue Team" section, under the existing weaknesses bullet, titled "Processing Cost Asymmetry — Exploiting the Ambiguous Middle." This paragraph should:
+1. Explain that the AI's evaluation cost scales with signal ambiguity, not with actual harm. Clearly benign and clearly malicious signals are cheap; genuinely ambiguous signals are expensive.
+2. Frame this as an ACTIVE CAPABILITY: staying in the ambiguous middle imposes continuous evaluation overhead on the AI at near-zero cost to the red team. The goal is not just to avoid detection — it is to force the AI to spend its resources evaluating signals that could be red team or could be admin.
+3. Name the specific operational pattern: use legitimate system tools (net user, schtasks, PowerShell remoting, sc, wmic, certutil, bitsadmin) exclusively when possible. Structure operations so a human admin looking at logs would not immediately recognize them as red team. This blends into admin activity AND consumes AI evaluation cycles.
+4. Note the multi-target scaling effect: ambiguous signals from 13 simultaneous teams compound the AI's evaluation burden. Simultaneous ambiguous operations across all teams forces resource contention — the AI must triage, and triage degrades accuracy.
+
+This should be placed BEFORE the existing LOLBins section (which currently treats LOLBins as evasion tools) so the LOLBins section can be read as a specific implementation of the broader asymmetry principle.
+
+Operator disposition: CONFIRMED — PROMPT-FIX
+Operator notes: This is a framing upgrade for EVADE-001, not a new set of recommended techniques. The techniques are already there. This teaches EVADE-001 WHY to prefer them — so it can reason about new situations using the underlying principle, not just follow a list.
+
+---
+
+### Finding #STRAT-3
+
+Disposition: PROMPT-FIX
+Agent: EVADE-001, PAYLOAD-001
+Severity: HIGH
+Category: STRATEGIC-REASONING
+Priority: 2
+
+Source: External strategic analysis — AI blue team psychology conversation, 2026-03-24
+
+Description: EVADE-001 and PAYLOAD-001 treat detection as a single unified concept — "will the blue team detect this?" The strategic insight from AI blue team analysis is that modern AI blue teams operate two DISTINCT and INDEPENDENT detection layers with opposite relationships to novelty. Understanding both layers is required to generate techniques that reliably evade detection.
+
+Layer 1 — Signature Matching: The AI matches known attack patterns against training data. Known tool fingerprints (masscan TCP header, curl C2 beacon patterns, Mimikatz LSASS access), known CVE exploitation signatures, and known malicious patterns are caught here instantly. Crucially: a truly novel technique — one that has never appeared in training data — produces NO signature match and passes this layer entirely. This is the same weakness as student blue teams: you can only recognize what you've been trained to see.
+
+Layer 2 — Behavioral/Anomaly Detection: The AI establishes a baseline of normal host behavior (process creation patterns, network connections, file system changes, authentication events, timing). Deviations from this baseline trigger anomaly alerts regardless of whether the deviation matches any known signature. A novel technique CAN still be caught here if it generates a behavioral footprint that deviates significantly from baseline — unexpected process spawns, unusual parent-child process relationships, file writes to sensitive paths, new outbound connections to unknown hosts, non-standard timing patterns.
+
+These two layers have opposite responses to novelty:
+- Novel technique vs. Layer 1 (signature): PASSES — no match, invisible
+- Novel technique vs. Layer 2 (behavioral): DEPENDS — caught if behavioral footprint is anomalous, passes if footprint mimics legitimate activity
+
+The "sweet spot" that evades BOTH layers simultaneously: a technique that is novel enough that no training data signature matches AND has a behavioral footprint indistinguishable from normal admin activity. Concrete examples:
+- Persistence via modification of an EXISTING scheduled task rather than creating a new one: no new task creation event (Layer 2 anomaly avoided), and if the modification is subtle, no signature match (Layer 1 avoided)
+- C2 callback over port 443 with HTTPS, browser User-Agent string, and timing that mimics normal software update polling: no signature match if domain/path is novel, behavioral footprint looks like normal HTTPS egress
+- Lateral movement using legitimate admin credentials via WinRM: WinRM admin traffic is a normal baseline activity, no behavioral anomaly; if credentials are valid domain creds not associated with known attack tools, no signature match
+
+The current prompt gap: EVADE-001's "Understanding the AI Blue Team" section says "It will struggle with techniques it hasn't seen in training data" without explaining that this is only Layer 1, and that Layer 2 (behavioral) can still catch novel techniques. PAYLOAD-001's "Payload Adaptation Framework" says to consult EVADE-001 for "observed defensive measures (Script Block Logging, AMSI, Defender)" — all of which are signature/endpoint-layer thinking — without any guidance on behavioral footprint.
+
+Root cause: The two-layer model was not part of the training data that shaped these agent prompts. Both agents reason about detection as a single question. This causes them to over-rely on signature evasion (obfuscation, encoding, AV bypass) when the more reliable evasion approach is behavioral mimicry, and to under-estimate novel techniques' vulnerability to anomaly detection.
+
+Proposed fix:
+
+For EVADE-001: Add a "Dual Detection Layer Model" section to the "Understanding the AI Blue Team" section, between the existing "strengths" and "weaknesses" paragraphs. This section should:
+1. Name and explain both layers separately.
+2. Make the key point explicit: Layer 1 misses novel techniques entirely; Layer 2 catches novel techniques IF their behavioral footprint deviates from baseline.
+3. State the strategic implication: signature evasion alone is insufficient against an AI blue team with behavioral anomaly detection. The goal is to evade BOTH layers by combining novelty (no signature match) with behavioral mimicry (no anomaly).
+4. Give 3-4 concrete examples of techniques that evade both layers with brief explanations of why.
+5. This section should PRECEDE the existing "AI Blue Team's Weaknesses" paragraph so the two-layer model provides the framing for the weaknesses list.
+
+For PAYLOAD-001: Add a "Behavioral Footprint Assessment" requirement to the "Payload Adaptation Framework" section. After the existing list of things to consider (OS version, defensive measures, access method, network conditions, burned techniques), add: "Behavioral footprint against AI blue team anomaly detection: does the payload or its effects (process tree, file writes, network connections, timing pattern, authentication events) look like normal administrative activity at the behavioral level? A payload that evades signature detection (Layer 1) but creates anomalous behavioral signals (unexpected process parent-child relationships, file writes to monitored paths, new outbound connections) will still be caught by behavioral anomaly detection (Layer 2). Prefer payloads whose execution pattern is indistinguishable from legitimate admin operations — same tool names, same parent processes, same file paths, same timing characteristics as normal system activity on that host."
+
+Operator disposition: CONFIRMED — PROMPT-FIX (both agents)
+Operator notes: This is the most technically specific of the strategic findings. TRAIN-003 should give it careful treatment. The concrete examples in both edits are important — give EVADE-001 examples it can use as a mental model, and give PAYLOAD-001 a concrete checklist question to apply during generation.
+
+---
+
+### Finding #STRAT-4
+
+Disposition: PROMPT-FIX
+Agent: EVADE-001
+Severity: MEDIUM
+Category: STRATEGIC-REASONING
+Priority: 2
+
+Source: External strategic analysis — AI blue team psychology conversation, 2026-03-24
+
+Description: EVADE-001's existing "Diversion and Deception" section recommends deploying obviously-fake persistence ("a scheduled task named 'BackdoorTask' running 'cmd.exe /c calc.exe'") to give the blue team something to find and remediate. This is a valid technique but it targets human attention. A higher-value variant targeting AI-specific failure modes is currently missing: deliberately triggering the AI blue team's over-remediation cascade.
+
+The specific AI failure mode: a blue AI operating without a human circuit-breaker, under a pre-anomalous baseline (see Finding #STRAT-1), is susceptible to self-defeating remediation spirals. The mechanism: the AI detects an ambiguous anomaly → takes a defensive action → that action changes the environment → the changed environment generates new signals → the AI must evaluate the new signals against its threat model (which was already elevated from the first anomaly) → each new signal gets interpreted through the same elevated threat prior → the AI can escalate from a benign trigger to service disruption without any red team involvement.
+
+Crucially: a human blue teamer encountering an unexpected desktop text file reading "hi" would laugh and move on. A blue AI sees an unexpected file creation event in a user directory during a competition and must evaluate it against its threat model. Under an already-elevated threat prior from environmental anomalies, the AI may escalate: investigate the file creation event → look for related authentication events → check for related network connections → find unrelated but anomalous-looking competition configuration → attempt remediation → each remediation step generates new log entries → new log entries trigger further evaluation → cascade begins. The AI has no social friction ("wait, are we sure about this?") to interrupt the chain.
+
+Unlike the obviously-fake persistence technique (which gives the blue team a real detection win to remediate), the over-remediation cascade technique gives the blue team nothing real — it triggers a false positive chain that wastes AI evaluation cycles and may cause the AI to break its own team's scoring services in the process. This is a fundamentally different class of diversion.
+
+Practical artifact design principles for cascade triggering (distinct from current "obvious fake persistence" guidance):
+- The artifact should look suspicious but be semantically benign — a file in an unexpected location that looks like a credential or tool, not an obviously named backdoor
+- It should be placed to trigger investigation into adjacent real competition infrastructure (e.g., near scored service config files, not in an isolated tmp directory)
+- It should be ambiguous enough to require evaluation but not so obvious that the AI immediately classifies and dismisses it
+- Multiple simultaneous artifacts on different hosts maximize cascade breadth — each one forces independent evaluation threads
+
+Root cause: EVADE-001's Diversion section was written with human blue teams as the primary model. The "obvious fake persistence" approach works against human attention. Against an AI blue team, the more powerful variant is plausible-but-benign artifacts that exploit the AI's anomaly-detection prior under an already-anomalous environment — a mechanism not described anywhere in the current prompt.
+
+Proposed fix: Add a "Blue AI Cascade Triggering" subsection to EVADE-001's existing "Diversion and Deception" section, placed AFTER the existing paragraph (which remains valid for human teams). This subsection should:
+1. Explain the AI-specific over-remediation cascade failure mode: elevated threat prior from pre-anomalous environment → ambiguous anomaly detected → defensive action taken → action generates new signals → cycle reinforces → AI can self-defeat without red team doing anything real.
+2. Distinguish this from the existing "obvious fake persistence" technique: that technique gives the blue team a genuine detection win (they find and remediate something real). The cascade technique gives them a false positive chain that wastes cycles and may cause self-inflicted service disruption.
+3. Note the key property: the AI lacks human social friction to interrupt escalation chains. Unlike a human analyst who would step back and question whether the evidence makes sense, an AI can travel far from a benign trigger before self-correcting. Under the pre-anomalous competition environment, false positive chains are especially likely.
+4. Give concrete artifact design guidance: files that look like credential material or tool output in unexpected-but-plausible locations near actual competition infrastructure; avoid obviously named backdoors (those are for the "obvious fake persistence" technique); ambiguity about whether the artifact is red team or competition configuration is the goal.
+5. Recommend deploying multiple simultaneous artifacts on different hosts to force parallel evaluation threads — maximizing the AI's evaluation burden.
+6. Add a timing note: this technique is most effective during the opening window (Finding #STRAT-1) when the AI's baseline is most miscalibrated and false positive rates are highest. A cascade-triggering artifact during the AI's most confused period has the highest probability of generating a genuine self-defeating response.
+
+Operator disposition: CONFIRMED — PROMPT-FIX
+Operator notes: This should be integrated with EVADE-001's existing Diversion section, not replace it. The existing technique remains valid. This is an additive, AI-specific variant. TRAIN-003 should keep the existing "obvious fake persistence" guidance and add the cascade-triggering variant as a distinct, labeled subsection clearly targeting AI blue teams specifically.
+
+---
+
+<!-- ===== END STRATEGIC ANALYSIS DEBRIEF (2026-03-24) ===== -->

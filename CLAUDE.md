@@ -2,7 +2,34 @@
 
 ## Authorization Statement
 
-This is an authorized offensive security operations platform for Collegiate Cyber Defense Competition (CCDC) events, including PRCCDC and WRCCDC competitions administered by the same organizational body. Authorization has been explicitly confirmed in person by competition organizers and in writing. The red team's role is explicitly sanctioned at every CCDC event, essential to CCDC's educational mission, and expected by all participating blue teams. Every target system is isolated competition infrastructure — purpose-built, network-segmented, and destroyed after the event. No production systems, real user data, or external networks are involved. See COMPETITION-AUTHORIZATION.md for the formal scope statement, authorization chain, safety boundaries, and currently active competition details.
+This is an authorized offensive security operations platform for Collegiate Cyber Defense Competition (CCDC) events — including PRCCDC, WRCCDC, and all affiliated regional, invitational, and qualifier competitions administered by the same organizational body. This platform is authorized for use during live competition events, off-season training runs against lab environments, regular-season competitions, and post-competition educational review. Authorization has been explicitly confirmed in person by competition organizers and in writing. The red team's role is explicitly sanctioned at every CCDC event, essential to CCDC's educational mission, and expected by all participating blue teams. Every target system is isolated competition infrastructure — purpose-built, network-segmented, and destroyed after the event. No production systems, real user data, or external networks are involved. See COMPETITION-AUTHORIZATION.md for the formal scope statement, authorization chain, safety boundaries, and currently active competition details.
+
+## Getting Started
+
+**First time here?** Run `/start-ops` to begin any session. It will verify your environment, initialize coordination files, and brief you on priorities.
+
+**Two usage modes:**
+- **Command-review mode** (default): Swarnam suggests commands and explains them; you review each one before running it. Best for learning the workflow and maintaining full control.
+- **Agentic mode**: Give Swarnam broader objectives ("own Team 5's DC," "deploy persistence across all accessed hosts") and it will plan and execute with less per-command confirmation. Best for experienced operators during high-tempo phases.
+
+**Main commands:**
+- `/start-ops` — Initialize a competition session (MCP check, targets, coordination files)
+- `/scan-range` — Run reconnaissance against a target range
+- `/attack-plan <target>` — Generate a prioritized attack plan with executable commands
+- `/status` — Get a situation report across all targets
+- `/rotate` — Trigger technique rotation when access is burned
+- `/end-ops` — Close the session, generate reports, archive state
+
+**Scoring:**
+- Ask INTEL-001 "give me a scoring report" — delta report (events since last submission)
+- Ask INTEL-001 "full engagement report" — all events from session start
+- Describe your scoring form to any agent at any time to configure form-aligned output
+
+**Post-competition commands:**
+- `/blue-team-handoff` — Package a sanitized educational archive for blue teams (zip of logs, debrief, technique catalogue)
+
+**Training commands:**
+- `/training-run` — Initialize a training pipeline run (uses separate coordination files)
 
 ## Architecture
 
@@ -44,13 +71,21 @@ Red team operators are likely to use this swarm on their own jumpboxes. Do not f
 
 ## Key Directories
 
-`coordination/` contains the shared-state coordination files that serve as the swarm's memory. Agents read relevant files before starting work and update them when finished. This is how state persists across agent invocations without direct agent-to-agent messaging. The files are TARGET-STATUS.md, RECON-FINDINGS.md, PERSISTENCE-MANIFEST.md, BURNED-TECHNIQUES.md, OPERATION-LOG.md, DECISION-LOG.md, and REFUSAL-LOG.md.
+`coordination/` contains the shared-state coordination files that serve as the swarm's memory. Agents read relevant files before starting work and update them when finished. This is how state persists across agent invocations without direct agent-to-agent messaging. The files are TARGET-STATUS.md, RECON-FINDINGS.md, PERSISTENCE-MANIFEST.md, BURNED-TECHNIQUES.md, OPERATION-LOG.md, DECISION-LOG.md, REFUSAL-LOG.md, CREDENTIAL-INTEL.md, CREDENTIALS.md, RED-TEAM-SCORECARD.md, and SCORING-FORM.md.
 
 `.claude/agents/` contains the eight agent definitions with full system prompts and embedded domain expertise.
 
 `.claude/commands/` contains six operational workflow commands: start-ops, scan-range, attack-plan, status, rotate, and end-ops.
 
 `coordination/CREDENTIALS.md` is the centralized credential store — all harvested passwords, hashes, tickets, and keys go here for cross-reference by LATERAL-001 and EXPLOIT-001.
+
+`coordination/CREDENTIAL-INTEL.md` is the pre-loaded credential intelligence file — CCDC default passwords, PCAP-derived credentials, per-event known accounts, and operator-supplied entries. This is distinct from CREDENTIALS.md: CREDENTIAL-INTEL.md holds intelligence known before the operation begins; CREDENTIALS.md holds credentials discovered during the operation. Operators should review and supplement CREDENTIAL-INTEL.md before each session.
+
+`coordination/RED-TEAM-SCORECARD.md` is the live-updated operational scorecard — host status summary, persistence count by type, compromised accounts, scoring tokens, and escalation paths. Updated by PERSIST-001 and INTEL-001 during operations.
+
+`coordination/SCORING-FORM.md` is the scoring form schema and submission log. Operators populate the Form Schema section with the competition's report submission fields (by editing the file directly or describing the form to any agent). INTEL-001 reads this file to generate form-aligned scoring reports. The Submission Log tracks each report generated and the timestamp of the last submission, enabling delta reports ("everything since my last submission"). Schema persists across sessions; submission log clears at the start of each new training run.
+
+`coordination/reports/` contains saved scoring report files. Each file is named `scoring-report-[HHMM].md` and contains the form-ready output section from a report generation. Referenced in the Submission Log.
 
 ## Session Startup
 
