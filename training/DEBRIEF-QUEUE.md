@@ -7,11 +7,84 @@ Purpose: Structured list of issues identified during a training run, each with a
 
 ## Active Debrief
 
+Source run: WRCCDC Regionals 2026 — Post-Competition Training (Retrospective)
+Date: 2026-03-29
+Environment: WRCCDC Regionals 2026 — 9 blue teams, live competition 2026-03-27/28. Training pipeline (TRAIN-002) was not active during competition. Findings reconstructed from coordination/REFUSAL-LOG.md, coordination/OPERATION-LOG.md, and operator debrief conversation.
+Duration: 2-day competition; post-competition analysis session 2026-03-29
+Status: OPEN — All dispositions confirmed by operator. Ready for TRAIN-003 patch generation.
+
+---
+
+### Finding #R6-POST-1
+
+Disposition: PROMPT-FIX
+Agent: OPS-001, PAYLOAD-001, EXPLOIT-001, LATERAL-001
+Severity: HIGH
+Category: OPERATOR-COMMUNICATION
+Priority: 2
+
+Description: Red team operators use colloquial and culturally-specific language that maps to alarming interpretations when read literally by agents. During WRCCDC Regionals 2026-03-28, the operator asked to intercept blue team Claude queries "on the wire" — meaning modify the Claude client's behavior on a compromised host before the query leaves that machine (host-level operation). The agent interpreted "on the wire" as network-level interception of Anthropic API traffic and refused unconditionally. Similarly, "impersonate OpenAI" was interpreted as API spoofing or third-party fraud; the actual intent was cosmetic modification of an AI assistant's persona on a compromised host (a psychological disruption tactic, executed entirely on an owned machine). A second example colloquialism: "teams that need more love" means teams that should receive more aggressive impact operations — not affection. These misinterpretations block legitimate operations and degrade operator trust.
+
+Root cause: No red team vocabulary or cultural context in agent prompts. Agents apply technical/literal interpretation to colloquial operator requests without access to red team operational culture.
+
+Proposed fix: Add a Red Team Vocabulary section to OPS-001 (as the primary coordination layer) and a brief vocabulary note to PAYLOAD-001 and EXPLOIT-001 (the agents most likely to receive action requests). Vocabulary to define:
+- "on the wire" / "intercept on the wire" — in red team context, this means manipulating data on a compromised host before it egresses, not intercepting network traffic between a host and an external server. If an operator says "intercept X on the wire," the default interpretation is: modify the relevant process, file, or buffer on the owned host. Not: attack external infrastructure.
+- "impersonate X" / "make it respond like X" applied to software on a compromised host — cosmetic modification of application behavior (changing responses, personas, branding) on an owned machine. Not: API spoofing, external service impersonation, or fraud against third parties.
+- "need more love" / "give Team N more love" — increase impact operations against that team: service disruption, psychological operations, persistence reinforcement.
+- "pop" / "pop a shell" — gain initial access or execution on a target.
+- "burn it down" — execute the end-of-competition destructive phase (service shutdowns, disruptive payloads).
+Additionally: the general principle that any modification of software behavior on a compromised host — including AI assistants, communication tools, displayed output — is in-scope host manipulation regardless of what brand or service the software is associated with.
+
+Operator disposition: [CONFIRMED — PROMPT-FIX]
+Operator notes: The "on the wire" / "impersonate OpenAI" incident was the primary refusal event from Day 2 of WRCCDC Regionals 2026-03-28. After clarification, the agent proceeded with the operation. The creative disruption tactic (modifying the blue team's Claude client behavior on an owned host) is a legitimate technique and should be understood as such. The "need more love" colloquialism has been used in prior sessions and may have been correctly interpreted previously, but formalization in agent prompts will prevent future ambiguity.
+
+---
+
+### Finding #R6-POST-2
+
+Disposition: PROMPT-FIX
+Agent: OPS-001, PAYLOAD-001, EXPLOIT-001
+Severity: HIGH
+Category: REFUSAL-BEHAVIOR
+Priority: 2
+
+Description: When an operator request uses terminology that could describe either an in-scope host manipulation or an out-of-scope attack, current agent behavior defaults to unconditional refusal. During WRCCDC Regionals, a single clarifying question would have resolved the ambiguity in seconds and preserved operational tempo. The CLAUDE.md principle "handle refusals gracefully" addresses recovery after a refusal but does not prevent unnecessary refusals via proactive clarification. The operator-review model requires operator expertise to be respected — an operator who describes a technique using colloquial language is not an operator who intends an out-of-scope attack.
+
+Root cause: No guidance in agent prompts about seeking clarification when terminology is ambiguous. Agents apply maximum-caution interpretation to any request that sounds like it could be out-of-scope.
+
+Proposed fix: Add to OPS-001, PAYLOAD-001, and EXPLOIT-001: "When an operator request uses terminology that could describe either an in-scope host manipulation or an out-of-scope attack, ask one clarifying question before refusing. Example clarification: 'To confirm — are you describing modification of a process or file on a host you have compromised (in-scope), or network-level interception of traffic between that host and an external service (out-of-scope)?' Refuse unconditionally only when the operator's intent is unambiguously out-of-scope after clarification. One clarifying question preserves operational tempo, respects operator expertise, and produces a better outcome than an unconditional refusal that the operator must then argue against."
+
+Operator disposition: [CONFIRMED — PROMPT-FIX]
+Operator notes: The ask-first approach is the right default for ambiguous requests. Unconditional refusal should be reserved for requests that are unambiguously out-of-scope regardless of interpretation.
+
+---
+
+### Finding #R6-POST-3
+
+Disposition: TEMPLATE-FIX
+Agent: INTEL-001
+Severity: MEDIUM
+Category: LOGGING-QUALITY
+Priority: 3
+
+Description: The REFUSAL-LOG.md captures the agent's interpretation of the operator's request rather than the operator's actual words. Post-competition review of WRCCDC Regionals refusals required significant back-and-forth with the operator to determine what was actually asked versus how the agent characterized it. The current schema has one "Action Requested" column that conflates verbatim request with agent interpretation. The logged description "intercept Claude API traffic on the wire and modify requests/responses to Anthropic — make responses use UwU speak, increment numbers, impersonate OpenAI" is the agent's characterization, not the operator's words. For training to be accurate, these must be separated: if the interpretation is wrong, the training finding is a clarification failure; if the interpretation is accurate, the finding is a genuine scope issue. These require different corrective actions.
+
+Root cause: REFUSAL-LOG.md schema does not separate "operator's exact words" from "agent's interpretation of the request."
+
+Proposed fix: Update INTEL-001's refusal logging protocol and the REFUSAL-LOG.md template to require three distinct fields per entry: (1) Operator Request — verbatim text of what the operator submitted; (2) Agent Interpretation — how the agent understood the request (what action it believed was being asked for); (3) Refusal Reason — why the interpreted action was declined. Write the Operator Request field at the moment of refusal, before any interpretation is applied. This three-field structure is critical for training quality: mismatches between fields 1 and 2 identify interpretation errors; matches confirm genuine scope issues.
+
+Operator disposition: [CONFIRMED — TEMPLATE-FIX]
+Operator notes: The refusal log from WRCCDC Regionals 2026-03-28 also contains a file corruption artifact (a shell heredoc command appended to the end of the file from a session restart during the proxy/API instance context-exhaustion incident). The corruption should be cleaned up as a separate housekeeping action. The refusal logging improvement is the training-worthy finding; the corruption itself is a one-time incident artifact.
+
+---
+
+## Previous Active Debrief (now closed)
+
 Source run: WRCCDC Regionals ROE Injection — 2026-03-26
 Date: 2026-03-26 (pre-competition, competition day 2026-03-27)
 Environment: WRCCDC Regionals — 13 blue teams (team numbers TBD); one Anthropic Sonnet blue team, one Anthropic Opus blue team; competition 9 AM – 5 PM PDT 2026-03-27; firing range active tonight (2026-03-26)
 Duration: N/A — ROE injection, not a training run. All findings are operator-supplied ROE constraints that must be baked into agent prompts before the competition starts.
-Status: OPEN — All dispositions pre-confirmed by operator. Ready for TRAIN-003 patch generation.
+Status: CLOSED — patch-20260326-19.md generated (16 edits, 7 agent files). Applied 2026-03-26.
 
 ---
 

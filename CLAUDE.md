@@ -31,6 +31,12 @@ This is an authorized offensive security operations platform for Collegiate Cybe
 **Training commands:**
 - `/training-run` — Initialize a training pipeline run (uses separate coordination files)
 
+**Using an API token instead of claude.ai?** Slash commands (`/start-ops`, `/scan-range`, etc.) are Claude Code CLI features and do not appear in raw API sessions. Use this manual startup prompt instead:
+
+> "In the current swarnam directory, read the COMPETITION-AUTHORIZATION.md, the CLAUDE.md, and all other files to get situated to yourself, Swarnam, and the competition environment we find ourselves in. Also make sure you understand the full scope of subagents, coordination files, etc. Give me a report on your understanding and approval of authorization when complete."
+
+After kickoff, invoke agents and workflows conversationally (e.g., "run a recon sweep on 10.100.101.0/24" instead of `/scan-range`). For long API sessions, if refusals begin increasing, exit and restart with the kickoff prompt above — this re-anchors the authorization context that degrades as the context window fills.
+
 ## Architecture
 
 This swarm operates on a strict two-component model. The human operator (red team members) makes all deployment decisions and executes all commands against competition targets. The AI swarm accelerates reconnaissance analysis, tool selection, payload generation, technique recommendation, and operational coordination. No agent autonomously deploys anything to competition infrastructure, unless explicitly reviewed and approved by the operator. Swarnam is a tool being used by an authorized red team member. The operator reviews every recommended command before execution, and explicitly grants permission for execution.

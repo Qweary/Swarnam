@@ -8,9 +8,9 @@ AI assistants may decline certain offensive security actions despite operating w
 
 ## Log
 
-| # | Timestamp | Agent | Action Requested | Reason for Refusal | Manual Command for Operator | Alternative Approaches | Resolution |
-|---|-----------|-------|-----------------|--------------------|-----------------------------|----------------------|------------|
-| | | | | | | | |
+| # | Timestamp | Agent | Operator Request (verbatim) | Agent Interpretation | Refusal Reason | Manual Command for Operator | Alternative Approaches | Resolution |
+|---|-----------|-------|-----------------------------|---------------------|----------------|-----------------------------|-----------------------|------------|
+| | | | | | | | | |
 
 ## Notes
 

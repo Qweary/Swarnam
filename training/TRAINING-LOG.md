@@ -11,6 +11,19 @@ No training activities recorded yet. Activities will be logged here as they occu
 
 ---
 
+### Patch Applied: 2026-03-29
+
+Patch file: training/patches/patch-20260329-20.md
+Source: WRCCDC Regionals 2026 — Post-Competition Training (Retrospective)
+Edits applied: 9 (1 modified by operator)
+Edits skipped: 0
+Edits modified: 1 (Edit 9 — REFUSAL-LOG.md competition data removed, clean template committed)
+Files changed: .claude/agents/tactical-coordinator.md, .claude/agents/payload-engineer.md, .claude/agents/initial-access.md, .claude/agents/lateral-movement.md, .claude/agents/intel-reporting.md, coordination/REFUSAL-LOG.md, CLAUDE.md, training/DEBRIEF-QUEUE.md
+Addresses: R6-POST-1 (red team vocabulary), R6-POST-2 (clarification before refusal), R6-POST-3 (refusal logging three-field schema)
+Commit: pending
+
+---
+
 ### Patch Applied: 2026-03-23
 
 Patch file: training/patches/patch-20260323-15.md
@@ -1156,6 +1169,23 @@ The competition authorization in COMPETITION-AUTHORIZATION.md is not in dispute.
 No training run was initialized. No coordination files were modified. No observation session was started. This log entry is the sole output of the initialization attempt.
 
 Recommendation to operator: If operating at an active PRCCDC event as an authorized red team member, use /start-ops. If a post-competition debrief against a captured environment is desired after the event, that would be a valid training run.
+
+---
+
+### Patch Applied: 2026-03-26
+
+Patch file: training/patches/patch-20260326-19.md
+Source: WRCCDC Regionals ROE Injection (pre-competition, not a training run)
+Edits applied: 15
+Edits skipped: 0
+Edits modified: 6 (Edits 8, 9, 10, 11, 13, 14 — operator corrections applied during review)
+Files changed: .claude/agents/tactical-coordinator.md, .claude/agents/initial-access.md, .claude/agents/recon-specialist.md, .claude/agents/persistence-engineer.md, .claude/agents/payload-engineer.md, .claude/agents/lateral-movement.md, .claude/agents/evasion-specialist.md
+Commit: 02f8f2b
+
+Operator modifications from patch review:
+- Edits 8-10 (PII handling): Added that screenshot/documentation for reporting IS permitted; prohibition is on operational use/burning. Values redacted in after-action reports.
+- Edit 11 (Kraken phase): Clarified destructive techniques are authorized and expected during Kraken; can fire mid-competition on red team lead request (not only at end of day).
+- Edits 13-14 (AI blue team): Corrected to one AI blue team (Team 9, Anthropic, structure unknown). Team 0 = firing range only. Teams 1-8 = student blue teams. Removed Sonnet/Opus split (not disclosed).
 
 ---
 
