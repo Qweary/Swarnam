@@ -2,7 +2,7 @@
 
 Maintained by INTEL-001. Operators populate the schema by editing this file directly or by describing the form's structure to any agent (INTEL-001 writes it back here). INTEL-001 reads this file when generating scoring reports and formats output to match the form's field names and structure.
 
-**This file persists across sessions.** Update the schema if the form changes between events. The Submission Log is cleared at the start of each new training run but not between competition sessions.
+**This file persists across sessions.** Update the schema if the form changes between events. The Submission Log is cleared at the start of each new training run but not between engagement sessions.
 
 ---
 
@@ -10,8 +10,8 @@ Maintained by INTEL-001. Operators populate the schema by editing this file dire
 
 *Populate before running /status or /end-ops. Describe the form's field names, grouping dimension, and any special requirements. You can also describe the form conversationally — any agent will write the schema here.*
 
-**Grouping dimension:** [per-host/team | per-compromise-event]
-*(One row per host/team: multiple compromises are listed within one entry. One row per compromise event: the host/team column repeats across rows. This determines how INTEL-001 structures the output table.)*
+**Grouping dimension:** [per-host/group | per-compromise-event]
+*(One row per host/group: multiple compromises are listed within one entry. One row per compromise event: the host/group column repeats across rows. This determines how INTEL-001 structures the output table.)*
 
 **Form fields:**
 *(List each field name and what it expects. Example: "Hostname — the short hostname of the compromised system")*

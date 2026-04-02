@@ -1,6 +1,6 @@
 # Red Team Scorecard
 
-Live-updated operational scorecard. INTEL-001 and PERSIST-001 update this file alongside their normal coordination file updates. This file provides at-a-glance metrics for status reports and ensures post-competition reports have accurate summary statistics.
+Live-updated operational scorecard. INTEL-001 and PERSIST-001 update this file alongside their normal coordination file updates. This file provides at-a-glance metrics for status reports and ensures post-engagement reports have accurate summary statistics.
 
 ## Last Updated
 | Timestamp | Updated By |

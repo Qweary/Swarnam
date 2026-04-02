@@ -11,13 +11,13 @@ When the operator invokes /scan-range with a target range, execute this reconnai
 
 ### Step 1: Determine Scan Profile
 
-Based on the operator's flags or the current competition phase, select a scan profile.
+Based on the operator's flags or the current engagement phase, select a scan profile.
 
-Quick scan (default during Phase 1, or --quick flag): fast host discovery followed by service detection on common CCDC ports. Prioritizes speed over completeness. Use nmap with -T4 timing, --min-rate 1000, and the CCDC port list (21,22,23,25,53,80,88,110,135,139,143,389,443,445,636,993,995,1433,3306,3389,5432,5985,5986,8080,8443).
+Quick scan (default during Phase 1, or --quick flag): fast host discovery followed by service detection on common exercise ports. Prioritizes speed over completeness. Use nmap with -T4 timing, --min-rate 1000, and the common exercise port list (21,22,23,25,53,80,88,110,135,139,143,389,443,445,636,993,995,1433,3306,3389,5432,5985,5986,8080,8443).
 
 Full scan (--full flag): comprehensive port scan with version detection and default scripts. Use nmap with -sV -sC -T4 -p- against each target. This takes significantly longer but catches services on non-standard ports.
 
-Stealth scan (default during Phase 3, or --stealth flag): targeted probes with rate limiting. Use nmap with -T2 timing, specific port lists, and --scan-delay 1s to minimize detection by the AI blue team.
+Stealth scan (default during Phase 3, or --stealth flag): targeted probes with rate limiting. Use nmap with -T2 timing, specific port lists, and --scan-delay 1s to minimize detection by the AI defensive team.
 
 ### Step 2: Execute Discovery Phase
 
@@ -36,9 +36,9 @@ echo "PID: $! — Log: /tmp/scan-<target-description>.log"
 
 Record the PID and log path in OPERATION-LOG with status RUNNING. When pivoting back to this target later, check the log file for results.
 
-**Resource gate:** Before launching a new background scan, check active background tasks. If more than 3 background scan/brute-force processes are running, or any single process is consuming >60% CPU (check with `ps aux --sort=-%cpu | head -5`), add the new task to OPERATION-LOG with status QUEUED and revisit after an existing task completes. Oversubscribing the jumpbox during a time-critical competition window risks destabilizing all concurrent operations.
+**Resource gate:** Before launching a new background scan, check active background tasks. If more than 3 background scan/brute-force processes are running, or any single process is consuming >60% CPU (check with `ps aux --sort=-%cpu | head -5`), add the new task to OPERATION-LOG with status QUEUED and revisit after an existing task completes. Oversubscribing the jumpbox during a time-critical engagement window risks destabilizing all concurrent operations.
 
-Do NOT wait for scan completion before recommending next actions. After launching a background scan, immediately proceed to Step 3 for any already-available results and recommend the operator's next action (e.g., /attack-plan on a target with existing recon, or /scan-range on the next team range).
+Do NOT wait for scan completion before recommending next actions. After launching a background scan, immediately proceed to Step 3 for any already-available results and recommend the operator's next action (e.g., /attack-plan on a target with existing recon, or /scan-range on the next target range).
 
 ### Step 3: Analyze Results
 

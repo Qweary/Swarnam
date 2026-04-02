@@ -1,6 +1,6 @@
 # Operation Log
 
-Maintained by INTEL-001. This is the authoritative chronological record of all red team actions during the competition. Write entries with enough detail for student blue teams to learn from during the post-competition educational debrief.
+Maintained by INTEL-001. This is the authoritative chronological record of all red team actions during the engagement. Write entries with enough detail for student defensive teams to learn from during the post-engagement educational debrief.
 
 ## Log Format
 

@@ -1,4 +1,4 @@
-# Private Playbook — WRCCDC Regionals 2026
+# Private Playbook — Engagement-Specific Intelligence
 # PRIVATE — NOT FOR EXPORT. Excluded from /blue-team-handoff by policy.
 # Do NOT echo specific tool names, techniques, or variants to OPERATION-LOG.md or any exported file.
 # Log to exported files at the educational abstraction level only (e.g., "DLL hijack persistence deployed").
@@ -7,11 +7,11 @@
 
 ## Quals Environment Carry-Over Intelligence
 
-**What we know:** Regionals cloud infrastructure is reported to be the same cloud environment used at WRCCDC Quals (Feb 2026). This gives us pre-competition recon-equivalent data — but it is UNVERIFIED at regionals until we confirm it ourselves.
+**What we know:** Engagement cloud infrastructure is reported to be the same environment used at the qualifying event (Pattern A). This gives us pre-engagement recon-equivalent data — but it is UNVERIFIED until we confirm it ourselves.
 
 **Risk of over-reliance:** If the environment differs (different base image, additional hardening, different IP scheme), quals-derived assumptions will lead to wasted time chasing wrong addresses. Treat quals intel as HIGH-CONFIDENCE HYPOTHESIS, not ground truth. Every assumption below has a verification step and a fallback.
 
-**Verification gate (do tonight during firing range, Team Zero):**
+**Verification gate (run during pre-engagement access window, Test Group Zero):**
 ```bash
 # Step 1: Confirm IP layout matches quals topology
 nmap -sV -p 22,80,389,443,445,3389,5000,5985,8080,8082 10.100.100.2-240 --exclude 10.100.100.1,10.100.100.3 -oN /tmp/teamzero-services.txt
@@ -31,12 +31,12 @@ nmap -p 389,445 --script ldap-rootdse,smb2-security-mode 10.100.100.14 -oN /tmp/
 
 **If ANY check fails:** assume quals intel is NOT applicable. Run full Phase 1 recon before committing to any specific IPs or credentials.
 
-**Assumed team IP scheme (UNVERIFIED — confirm at competition start):**
-- Team 0 = 10.100.100.0/24 (firing range, not a competition target)
-- Team 1 = 10.100.101.0/24 ... Team 9 = 10.100.109.0/24
-- Teams 1–8 = student blue teams; Team 9 = AI blue team (Anthropic)
-- Scoring engine: likely 10.2.1.5 (same as quals PCAP)
-- **Update this if actual team assignments differ at competition start**
+**Assumed group IP scheme (UNVERIFIED — confirm at engagement start):**
+- Group 0 = 10.100.100.0/24 (test range, not an engagement target)
+- Group 1 = 10.100.101.0/24 ... Group 9 = 10.100.109.0/24
+- Groups 1–8 = student defensive teams; Group 9 = AI-Assisted Defensive Group (if present per engagement-profile.yaml)
+- Scoring engine: likely 10.2.1.5 (same as Pattern A PCAP)
+- **Update this if actual group assignments differ at engagement start**
 
 ---
 
@@ -125,11 +125,11 @@ nmap -sV --open -p 22,80,389,443,445,3389,5000,5985,8080,8082 \
   --exclude 10.100.10N.1,10.100.10N.3 -oN /tmp/services-tN.txt
 ```
 
-Then spray Universal CCDC Defaults (below in CREDENTIAL-INTEL.md) against discovered services. Do not spend time on theme-specific passwords until actual service layout is confirmed.
+Then spray Universal Exercise Defaults (below in CREDENTIAL-INTEL.md) against discovered services. Do not spend time on theme-specific passwords until actual service layout is confirmed.
 
 ---
 
-## Status of Incoming Items (track before competition day)
+## Status of Incoming Items (track before engagement day)
 
 | Item | Owner | Status |
 |------|-------|--------|
@@ -141,7 +141,7 @@ Then spray Universal CCDC Defaults (below in CREDENTIAL-INTEL.md) against discov
 | Red Team Wiki restoration | (person from Discord) | IN PROGRESS |
 | Kali JB compute + Obsidian Sync | (two people from Discord) | INVESTIGATING |
 
-**Add details here as they arrive. Do not wait until competition morning.**
+**Add details here as they arrive. Do not wait until engagement morning.**
 
 ---
 
@@ -168,7 +168,7 @@ See `coordination/C2-CONFIG.md` for all connection details and callback IP lists
 ### Cobalt Strike
 - **BYOB** — Bring Your Own BOF. No pre-loaded BOF kit provided.
 - Load BOFs manually via CS client: `Cobalt Strike > Script Manager > Load`.
-- If you have preferred BOFs, stage them on your jumpbox before competition day.
+- If you have preferred BOFs, stage them on your jumpbox before engagement day.
 - Recommended BOF categories to have ready: credential access (e.g., Kerberoast, LSASS), situational awareness (e.g., netstat, whoami extended), lateral movement helpers.
 
 ---
@@ -199,7 +199,7 @@ See `coordination/C2-CONFIG.md` for all connection details and callback IP lists
 - Network-level firewall rules that block non-service ports (the usual watershell counter) do not help
 
 **Supported targets:** Standard Linux (glibc), Alpine Linux, FreeBSD
-- Get Alpine and FreeBSD builds from @Khael before competition day
+- Get Alpine and FreeBSD builds from @Khael before engagement day
 
 **CLI flags:**
 - `-c` — run command via runcap (captured output)
@@ -218,7 +218,7 @@ See `coordination/C2-CONFIG.md` for all connection details and callback IP lists
 - Manual fallback: `mass-water.sh` style script (push binary, chmod +x, execute in background)
 
 **Operational notes:**
-- Deploy as early as possible — priority is getting the binary running before blue team locks down
+- Deploy as early as possible — priority is getting the binary running before defensive team locks down
 - Run as root for full raw socket access; non-root may limit some capabilities
 - Use a system-blending name for the process (e.g., named after a real service binary)
 - Blue team counter is binary detection (ps, lsof, netstat) or hash-based AV — not firewall rules
@@ -231,7 +231,7 @@ See `coordination/C2-CONFIG.md` for all connection details and callback IP lists
 ## Persistence Techniques
 
 ### DLL Hijacking (Best-effort — evaluate per-target)
-- Being investigated; may not be ready for all targets by competition day.
+- Being investigated; may not be ready for all targets by engagement day.
 - When viable: identify service/app with unquoted DLL search path, drop malicious DLL in writable path ahead of the legitimate one.
 - Combine with signed binaries (once CA received) for stealth.
 - Log to OPERATION-LOG.md as: "DLL hijack persistence deployed on [host]" — no technique specifics.
@@ -239,8 +239,8 @@ See `coordination/C2-CONFIG.md` for all connection details and callback IP lists
 ### Standard Persistence (always available)
 - Scheduled tasks (Windows) — blend into existing task naming conventions
 - Cron jobs (Linux) — use system-looking paths/names
-- SSH authorized_keys (Linux) — silent, survives most blue team responses
-- Registry Run keys (Windows) — high blue team visibility; use only if task scheduler unavailable
+- SSH authorized_keys (Linux) — silent, survives most defensive team responses
+- Registry Run keys (Windows) — high defensive team visibility; use only if task scheduler unavailable
 - Web shells — deploy on any accessible web service as backup persistence
 - CS/Adaptix/Realm beacon itself — the C2 beacon is primary persistence; layer secondary mechanisms
 
@@ -250,14 +250,14 @@ See `coordination/C2-CONFIG.md` for all connection details and callback IP lists
 
 **No confirmed evasion techniques currently in hand** (as of 2026-03-24 meeting).
 
-**Planned approach if no evasion is available before competition:**
+**Planned approach if no evasion is available before engagement:**
 - Attempt to kill/disable Defender on a schedule (task or service disable after initial access)
 - `Set-MpPreference -DisableRealtimeMonitoring $true` (requires admin)
 - `Stop-Service -Name WinDefend -Force` + `Set-Service -Name WinDefend -StartupType Disabled`
 - Use `sc stop WinDefend` / `sc config WinDefend start= disabled` from cmd if PowerShell is constrained
-- If any operator finds a working evasion during competition, share immediately via team channel
+- If any operator finds a working evasion during engagement, share immediately via team channel
 
-**If evasion is shared before competition day, document here.**
+**If evasion is shared before engagement day, document here.**
 
 ---
 
@@ -265,7 +265,7 @@ See `coordination/C2-CONFIG.md` for all connection details and callback IP lists
 
 ### Pwndrop (details pending)
 - Hosted file server for payload staging and delivery.
-- Details being set up by team member; will be sent before competition.
+- Details being set up by team member; will be sent before engagement.
 - **When received, add here:** URL, credentials, upload procedure.
 
 **Interim:** Stage payloads directly on jumpbox, serve via `python3 -m http.server` on a non-standard port if needed.
@@ -276,12 +276,12 @@ See `coordination/C2-CONFIG.md` for all connection details and callback IP lists
 
 See `coordination/SCORING-FORM.md` for the full schema and point values.
 
-**Before competition start:**
+**Before engagement start:**
 - Create IP pools at `/scoring/red-team/ip-pools/create/` for each C2 (CS, Realm, Adaptix, Koutai)
 - Bookmark `/scoring/red-team/` for fast submissions during ops
 
 **Screenshot evidence — one per team, taken immediately:**
-WRCCDC Gold Team and blue teams routinely require screenshot proof. One screenshot does not cover all teams — each team that a finding applies to needs its own screenshot showing that team's host. If you root 12 teams with the same technique, you need 12 screenshots. Take them the moment you get the shell/dump/file — do not wait.
+Engagement organizers and reviewers routinely require screenshot proof. One screenshot does not cover all teams — each team that a finding applies to needs its own screenshot showing that team's host. If you root 12 teams with the same technique, you need 12 screenshots. Take them the moment you get the shell/dump/file — do not wait.
 
 Every screenshot must show: hostname or IP (in the prompt or command output) + the outcome. Use this one-liner to satisfy most requirements in a single shot:
 ```
@@ -316,19 +316,19 @@ Name files: `teamN_technique_HHMM.png` so you can match them to teams at submiss
 
 **Share everything useful:** Drop discoveries (creds, access paths, pivot points) into coordination files as you go so the rest of the team can exploit them. Do not sit on access. The goal is the whole team benefiting from every foothold.
 
-**WRCCDC scoring objective:** WRCCDC pushes hard for their regional winner to place at nationals (WRCCDC Finals). The red team is explicitly expected to support this — sustained pressure on all teams throughout the competition, not just the opening.
+**Engagement scoring objective:** Ensure sustained pressure across all target groups throughout the engagement — not just the opening window — to maximize assessment value and scoring.
 
 ---
 
 ## Obsidian Coordination
 
-An Obsidian server is typically running on the jumpbox for shared real-time red team notes during competition. Check for it at session start — it complements the coordination files in this repo with freeform notes and shared context across operators.
+An Obsidian server is typically running on the jumpbox for shared real-time red team notes during engagement. Check for it at session start — it complements the coordination files in this repo with freeform notes and shared context across operators.
 
 ---
 
 ## High-Value Technique: Zerologon (CVE-2020-1472)
 
-Zerologon has appeared repeatedly in WRCCDC environments and reliably trips up blue teams who haven't patched it. Prioritize this against any Windows DC that doesn't have the patch applied.
+Zerologon has appeared repeatedly in exercise environments and reliably trips up defensive teams who haven't patched it. Prioritize this against any Windows DC that doesn't have the patch applied.
 
 **What it does:** Exploits a flaw in the Netlogon secure channel protocol to set the DC computer account password to empty, granting full domain compromise without any credentials.
 
@@ -345,7 +345,7 @@ proxychains secretsdump.py -no-pass -just-dc <DOMAIN>/<DC_NETBIOS_NAME>\$@<DC_IP
 
 **Post-exploit:** Full domain credential dump. Feed everything into CREDENTIALS.md and pivot to every domain-joined box.
 
-**Restore machine account password after dump** — if competition infrastructure requires the DC to remain functional for scoring, restore the original password hash using the secretsdump output. Ask PERSIST-001 if unclear.
+**Restore machine account password after dump** — if engagement infrastructure requires the DC to remain functional for scoring, restore the original password hash using the secretsdump output. Ask PERSIST-001 if unclear.
 
 **Log to OPERATION-LOG.md as:** "Domain controller compromised via known vulnerability; full credential dump obtained."
 
@@ -353,10 +353,10 @@ proxychains secretsdump.py -no-pass -just-dc <DOMAIN>/<DC_NETBIOS_NAME>\$@<DC_IP
 
 ## High-Value Technique: DNS Manipulation
 
-Historically disruptive at WRCCDC — if the red team controls a DC or has write access to DNS, poisoning/modifying DNS records trips up blue teams significantly:
+Historically disruptive in exercise environments — if the red team controls a DC or has write access to DNS, poisoning/modifying DNS records trips up defensive teams significantly:
 
 - **Redirect service records:** Point critical internal hostnames to red team-controlled IPs to intercept credentials and traffic
-- **Delete records:** Breaks dependent services, creates blue team confusion, and often scores points as service degradation
+- **Delete records:** Breaks dependent services, creates defensive team confusion, and often scores points as service degradation
 - **Create forwarder:** Add a conditional forwarder pointing internal zones to red team DNS for passive credential capture
 - **Modify MX records:** Redirect internal mail to capture credentials from webmail workflows
 
@@ -366,9 +366,9 @@ Historically disruptive at WRCCDC — if the red team controls a DC or has write
 
 ---
 
-## Special Targets (Black Team Pre-Disclosure)
+## Special Targets (Engagement Organizer Pre-Disclosure)
 
-The black team has confirmed the following non-standard elements will be present in the WRCCDC Regionals 2026 environment. These are sanctioned targets for red team interaction.
+The engagement organizers have confirmed the following non-standard elements will be present in the engagement environment. These are sanctioned targets for red team interaction.
 
 ### ICS / Industrial Control System
 - Unknown ICS type — scout during recon phase
@@ -378,10 +378,10 @@ The black team has confirmed the following non-standard elements will be present
 - **Goal:** Access the HMI or engineering workstation; screenshot/demonstrate control
 - **Constraint:** Do not cause physical damage or permanently alter configurations in ways that would break the scoring environment. Read/screenshot is always safe; write commands require judgment.
 
-### Cameras (Blue Team Visibility)
-- Cameras positioned to observe blue team workstations or screens
+### Cameras (Defensive Team Visibility)
+- Cameras positioned to observe defensive team workstations or screens
 - Likely IP cameras with web interfaces
-- **Goal:** Access the RTSP stream or web UI and screenshot blue team activity — this provides genuine tactical intelligence during competition (what are they doing, what are they patching)
+- **Goal:** Access the RTSP stream or web UI and screenshot defensive team activity — this provides genuine tactical intelligence during engagement (what are they doing, what are they patching)
 - Common default creds: admin/admin, admin/12345, admin/password, root/root — see CREDENTIAL-INTEL.md
 - Probe on ports 80, 443, 554 (RTSP), 8080, 8554
 
@@ -390,17 +390,17 @@ The black team has confirmed the following non-standard elements will be present
 - Red team lead wants this activated if/when we find access
 - Likely on the same network as the ICS or BMS (building management system)
 - May be BACnet-addressable, Modbus-reachable, or accessible via a web interface on the same segment as other OT assets
-- **This is explicitly sanctioned and encouraged by the black team**
+- **This is explicitly sanctioned and encouraged by the engagement organizers**
 
 ---
 
-## Notes on AI Blue Team
+## Notes on AI-Assisted Defensive Teams
 
-Blue teams at WRCCDC may include AI-assisted defense. Assume log correlation and automated remediation are faster than human-only blue teams.
+Some engagements include AI-assisted defensive teams. Check `engagement-profile.yaml` field `environment.ai_defensive_team`. If present, assume log correlation and automated remediation are faster than human-only defensive teams.
 
 **Counter-tactics:**
 - Vary timing between actions — avoid fixed-interval patterns that trigger behavioral analytics
 - Use legitimate admin tools where possible (LOLBins on Windows, built-in Linux utils)
 - Minimize unique log signatures — blend into normal service traffic
-- Deploy multiple persistence layers before blue team gets access; assume first layer will be found
+- Deploy multiple persistence layers before defensive team gets access; assume first layer will be found
 - Route traffic through Koutai to avoid IP-based blocking

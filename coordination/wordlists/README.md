@@ -1,6 +1,6 @@
-# Wordlists — WRCCDC Regionals 2026
+# Wordlists — Exercise Intelligence (Pattern A)
 
-Credential spray lists for competition use. Read CONFIDENCE notes before using.
+Credential spray lists for engagement use. Read CONFIDENCE notes before using.
 
 ## Files
 
@@ -9,7 +9,7 @@ Credential spray lists for competition use. Read CONFIDENCE notes before using.
 - **Confidence:** HIGH — based on quals PCAP analysis and environment reuse assumption
 - **Top entry:** `WaterIsWet??` (CONFIRMED — scoring engine verified at quals)
 - **Use only if:** quals topology verification passes (see PRIVATE-PLAYBOOK.md verification gate)
-- **Fallback:** Bottom section contains universal CCDC defaults that work regardless
+- **Fallback:** Bottom section contains universal exercise defaults that work regardless
 
 ### quals-2026-usernames.txt
 - **Confidence:** UNKNOWN for specific names; HIGH for format (FIRSTNAME_LASTNAME all caps)
@@ -34,7 +34,7 @@ hydra -l admin -P quals-2026-passwords.txt <team-ip> http-post-form \
   -t 4 -f
 ```
 
-## Updating during competition
+## Updating during engagement
 
 Once any DC access is established:
 ```bash

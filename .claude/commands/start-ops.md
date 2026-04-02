@@ -1,9 +1,9 @@
 ---
 name: "start-ops"
-description: "Initialize a competition operations session. Verifies MCP connectivity, creates required directories, generates the competition wordlist, loads or initializes coordination files, checks for existing state from prior sessions, and briefs the operator on recommended priorities. Run this at the beginning of every competition session."
+description: "Initialize an engagement operations session. Verifies MCP connectivity, creates required directories, validates the engagement profile, generates the engagement wordlist, loads or initializes coordination files, checks for existing state from prior sessions, and briefs the operator on recommended priorities. Run this at the beginning of every engagement session."
 ---
 
-# /start-ops — Competition Session Initialization
+# /start-ops — Engagement Session Initialization
 
 ## Workflow
 
@@ -63,6 +63,19 @@ done
 
 Report any missing tools so the operator can install them before operations begin.
 
+### Step 1.5: Validate Engagement Profile
+
+Check if `engagement-profile.yaml` exists in the project root. If it does not exist:
+1. Warn the operator: "engagement-profile.yaml not found. This file defines the authorized scope, authorization chain, and ROE constraints for this deployment. It should be filled out before starting operations."
+2. Offer to copy the template from the repository or prompt the operator to create it.
+3. Continue with initialization but mark the session as "profile not validated" in the session brief.
+
+If `engagement-profile.yaml` exists:
+1. Read the file and summarize the key fields for the operator: engagement name, type, authorizing party, target ranges, ROE constraints.
+2. Confirm: "Is this the correct engagement profile for this session?"
+3. If ROE constraints include `no_file_deletion: true` or `no_resource_consumption: true`, note these prominently in the session brief — all agents must enforce them.
+4. Note the `environment.ai_defensive_team` field value — if `true`, agents will apply elevated evasion posture.
+
 ### Step 2: Create Required Directories and Infrastructure
 
 Create the scans output directory and any missing coordination files:
@@ -74,35 +87,25 @@ mkdir -p archive
 
 Initialize any coordination files that don't already exist from the project templates. If coordination files already exist (resuming a session), do not overwrite them.
 
-### Step 3: Generate Competition Wordlist
+### Step 3: Generate Engagement Wordlist
 
-Generate the competition-specific password wordlist at `/tmp/ccdc-wordlist.txt`. This wordlist is referenced by EXPLOIT-001 for credential spraying and should include CCDC-common defaults plus competition-specific patterns.
+Generate the engagement-specific password wordlist at `/tmp/engagement-wordlist.txt`. This wordlist is referenced by EXPLOIT-001 for credential spraying and should include common default credentials plus engagement-specific patterns from CREDENTIAL-INTEL.md.
 
 ```bash
-cat > /tmp/ccdc-wordlist.txt << 'WORDLIST'
+cat > /tmp/engagement-wordlist.txt << 'WORDLIST'
 Password1!
 P@ssw0rd
 P@ssw0rd!
 Changeme123
 Changeme123!
-Spring2026!
-Winter2025!
-Winter2026!
-WRCCDC2026!
-WRCCDC2026
-Ccdc2026!
 Password123
 Password123!
 Admin123!
-Admin2026!
 Welcome1!
 Welcome123!
 Company123!
 Letmein123!
 Qwerty123!
-Summer2025!
-Fall2025!
-March2026!
 P@ss1234
 Passw0rd!
 !@#$%^&*
@@ -114,16 +117,16 @@ root
 changeme
 default
 WORDLIST
-echo "[OK] Competition wordlist generated at /tmp/ccdc-wordlist.txt ($(wc -l < /tmp/ccdc-wordlist.txt) entries)"
+echo "[OK] Engagement wordlist generated at /tmp/engagement-wordlist.txt ($(wc -l < /tmp/engagement-wordlist.txt) entries)"
 ```
 
-Ask the operator if they have additional competition-specific passwords to add (organizer-provided defaults, passwords observed in prior invitationals, etc.) and append them.
+Ask the operator if they have additional engagement-specific passwords to add (organizer-provided defaults, passwords from CREDENTIAL-INTEL.md, intelligence from prior exercises, etc.) and append them.
 
 ### Step 3b: Review Credential Intelligence File
 
 Check if `coordination/CREDENTIAL-INTEL.md` exists. If it does, briefly summarize its contents for the operator: how many per-event credential sets are loaded, whether the operator-added entries section has content, and the total credential count. Ask the operator if they have additional intelligence to add — event-specific passwords from briefings, passwords shared by other red team members, or custom wordlist entries. Any additions should go in the "Operator-Added Entries" section.
 
-If `coordination/CREDENTIAL-INTEL.md` does not exist, create it from the template (see coordination/CREDENTIAL-INTEL.md in the repository). Inform the operator: "CREDENTIAL-INTEL.md has been initialized with universal CCDC defaults and historical event data. Review and supplement it with any event-specific intelligence before running /attack-plan."
+If `coordination/CREDENTIAL-INTEL.md` does not exist, create it from the template (see coordination/CREDENTIAL-INTEL.md in the repository). Inform the operator: "CREDENTIAL-INTEL.md has been initialized with common default credentials and historical exercise data. Review and supplement it with any engagement-specific intelligence before running /attack-plan."
 
 **Note:** This file is distinct from `coordination/CREDENTIALS.md`, which tracks credentials harvested during the operation. CREDENTIAL-INTEL.md holds pre-loaded intelligence that exists before the operation begins.
 
@@ -162,7 +165,7 @@ echo "JUMPBOX_IP=$JUMPBOX_IP" > /tmp/session-vars.txt
 
 ### Step 5: Load or Initialize Target Ranges
 
-Ask the operator to confirm the target ranges for this session. The operator should provide the IP ranges assigned by competition organizers. Record these in coordination/TARGET-STATUS.md as the authorized scope.
+Ask the operator to confirm the target ranges for this session. The operator should provide the IP ranges assigned by engagement coordinators. Record these in coordination/TARGET-STATUS.md as the authorized scope.
 
 If resuming a session, read the existing TARGET-STATUS.md to restore the operational picture. Report the current state: how many targets are owned, what persistence is active, and what needs immediate attention.
 
@@ -174,15 +177,15 @@ If resuming from a prior session (especially Day 2 morning after an overnight ga
 
 ### Step 7: Verify Apparition Delivery System Tooling (Optional)
 
-Check if the Apparition Delivery System tooling is available in the workspace (look for src/ADS-OneLiner.ps1 or payloads/ccdc-library.ps1). If available, note this for PERSIST-001 and PAYLOAD-001 integration.
+Check if the Apparition Delivery System tooling is available in the workspace (look for src/ADS-OneLiner.ps1 or payloads/engagement-library.ps1). If available, note this for PERSIST-001 and PAYLOAD-001 integration.
 
 ### Step 8: Claim Operator Assignment
 
-Ask the operator for their name/initials and which team ranges they will be working. Record this in TARGET-STATUS.md. If multiple operators are sharing the swarm, each should claim their assigned ranges to prevent duplication of effort. The convention is that an operator who begins work on a team range owns it until they explicitly release it or the session ends.
+Ask the operator for their name/initials and which target ranges they will be working. Record this in TARGET-STATUS.md. If multiple operators are sharing the swarm, each should claim their assigned ranges to prevent duplication of effort. The convention is that an operator who begins work on a team range owns it until they explicitly release it or the session ends.
 
 ### Step 9: Brief the Operator
 
-Produce a session startup brief that includes the current competition phase (estimate based on time of day and any existing operational state), the jumpbox IP and listener port assignments, a summary of the current operational picture (targets owned, persistence active, techniques burned), recommended immediate priorities based on the target tier framework, a reminder of the /scan-range → /attack-plan → persistence workflow, and any issues requiring operator attention.
+Produce a session startup brief that includes the current engagement phase (estimate based on time of day and any existing operational state), the jumpbox IP and listener port assignments, a summary of the current operational picture (targets owned, persistence active, techniques burned), recommended immediate priorities based on the target tier framework, a reminder of the /scan-range → /attack-plan → persistence workflow, and any issues requiring operator attention.
 
 ### Step 10: Log Session Start
 

@@ -1,19 +1,19 @@
 ---
 description: >
-  Feed PCAP files from past WRCCDC competitions to TRAIN-001 (PCAP Analyst) for
+  Feed PCAP files from past exercise competitions (including WRCCDC archives) to TRAIN-001 (PCAP Analyst) for
   intelligence extraction. Accepts a file path (single PCAP) or directory path
   (batch processing). Outputs structured findings to training/PCAP-INTELLIGENCE.md
   and generates agent prompt improvement recommendations. Run this before Phase 1
-  training runs to embed WRCCDC-specific knowledge into competition agents.
+  training runs to embed exercise-specific knowledge into engagement agents.
 arguments:
   - name: path
     description: Path to a PCAP file or directory containing PCAPs
     required: true
   - name: topology
-    description: Optional path to the topology document for this competition year
+    description: Optional path to the topology document for this exercise year
     required: false
   - name: year
-    description: Competition year for these captures (e.g., 2019)
+    description: Exercise year for these captures (e.g., 2019)
     required: false
   - name: pass
     description: Run a specific analysis pass only (topology, redteam, blueteam, credentials). Omit for all four passes.
@@ -22,7 +22,7 @@ arguments:
 
 ## Workflow
 
-This command orchestrates TRAIN-001 (PCAP Analyst) to extract operational intelligence from WRCCDC packet captures. The extracted intelligence feeds the competition agents' system prompts during the training calibration cycle.
+This command orchestrates TRAIN-001 (PCAP Analyst) to extract operational intelligence from historical exercise packet captures (including WRCCDC archives). The extracted intelligence feeds the engagement agents' system prompts during the training calibration cycle.
 
 ### Step 1: Validate Input
 
@@ -51,15 +51,15 @@ Working directory: training/analysis/{year}/
 Output target: training/PCAP-INTELLIGENCE.md
 ```
 
-If a specific pass was requested via the --pass argument, TRAIN-001 runs only that pass. Otherwise, TRAIN-001 runs all four passes in sequence: topology extraction, red team traffic identification, blue team response detection, and credential extraction.
+If a specific pass was requested via the --pass argument, TRAIN-001 runs only that pass. Otherwise, TRAIN-001 runs all four passes in sequence: topology extraction, red team traffic identification, defensive team response detection, and credential extraction.
 
-For directory inputs with multiple PCAP files, TRAIN-001 processes them in filename order (which typically corresponds to chronological order for competition captures). If the total file count exceeds 10, TRAIN-001 applies its sampling strategy: process the first 3-5 files in full detail and sample the remainder.
+For directory inputs with multiple PCAP files, TRAIN-001 processes them in filename order (which typically corresponds to chronological order for exercise captures). If the total file count exceeds 10, TRAIN-001 applies its sampling strategy: process the first 3-5 files in full detail and sample the remainder.
 
 ### Step 4: Review Findings
 
 After TRAIN-001 completes, display a summary of what was extracted:
 
-Report the counts: how many unique hosts identified, how many services mapped, how many red team traffic patterns found, how many blue team response events detected, how many credentials extracted, and how many agent prompt recommendations generated.
+Report the counts: how many unique hosts identified, how many services mapped, how many red team traffic patterns found, how many defensive team response events detected, how many credentials extracted, and how many agent prompt recommendations generated.
 
 If any pass produced zero findings, flag it — this may indicate the PCAP doesn't contain the expected traffic (e.g., a capture that only includes scoring engine traffic would have no red team patterns).
 
@@ -77,13 +77,13 @@ Append an entry to training/TRAINING-LOG.md recording the analysis:
 ## PCAP Analysis: {date}
 
 Source: {path}
-Competition year: {year}
+Exercise year: {year}
 Passes run: {which passes}
 Findings summary:
   Hosts identified: N
   Services mapped: N
   Red team patterns: N
-  Blue team responses: N
+  Defensive team responses: N
   Credentials extracted: N
   Prompt recommendations: N
 Duration: {elapsed time}
@@ -91,7 +91,7 @@ Duration: {elapsed time}
 
 ## Usage Examples
 
-Analyze a single PCAP from the 2019 competition:
+Analyze a single PCAP from the 2019 exercise:
 ```
 /analyze-pcap ~/wrccdc-training/pcaps/2019/day1/competition-day1-01.pcap --year 2019 --topology ~/wrccdc-training/topologies/2019-topology.pdf
 ```
@@ -106,7 +106,7 @@ Run only the credential extraction pass on a specific capture:
 /analyze-pcap ~/wrccdc-training/pcaps/2019/day1/competition-day1-03.pcap --pass credentials --year 2019
 ```
 
-Run topology extraction to validate understanding of a new competition year's network layout:
+Run topology extraction to validate understanding of a new exercise year's network layout:
 ```
 /analyze-pcap ~/wrccdc-training/pcaps/2017/day1/ --pass topology --year 2017 --topology ~/wrccdc-training/topologies/2017-blueteam-packet.pdf
 ```
@@ -115,4 +115,4 @@ Run topology extraction to validate understanding of a new competition year's ne
 
 This command is idempotent for the same input — re-running it on the same PCAP appends findings under a new dated subsection rather than overwriting previous analysis. This allows the operator to run the same PCAP through different passes at different times without losing earlier findings.
 
-The command does not modify any competition files. All output stays within the training/ directory. Recommendations for agent prompt changes are proposals only — they are not applied until the operator approves them through the debrief and patching cycle.
+The command does not modify any engagement files. All output stays within the training/ directory. Recommendations for agent prompt changes are proposals only — they are not applied until the operator approves them through the debrief and patching cycle.

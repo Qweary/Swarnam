@@ -4,30 +4,30 @@ Maintained by OPS-001. This is the authoritative record of the operational state
 
 ## Authorized Target Ranges
 
-Fill on competition day:
+Confirm at session start (from engagement-profile.yaml or engagement coordinator briefing):
 
 ```
-Team 1: [FILL]
-Team 2: [FILL]
-Team 3: [FILL]
-Team 4: [FILL]
-Team 5: [FILL]
-Team 6: [FILL]
-Team 7: [FILL]
-Team 8: [FILL]
-AI Team: [FILL]
+Group 1: [FILL]
+Group 2: [FILL]
+Group 3: [FILL]
+Group 4: [FILL]
+Group 5: [FILL]
+Group 6: [FILL]
+Group 7: [FILL]
+Group 8: [FILL]
+AI-Assisted Defensive Group: [FILL — if present per engagement-profile.yaml]
 ```
 
 ## Status Legend
 
-Status values: UNKNOWN (not yet scanned), ENUMERATED (scanned, services identified), ACCESSED (initial access achieved but persistence not yet deployed), OWNED (access + persistence deployed), BURNED (access lost, blue team remediated), PARTIAL (some persistence remains after remediation).
+Status values: UNKNOWN (not yet scanned), ENUMERATED (scanned, services identified), ACCESSED (initial access achieved but persistence not yet deployed), OWNED (access + persistence deployed), BURNED (access lost, defensive team remediated), PARTIAL (some persistence remains after remediation).
 
 ## Target Map
 
-| IP | Hostname | Team | Tier | OS | Status | Access Method | Persistence Count | Last Verified | Blue Team Activity | Operator |
+| IP | Hostname | Group | Tier | OS | Status | Access Method | Persistence Count | Last Verified | Defensive Team Activity | Operator |
 |----|----------|------|------|----|--------|---------------|-------------------|---------------|-------------------|----------|
 | | | | | | | | | | | |
 
 ## Notes
 
-Record observations about specific targets, blue team behavior, or environmental conditions here. Prepend each note with a timestamp.
+Record observations about specific targets, defensive team behavior, or environmental conditions here. Prepend each note with a timestamp.

@@ -5,7 +5,7 @@ description: >
   pre-categorized by disposition. The operator reviews findings, adjusts
   dispositions as needed, and confirms. After confirmation, TRAIN-003 generates
   the patch file for approved fixes. This command replaces /end-ops for training
-  runs — use /end-ops only during actual competition.
+  runs — use /end-ops only during live engagements.
 ---
 
 ## Workflow
@@ -33,7 +33,7 @@ Total duration: {elapsed time}
 
 TRAIN-002 compiles everything it captured during the run into two outputs.
 
-The first output is training/TRAINING-METRICS.md, which receives a new metrics row for this run. The row includes all four metric categories (operational velocity, accuracy, resilience, efficiency) with the values measured during this specific run. If certain metrics couldn't be measured (e.g., persistence-survival-rate in a run that didn't include a simulated blue team check), those cells are marked "N/M" (not measured) rather than zero.
+The first output is training/TRAINING-METRICS.md, which receives a new metrics row for this run. The row includes all four metric categories (operational velocity, accuracy, resilience, efficiency) with the values measured during this specific run. If certain metrics couldn't be measured (e.g., persistence-survival-rate in a run that didn't include a simulated defensive team check), those cells are marked "N/M" (not measured) rather than zero.
 
 The second output is training/DEBRIEF-QUEUE.md, which receives the complete list of findings from this run. Each finding is a numbered item with the following fields:
 
@@ -69,7 +69,7 @@ Confirm the disposition as-is (the majority case — TRAIN-002's pre-categorizat
 
 Change NEEDS-TRIAGE to a specific disposition after discussion (the operator provides the categorization that TRAIN-002 couldn't determine).
 
-Change any finding to WONTFIX with a rationale (the operator decides this is an acceptable limitation, an environment-specific issue, or not worth fixing before competition).
+Change any finding to WONTFIX with a rationale (the operator decides this is an acceptable limitation, an environment-specific issue, or not worth fixing before the next engagement).
 
 Change PROMPT-FIX to OPERATOR-TRAINING or vice versa (sometimes what looks like an agent problem is actually an operator workflow issue, or vice versa).
 
@@ -130,9 +130,9 @@ If the patch file has cross-agent edits: highlight these specifically, as they n
 
 If the metrics show improvement over previous runs: note this as positive signal that the calibration is working.
 
-If the metrics show stagnation or regression: flag this and suggest the operator consider whether the prompt changes are addressing the right root causes, or whether the training environment is too different from the target competition environment to produce transferable improvements.
+If the metrics show stagnation or regression: flag this and suggest the operator consider whether the prompt changes are addressing the right root causes, or whether the training environment is too different from the target engagement environment to produce transferable improvements.
 
-If this was the last planned Phase 1 run: suggest the operator run /restore-competition to verify competition readiness before moving to Phase 2.
+If this was the last planned Phase 1 run: suggest the operator run /restore-competition to verify engagement readiness before moving to Phase 2.
 
 ## Usage
 
