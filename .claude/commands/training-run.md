@@ -2,13 +2,13 @@
 description: >
   Initialize a training pipeline run against a lab environment. Similar to
   /start-ops but uses training-specific coordination files (training/coordination/
-  instead of coordination/) so competition files stay clean. Sets up TRAIN-002
+  instead of coordination/) so engagement files stay clean. Sets up TRAIN-002
   (Training Evaluator) to monitor the session and records training environment
-  details. After initialization, the operator runs the normal competition pipeline
+  details. After initialization, the operator runs the normal engagement pipeline
   (/scan-range, /attack-plan, execute, /status, /rotate) while TRAIN-002 observes.
 arguments:
   - name: environment
-    description: Description of the training environment (e.g., "2016 WRCCDC, 3 VMs, host-only network")
+    description: Description of the training environment (e.g., "historical exercise topology, 3 VMs, host-only network")
     required: true
   - name: focus
     description: Optional focus area for this run (e.g., "persistence timing", "credential spray accuracy", "coordination file flow")
@@ -20,7 +20,7 @@ arguments:
 
 ## Workflow
 
-This command initializes a training pipeline run. It mirrors /start-ops for the competition pipeline but routes all coordination file activity to training/coordination/ and activates TRAIN-002 to observe the session.
+This command initializes a training pipeline run. It mirrors /start-ops for the engagement pipeline but routes all coordination file activity to training/coordination/ and activates TRAIN-002 to observe the session.
 
 ### Step 1: Determine Run Number
 
@@ -68,15 +68,15 @@ If any check fails, re-write the file. Report validation results before proceedi
 
 Display the training environment description back to the operator and ask them to confirm or amend. Prompt for any details not provided:
 
-What competition year's infrastructure is deployed? How many target VMs are running and what are their roles (DC, web server, workstation, etc.)? What network topology is in use (IP ranges, which segment is the Kali jumpbox on)? Is there any simulated blue team activity, or is this a static target environment? Are there any known default credentials from the scenario documentation?
+What exercise year's infrastructure is deployed? How many target VMs are running and what are their roles (DC, web server, workstation, etc.)? What network topology is in use (IP ranges, which segment is the Kali jumpbox on)? Is there any simulated defensive team activity, or is this a static target environment? Are there any known default credentials from the scenario documentation?
 
 ### Step 4: Configure Agent Routing
 
-The critical distinction between /training-run and /start-ops is that all coordination file reads and writes during the training run must use training/coordination/ instead of coordination/. This keeps competition files clean.
+The critical distinction between /training-run and /start-ops is that all coordination file reads and writes during the training run must use training/coordination/ instead of coordination/. This keeps engagement files clean.
 
-Inform the operator of this routing. During the training run, when they invoke competition commands (/scan-range, /attack-plan, /status, /rotate), the agents will be instructed to read from and write to training/coordination/ instead of coordination/. The operator should pass the `--training` flag (or the equivalent convention) to competition commands, or should be aware that the training session has established this routing.
+Inform the operator of this routing. During the training run, when they invoke engagement commands (/scan-range, /attack-plan, /status, /rotate), the agents will be instructed to read from and write to training/coordination/ instead of coordination/. The operator should pass the `--training` flag (or the equivalent convention) to engagement commands, or should be aware that the training session has established this routing.
 
-In practice, the simplest approach is for the operator to set the working context: at the start of the training run, explicitly tell the competition agents to use training/coordination/ for all coordination file operations. The /training-run command establishes this context.
+In practice, the simplest approach is for the operator to set the working context: at the start of the training run, explicitly tell the engagement agents to use training/coordination/ for all coordination file operations. The /training-run command establishes this context.
 
 ### Step 5: Initialize TRAIN-002
 
@@ -97,13 +97,13 @@ TRAIN-002 begins its observation role. It will passively monitor the training se
 
 Same as /start-ops: check whether the MCP Kali server is available. If not, report the status but allow the run to continue — some training value (coordination file flow, agent recommendation quality) can be captured even without MCP tool execution.
 
-### Step 7: Generate Competition Wordlist
+### Step 7: Generate Engagement Wordlist
 
-Same as /start-ops: generate or verify the competition wordlist at /tmp/ccdc-wordlist.txt. If PCAP analysis has produced credential patterns (in training/PCAP-INTELLIGENCE.md), incorporate those patterns into the wordlist for this training run.
+Same as /start-ops: generate or verify the engagement wordlist at /tmp/engagement-wordlist.txt. If PCAP analysis has produced credential patterns (in training/PCAP-INTELLIGENCE.md), incorporate those patterns into the wordlist for this training run.
 
 ### Step 7b: Review Credential Intelligence File
 
-Check if `training/coordination/CREDENTIAL-INTEL.md` exists (note: training runs use the training/coordination/ path). If it does, summarize its contents for the operator. If it does not exist, copy or create it from the competition template at `coordination/CREDENTIAL-INTEL.md`. Ask the operator if they have training-environment-specific credentials to add (e.g., passwords from the training scenario documentation, known defaults for the lab VMs). Additions go in the "Operator-Added Entries" section.
+Check if `training/coordination/CREDENTIAL-INTEL.md` exists (note: training runs use the training/coordination/ path). If it does, summarize its contents for the operator. If it does not exist, copy or create it from the engagement template at `coordination/CREDENTIAL-INTEL.md`. Ask the operator if they have training-environment-specific credentials to add (e.g., passwords from the training scenario documentation, known defaults for the lab VMs). Additions go in the "Operator-Added Entries" section.
 
 ### Step 7c: Load or Initialize Scoring Form
 
@@ -148,7 +148,7 @@ Present a startup brief:
 TRAINING RUN #{run_number} INITIALIZED
 Environment: {description}
 Focus: {areas}
-Coordination files: training/coordination/ (competition files untouched)
+Coordination files: training/coordination/ (engagement files untouched)
 TRAIN-002: Active and observing
 
 NEXT STEPS:
@@ -167,11 +167,11 @@ REMINDERS:
 
 ### Step 10: Start the Clock
 
-Record the exact start time. TRAIN-002 uses this as the baseline for all timing measurements. The operator is now in the training pipeline and should proceed with /scan-range, /attack-plan, etc. as they would during competition.
+Record the exact start time. TRAIN-002 uses this as the baseline for all timing measurements. The operator is now in the training pipeline and should proceed with /scan-range, /attack-plan, etc. as they would during a live engagement.
 
 ## Post-Initialization
 
-After initialization, the operator runs the normal competition pipeline. The only differences from a real competition run are that coordination files are in training/coordination/, TRAIN-002 is observing, and the operator should call /debrief when the training run is complete (instead of /end-ops, which is reserved for competition operations).
+After initialization, the operator runs the normal engagement pipeline. The only differences from a live engagement run are that coordination files are in training/coordination/, TRAIN-002 is observing, and the operator should call /debrief when the training run is complete (instead of /end-ops, which is reserved for live engagement operations).
 
 If the operator wants to end the training run early (e.g., encountered a blocking issue), they should still call /debrief to capture whatever metrics and findings were generated during the partial run.
 
@@ -179,7 +179,7 @@ If the operator wants to end the training run early (e.g., encountered a blockin
 
 Start a Phase 1 calibration run:
 ```
-/training-run --environment "2016 WRCCDC, 4 VMs (DC, web, mail, workstation), host-only 10.0.1.0/24" --operator Queue
+/training-run --environment "historical exercise topology, 4 VMs (DC, web, mail, workstation), host-only 10.0.1.0/24" --operator Queue
 ```
 
 Start a focused run on persistence timing:
@@ -189,5 +189,5 @@ Start a focused run on persistence timing:
 
 Start a Phase 2 scrimmage:
 ```
-/training-run --environment "2019 WRCCDC full topology, 8 targets, NAT network 10.200.X.0/24" --focus "operational tempo and multi-target prioritization" --operator Queue
+/training-run --environment "historical full exercise topology, 8 targets, NAT network 10.200.X.0/24" --focus "operational tempo and multi-target prioritization" --operator Queue
 ```

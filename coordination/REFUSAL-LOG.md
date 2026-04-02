@@ -4,13 +4,13 @@ Records instances where the AI swarm declined to perform a requested action. Thi
 
 ## Purpose
 
-AI assistants may decline certain offensive security actions despite operating within authorized competition scope. This is expected and handled gracefully. The swarm logs the refusal, provides the manual fallback, and continues operating on non-refused tasks. The operation never stalls because an AI declined one action.
+AI assistants may decline certain offensive security actions despite operating within authorized engagement scope. This is expected and handled gracefully. The swarm logs the refusal, provides the manual fallback, and continues operating on non-refused tasks. The operation never stalls because an AI declined one action.
 
 ## Log
 
-| # | Timestamp | Agent | Action Requested | Reason for Refusal | Manual Command for Operator | Alternative Approaches | Resolution |
-|---|-----------|-------|-----------------|--------------------|-----------------------------|----------------------|------------|
-| | | | | | | | |
+| # | Timestamp | Agent | Operator Request (verbatim) | Agent Interpretation | Refusal Reason | Manual Command for Operator | Alternative Approaches | Resolution |
+|---|-----------|-------|-----------------------------|---------------------|----------------|-----------------------------|-----------------------|------------|
+| | | | | | | | | |
 
 ## Notes
 

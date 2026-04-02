@@ -1,6 +1,6 @@
 # Persistence Manifest
 
-Maintained by PERSIST-001. This is the authoritative record of all persistence mechanisms deployed to competition targets. Every entry includes the cleanup command so that all persistence can be accounted for during post-competition review.
+Maintained by PERSIST-001. This is the authoritative record of all persistence mechanisms deployed to engagement targets. Every entry includes the cleanup command so that all persistence can be accounted for during post-engagement review.
 
 ## Manifest
 
@@ -14,7 +14,7 @@ Type values: TASK (scheduled task), REGISTRY (run key or other registry persiste
 
 ## Status Legend
 
-Status values: ACTIVE (deployed and verified), UNVERIFIED (deployed but not recently verified), BURNED (detected and removed by blue team), DEGRADED (partially functional).
+Status values: ACTIVE (deployed and verified), UNVERIFIED (deployed but not recently verified), BURNED (detected and removed by defensive team), DEGRADED (partially functional).
 
 ## Verification Schedule
 
@@ -22,4 +22,4 @@ High-value persistence (Tier 1 targets) should be verified every 30 minutes duri
 
 ## Deployment Notes
 
-Record deployment-specific observations here (unusual behavior during deployment, error messages, blue team activity during deployment window). Prepend each note with a timestamp.
+Record deployment-specific observations here (unusual behavior during deployment, error messages, defensive team activity during deployment window). Prepend each note with a timestamp.

