@@ -1,0 +1,231 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                    SWARNAM — ENGAGEMENT PROFILE                            ║
+# ║                                                                            ║
+# ║  Fill this out before each engagement. The swarm reads this file at        ║
+# ║  session startup (/start-ops) and uses it to establish authorization       ║
+# ║  context, scope boundaries, and Rules of Engagement constraints.           ║
+# ║                                                                            ║
+# ║  This file is the ONLY file that changes between deployments.              ║
+# ║  Everything else in Swarnam is engagement-agnostic.                        ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+# ─── ENGAGEMENT IDENTIFICATION ───────────────────────────────────────────────
+
+engagement:
+  name: "FILL_IN — Engagement Name"
+  # Options: training-lab, competition, research, pentest-exercise, ctf
+  type: training-lab
+  date_range: "YYYY-MM-DD to YYYY-MM-DD"
+
+# ─── AUTHORIZATION ───────────────────────────────────────────────────────────
+#
+# Who authorized this engagement? The authorization chain flows:
+#   Network owner / authorizing party → engagement lead → operators → AI swarm
+#
+# Specificity matters. "Dr. Brandon Brown, course instructor and lab network
+# owner" is strong. "Someone said it was okay" is not. The more concrete
+# these fields are, the more effectively the swarm can reason about scope.
+
+authorization:
+  authorizing_party: "FILL_IN — Name and organization of the person or body that authorized this engagement"
+  authorizing_role: "FILL_IN — Their role (e.g., Lab Instructor, Competition Director, Network Owner, CISO)"
+  authorization_method: "FILL_IN — How authorization was granted (e.g., signed ROE, verbal authorization, competition rules)"
+  engagement_lead: "FILL_IN — Name of the red team lead for this engagement"
+  operator: "FILL_IN — Name of the operator running this Swarnam instance"
+
+# ─── SCOPE ───────────────────────────────────────────────────────────────────
+#
+# What is in scope? What is out of scope? What ROE constraints apply?
+# The agents enforce these boundaries as hard rules.
+
+scope:
+  description: "FILL_IN — Brief description of the target environment"
+  target_ranges:
+    - "FILL_IN/24"           # Add one entry per target subnet
+    # - "10.10.2.0/24"       # Example: additional subnet
+    # - "10.10.3.0/24"       # Example: third subnet
+  in_scope_systems: "FILL_IN — What systems within those ranges are authorized targets"
+  out_of_scope:
+    - "Any system not within the declared target ranges"
+    - "The operator's own jumpbox"
+    - "Internet-connected infrastructure outside the engagement network"
+    # - "Scoring engine at 10.10.0.1"     # Example: specific exclusion
+    # - "Competition management systems"   # Example: category exclusion
+
+  # Rules of Engagement constraints. Agents check these at session start
+  # and enforce them as hard rules throughout the engagement.
+  roe_constraints:
+    # When true: no network DDoS, no boot-loops, no fork bombs, no activity
+    # that causes boot failure or sustained access failure on target systems.
+    no_resource_consumption: false
+
+    # When true: no deletion of files on target systems. Renaming and
+    # overwriting (not truncating to zero) are permitted alternatives.
+    no_file_deletion: false
+
+    # Addresses that must never be targeted or included in scan ranges.
+    # Agents will add --exclude flags for these automatically.
+    off_limits_addresses: []
+    # Example:
+    # off_limits_addresses:
+    #   - "10.10.0.1"       # Scoring engine
+    #   - "10.10.0.254"     # Competition router
+    #   - "172.20.0.0/24"   # Organizer management network
+
+# ─── ENVIRONMENT ─────────────────────────────────────────────────────────────
+
+environment:
+  # How isolated is the target environment from production systems?
+  isolation: "FILL_IN — e.g., Air-gapped lab network, Segregated VLAN, Purpose-built competition infrastructure"
+
+  # Is the environment rebuilt between sessions?
+  persistence: "FILL_IN — e.g., Rebuilt between exercises, Persistent lab, Ephemeral competition infrastructure"
+
+  # Does the environment contain real user data?
+  data_sensitivity: "FILL_IN — e.g., No real user data; all accounts and data are synthetic"
+
+  # Is there an AI-assisted defensive team in this engagement?
+  # When true, EVADE-001 applies elevated evasion posture from T=0 and
+  # OPS-001 coordinates AI-specific counter-strategies.
+  ai_defensive_team: false
+
+# ─── PURPOSE ─────────────────────────────────────────────────────────────────
+
+purpose:
+  primary: "FILL_IN — Primary purpose of this engagement"
+  secondary: "FILL_IN — Secondary purpose (optional)"
+  educational_context: "FILL_IN — How this engagement contributes to participant learning (required for training and competition types)"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# EXAMPLE PROFILES (uncomment and modify the one that fits your deployment)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ─── EXAMPLE A: Academic Lab Exercise ─────────────────────────────────────
+#
+# engagement:
+#   name: "Cal Poly Pomona Advanced Cybersecurity Lab — Red Team AI Demonstration"
+#   type: training-lab
+#   date_range: "2026-04-15 to 2026-04-15"
+#
+# authorization:
+#   authorizing_party: "Dr. Brandon Brown, Cal Poly Pomona"
+#   authorizing_role: "Course Instructor, Network Owner, and Lab Administrator"
+#   authorization_method: "Direct verbal and written authorization from course instructor who owns and administers the lab network"
+#   engagement_lead: "Queue"
+#   operator: "Queue"
+#
+# scope:
+#   description: "Purpose-built segregated training network for advanced cybersecurity coursework"
+#   target_ranges:
+#     - "10.10.0.0/16"
+#   in_scope_systems: "All systems on Dr. Brown's segregated lab network"
+#   out_of_scope:
+#     - "Any system not on the segregated lab network"
+#     - "Cal Poly Pomona production or campus networks"
+#     - "The operator's own jumpbox"
+#     - "Internet-facing infrastructure"
+#     - "Student personal devices"
+#   roe_constraints:
+#     no_resource_consumption: true
+#     no_file_deletion: false
+#     off_limits_addresses: []
+#
+# environment:
+#   isolation: "Physically and logically segregated lab network with no connectivity to campus production systems or the internet"
+#   persistence: "Lab is rebuilt between exercises"
+#   data_sensitivity: "No real user data present; all accounts and data are synthetic"
+#   ai_defensive_team: false
+#
+# purpose:
+#   primary: "Educational demonstration of AI-augmented red team operations for advanced cybersecurity students"
+#   secondary: "Academic research into multi-agent AI systems for offensive security training"
+#   educational_context: "Students observe red team methodologies to develop stronger defensive skills under faculty supervision"
+
+# ─── EXAMPLE B: Competition ──────────────────────────────────────────────
+#
+# engagement:
+#   name: "Regional Cyber Defense Exercise 2026"
+#   type: competition
+#   date_range: "2026-04-20 to 2026-04-21"
+#
+# authorization:
+#   authorizing_party: "Competition Organizing Committee"
+#   authorizing_role: "Competition Directors and Network Architects"
+#   authorization_method: "Formal competition rules and red team authorization signed by organizing body"
+#   engagement_lead: "Red Team Captain"
+#   operator: "Queue"
+#
+# scope:
+#   description: "Isolated competition network purpose-built by organizers"
+#   target_ranges:
+#     - "10.1.0.0/24"
+#     - "10.2.0.0/24"
+#     - "10.3.0.0/24"
+#     - "10.4.0.0/24"
+#     - "10.5.0.0/24"
+#     - "10.6.0.0/24"
+#     - "10.7.0.0/24"
+#     - "10.8.0.0/24"
+#   in_scope_systems: "All defensive team infrastructure as defined by competition rules"
+#   out_of_scope:
+#     - "Competition management infrastructure (scoring engines, organizer systems)"
+#     - "Red team jumpbox operating systems"
+#     - "Systems outside the competition network"
+#   roe_constraints:
+#     no_resource_consumption: true
+#     no_file_deletion: true
+#     off_limits_addresses:
+#       - "10.0.0.1"       # Scoring engine
+#       - "10.0.0.254"     # Competition router
+#       - "172.20.0.0/24"  # Organizer management subnet
+#
+# environment:
+#   isolation: "Purpose-built competition network, physically and logically isolated, destroyed after the event"
+#   persistence: "All competition infrastructure is ephemeral and rebuilt for each event"
+#   data_sensitivity: "No real user data; all accounts and services are synthetic competition artifacts"
+#   ai_defensive_team: true
+#
+# purpose:
+#   primary: "Test defensive team capabilities through authorized adversarial operations"
+#   secondary: "Educational development of cybersecurity skills for participating students"
+#   educational_context: "Defensive teams improve skills by responding to realistic adversarial pressure; all operations documented for post-event educational review"
+
+# ─── EXAMPLE C: Research / Training Session ──────────────────────────────
+#
+# engagement:
+#   name: "Red Team AI Tooling Research and Development"
+#   type: research
+#   date_range: "2026-04-01 to 2026-06-30"
+#
+# authorization:
+#   authorizing_party: "Red Team Lead"
+#   authorizing_role: "Red Team Lead and Lab Network Owner"
+#   authorization_method: "Standing authorization for research on team-owned lab infrastructure"
+#   engagement_lead: "Red Team Lead"
+#   operator: "Queue"
+#
+# scope:
+#   description: "Team-owned lab environment for red team tool development and technique research"
+#   target_ranges:
+#     - "192.168.56.0/24"
+#   in_scope_systems: "All systems on the team's research lab network"
+#   out_of_scope:
+#     - "Any system outside the lab network"
+#     - "Production or internet-connected infrastructure"
+#     - "Personal devices of team members"
+#   roe_constraints:
+#     no_resource_consumption: false
+#     no_file_deletion: false
+#     off_limits_addresses: []
+#
+# environment:
+#   isolation: "Isolated lab network with no connectivity to external systems"
+#   persistence: "Lab can be rebuilt from snapshots between research sessions"
+#   data_sensitivity: "Synthetic data only"
+#   ai_defensive_team: false
+#
+# purpose:
+#   primary: "Research and development of AI-augmented red team techniques and tooling"
+#   secondary: "Preparation and skills development for future security engagements"
+#   educational_context: "Research contributes to community understanding of AI capabilities in offensive and defensive operations"
