@@ -18,6 +18,29 @@ The authorization chain flows through four levels: the network owner / authorizi
 
 `/start-ops` reads this file during initialization and populates `ENGAGEMENT-AUTHORIZATION.md` with engagement-specific details. If the profile is not filled in, `/start-ops` will prompt the operator to complete it before proceeding.
 
+## Prerequisites
+
+Swarnam requires the `mcp-kali-server` package and its API server running before launching Claude Code. The MCP configuration is already included in `.mcp.json` at the project root — Claude Code reads it automatically.
+
+**Install (Kali Linux):**
+```bash
+sudo apt install mcp-kali-server
+```
+
+**Start the API server** (do this before `claude` each session):
+```bash
+sudo systemctl start kali-server-mcp
+# or run directly in a terminal:
+kali-server-mcp
+```
+
+To start automatically on boot:
+```bash
+sudo systemctl enable kali-server-mcp
+```
+
+Once the API server is running, launch Claude Code from the project directory: `claude`. The `kali-server` MCP will connect automatically.
+
 ## Getting Started
 
 **First time here?** Run `/start-ops` to begin any session. It will validate the engagement profile, verify your environment, initialize coordination files, and brief you on priorities.
