@@ -1,6 +1,6 @@
 ---
 description: >
-  Feed PCAP files from past exercise competitions (including WRCCDC archives) to TRAIN-001 (PCAP Analyst) for
+  Feed PCAP files from past exercise competitions (such as WRCCDC and other competition archives) to TRAIN-001 (PCAP Analyst) for
   intelligence extraction. Accepts a file path (single PCAP) or directory path
   (batch processing). Outputs structured findings to training/PCAP-INTELLIGENCE.md
   and generates agent prompt improvement recommendations. Run this before Phase 1
@@ -22,7 +22,7 @@ arguments:
 
 ## Workflow
 
-This command orchestrates TRAIN-001 (PCAP Analyst) to extract operational intelligence from historical exercise packet captures (including WRCCDC archives). The extracted intelligence feeds the engagement agents' system prompts during the training calibration cycle.
+This command orchestrates TRAIN-001 (PCAP Analyst) to extract operational intelligence from historical exercise packet captures (such as WRCCDC and other competition archives). The extracted intelligence feeds the engagement agents' system prompts during the training calibration cycle.
 
 ### Step 1: Validate Input
 
